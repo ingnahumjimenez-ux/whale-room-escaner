@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Test velas · Escáner Confluencias v3</title>
+<title>Test salidas · Escáner Confluencias v3</title>
 <style>
 .econcal{max-width:560px}
 .ec-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
@@ -3744,9 +3744,10 @@ document.addEventListener('click',e=>{
 </script>
 <div id="tvOv" style="position:fixed;inset:0;z-index:9999;background:#0b1220;color:#e5e7eb;overflow:auto;padding:14px;font:14px/1.45 Inter,system-ui,sans-serif">
  <div style="max-width:560px;margin:0 auto">
-  <h2 style="margin:4px 0 2px;font-size:19px">🧪 Test de velas · 15m · 500 vs 1000</h2>
-  <div style="color:#94a3b8;font-size:12.5px">Toma los 50 pares de futuros con más volumen ahora, retrocede en el tiempo y, en muchos momentos de los últimos ~5 días, ejecuta el mismo análisis del escáner v3 con 500 y con 1000 velas. Luego mira qué pasó de verdad en las 24 h siguientes.</div>
-  <div style="display:flex;gap:8px;margin:12px 0">
+  <h2 style="margin:4px 0 2px;font-size:19px">🧪 Test de salidas · 15m</h2>
+  <div style="color:#94a3b8;font-size:12.5px">Toma los 50 pares de futuros con más volumen, ejecuta el análisis de v3 en muchos momentos de los últimos ~5 días y mira qué pasó después. Compara <b>dónde conviene salir</b> (T1, T2, T3, óptimo o mitad en T1) esperando 24 h y 48 h, y revisa si el % de cada objetivo se cumple.</div>
+  <div style="display:flex;gap:8px;margin:12px 0;align-items:center">
+   <select id="tvL" style="padding:11px;border-radius:12px;background:#111a2e;color:#e5e7eb;border:1px solid #334155;font-weight:700"><option value="1000" selected>1000 velas</option><option value="500">500 velas</option></select>
    <button id="tvGo" style="flex:1;padding:12px;border-radius:12px;border:0;background:#16a34a;color:#fff;font-weight:800;font-size:15px">▶ Iniciar test</button>
    <button id="tvCopy" style="padding:12px;border-radius:12px;border:1px solid #334155;background:#111a2e;color:#e5e7eb;font-weight:700;display:none">📋 Copiar</button>
   </div>
@@ -3755,103 +3756,112 @@ document.addEventListener('click',e=>{
   <div id="tvOut" style="margin-top:12px"></div>
  </div>
 </div>
+<style>#tvOut table{width:100%;border-collapse:collapse;font-size:12.5px}#tvOut td{padding:5px 4px;border-bottom:1px solid #1e293b}#tvOut tr.h td{color:#94a3b8;font-weight:700}#tvOut tr.best td{background:#052e16}#tvOut h3{font-size:14.5px;margin:16px 0 6px}</style>
 <script>
 (()=>{
-const TV={pairs:50, total:1500, look:96, fillWin:16, step:12, gap:24, minAny:60};
+const TV={pairs:50, total:1500, fillWin:16, step:12, gap:24, minAny:60, fee:0.001, W:[96,192]};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const $t=id=>document.getElementById(id);
-function outcome(r, K, t, stop, opt){
-  const sh=r.dir==='short', lo=r.entryLow, hi=r.entryHigh, end=Math.min(K.length-1, t+TV.look);
+/* recorre el precio una vez y guarda en qué vela pasó cada cosa (stop primero si coinciden: conservador) */
+function path(r, K, t, stop){
+  const sh=r.dir==='short', lo=r.entryLow, hi=r.entryHigh, end=Math.min(K.length-1, t+TV.W[1]);
   let fill=-1, ep=null;
   for(let j=t+1;j<=Math.min(end,t+TV.fillWin);j++){ const k=K[j]; if(k.l<=hi && k.h>=lo){ fill=j; ep=Math.min(hi,Math.max(lo,k.o)); break; } }
-  if(fill<0) return {filled:false};
-  const risk=Math.abs(ep-stop); if(!(risk>0)) return {filled:false};
-  const tg=r.targets.map(x=>x.p); let maxK=0, stopped=false, optHit=false, optR=null, exitR=null;
-  const optP= opt? tg[opt.k-1] : null;
+  if(fill<0) return null;
+  const risk=Math.abs(ep-stop); if(!(risk>0)) return null;
+  const tg=r.targets.map(x=>x.p), hit=new Array(tg.length).fill(-1); let sIdx=-1;
   for(let j=fill;j<=end;j++){ const k=K[j];
-    const sHit= sh? k.h>=stop : k.l<=stop;
-    if(sHit && j>fill){ stopped=true; break; }
-    for(let i=maxK;i<tg.length;i++){ if(sh? k.l<=tg[i] : k.h>=tg[i]) maxK=i+1; else break; }
-    if(optP!=null && !optHit && (sh? k.l<=optP : k.h>=optP)){ optHit=true; optR=Math.abs(optP-ep)/risk; }
-    if(sHit){ stopped=true; break; }
+    if(sh? k.h>=stop : k.l<=stop){ sIdx=j; break; }
+    for(let i=0;i<tg.length;i++) if(hit[i]<0 && (sh? k.l<=tg[i] : k.h>=tg[i])) hit[i]=j;
   }
-  if(optHit) exitR=optR; else if(stopped) exitR=-1; else { const c=K[end].c; exitR=(sh? ep-c : c-ep)/risk; }
-  return {filled:true, maxK, stopped, optHit, exitR};
+  return {sh, ep, risk, fill, tg, hit, sIdx, K};
+}
+const mtm=(P,j)=>{ const c=P.K[Math.min(j,P.K.length-1)].c; return (P.sh? P.ep-c : c-P.ep)/P.risk; };
+function ruleTarget(P, k, w){ // salir todo en Tk
+  const lim=P.fill+w, h=P.hit[k-1];
+  if(h>=0 && h<=lim) return Math.abs(P.tg[k-1]-P.ep)/P.risk;
+  if(P.sIdx>=0 && P.sIdx<=lim) return -1;
+  return mtm(P, lim);
+}
+function ruleHalf(P, k2, w){ // mitad en T1, stop a la entrada, resto en Tk2
+  const lim=P.fill+w, h1=P.hit[0];
+  if(!(h1>=0 && h1<=lim)) return (P.sIdx>=0 && P.sIdx<=lim) ? -1 : mtm(P, lim);
+  const r1=Math.abs(P.tg[0]-P.ep)/P.risk, K=P.K;
+  for(let j=h1+1;j<=Math.min(lim,K.length-1);j++){ const c=K[j];
+    if(P.sh? c.h>=P.ep : c.l<=P.ep) return r1/2;                 // vuelve a la entrada: el resto sale en 0
+    if(P.sh? c.l<=P.tg[k2-1] : c.h>=P.tg[k2-1]) return r1/2+Math.abs(P.tg[k2-1]-P.ep)/P.risk/2;
+  }
+  return r1/2+Math.max(0,mtm(P,lim))/2;
 }
 async function run(){
   $t('tvGo').disabled=true; $t('tvOut').innerHTML=''; const st=$t('tvSt'), bar=$t('tvBar');
+  const L=+$t('tvL').value;
   const base={...getCfg(), market:'futures', tf:'15m'};
   const userMin=base.minScore||90;
   st.textContent='Descargando la lista de pares…';
   let uni; try{ uni=(await getUniverse('futures',0)).slice(0,TV.pairs); }catch(e){ st.textContent='❌ No se pudo leer Binance: '+e.message; $t('tvGo').disabled=false; return; }
-  const R={500:[],1000:[]}; let done=0, fails=0;
+  const T=[]; let done=0, fails=0, nosig=0;
   for(const u of uni){
-    st.textContent=`(${done+1}/${uni.length}) ${u.symbol} · descargando 1500 velas…`;
+    st.textContent=`(${done+1}/${uni.length}) ${u.symbol}…`;
     let K; try{ K=await getKlines('futures',u.symbol,'15m',TV.total); }catch(e){ fails++; done++; continue; }
-    if(K.length<1300){ done++; continue; }
-    K=K.slice(0,-1); // sin la vela en curso
+    K=K.slice(0,-1);
+    if(K.length<L+TV.W[1]+50){ done++; continue; }
     const last={};
-    for(let t=1000; t<=K.length-1-TV.look; t+=TV.step){
-      for(const L of [500,1000]){
-        const W=K.slice(t-L+1,t+1);
-        for(const dir of ['long','short']){
-          const key=L+dir; if(last[key]!=null && t-last[key]<TV.gap) continue;
-          let r=null; try{ r=analyzeDir(u.symbol,W,{...base,minScore:TV.minAny},u.vol,dir); }catch(e){}
-          if(!r) continue;
-          last[key]=t;
-          let O=null; try{ O=optOf(r); }catch(e){}
-          const stop=O?O.stop.stop:r.stop;
-          const res=outcome(r,K,t,stop,O&&O.best);
-          R[L].push({sym:u.symbol, dir, score:r.score, best:O&&O.best?{k:O.best.k, prob:O.best.prob}:null, p1:O&&O.rows[0]?O.rows[0].prob:null, ...res});
+    for(let t=Math.max(L,K.length-1-TV.W[1]-480); t<=K.length-1-TV.W[1]; t+=TV.step){
+      const Wk=K.slice(t-L+1,t+1);
+      for(const dir of ['long','short']){
+        if(last[dir]!=null && t-last[dir]<TV.gap) continue;
+        let r=null; try{ r=analyzeDir(u.symbol,Wk,{...base,minScore:TV.minAny},u.vol,dir); }catch(e){}
+        if(!r){ nosig++; continue; }
+        last[dir]=t;
+        let O=null; try{ O=optOf(r); }catch(e){}
+        const stop=O?O.stop.stop:r.stop;
+        const P=path(r,K,t,stop);
+        if(!P){ T.push({score:r.score, filled:false}); continue; }
+        const fee=TV.fee*P.ep/P.risk;
+        const rec={score:r.score, filled:true, fee, best:O&&O.best?O.best.k:null, pred:O?O.rows.map(x=>x?x.prob:null):[], hit48:P.hit.map(h=>h>=0), res:{}};
+        for(const w of TV.W){
+          rec.res['T1'+w]=ruleTarget(P,1,w); rec.res['T2'+w]=ruleTarget(P,2,w); rec.res['T3'+w]=ruleTarget(P,3,w);
+          if(rec.best){ rec.res['OPT'+w]=ruleTarget(P,rec.best,w); rec.res['HALF'+w]=ruleHalf(P,rec.best,w); }
         }
+        T.push(rec);
       }
       await sleep(0);
     }
     done++; bar.style.width=(done/uni.length*100)+'%';
   }
-  show(R, userMin, uni.length-fails);
+  show(T, userMin, uni.length-fails, L);
 }
-function stats(arr){
-  const f=arr.filter(x=>x.filled), n=arr.length, nf=f.length;
-  const pc=x=>nf?x/nf:0;
-  const t1=f.filter(x=>x.maxK>=1).length, st=f.filter(x=>x.stopped && x.maxK===0).length;
-  const wb=f.filter(x=>x.best), optHit=wb.filter(x=>x.optHit).length;
-  const avgR=wb.length? wb.reduce((a,x)=>a+x.exitR,0)/wb.length : 0;
-  const pred=wb.length? wb.reduce((a,x)=>a+x.best.prob,0)/wb.length : 0;
-  const real=wb.length? optHit/wb.length : 0;
-  const c1=f.filter(x=>x.p1!=null), brier=c1.length? c1.reduce((a,x)=>a+Math.pow(x.p1-(x.maxK>=1?1:0),2),0)/c1.length : null;
-  return {n, nf, t1:pc(t1), st:pc(st), nb:wb.length, real, pred, gap:Math.abs(pred-real), avgR, totR:avgR*wb.length, brier};
-}
-function show(R, userMin, nPairs){
-  const P=x=>Math.round(x*100)+' %', F=x=>(x>=0?'+':'')+x.toFixed(2)+' R';
-  const sets=[[`Puntaje ≥ ${userMin} (tu mínimo)`, x=>x.score>=userMin], ['Puntaje ≥ 70', x=>x.score>=70]];
-  let h='', txt=`TEST VELAS 15m · ${nPairs} pares · ${new Date().toLocaleString('es-SV')}\n`;
-  let verdict=null;
-  for(const [lbl,flt] of sets){
-    const a=stats(R[500].filter(flt)), b=stats(R[1000].filter(flt));
-    const row=(k,f,better)=>{ const va=f(a), vb=f(b); return `<tr><td>${k}</td><td>${va}</td><td>${vb}</td></tr>`; };
-    h+=`<h3 style="font-size:14.5px;margin:14px 0 6px">${lbl}</h3><table style="width:100%;border-collapse:collapse;font-size:13px">
-     <tr style="color:#94a3b8"><td></td><td><b>500 velas</b></td><td><b>1000 velas</b></td></tr>
-     ${row('Señales',s=>s.n)}${row('Entraron (tocó la entrada)',s=>s.nf)}
-     ${row('Llegó a T1 antes del stop',s=>P(s.t1))}${row('Stop sin tocar T1',s=>P(s.st))}
-     ${row('Objetivo óptimo: % previsto',s=>P(s.pred))}${row('Objetivo óptimo: % real',s=>P(s.real))}
-     ${row('Error de la probabilidad',s=>P(s.gap))}
-     ${row('Resultado medio por operación',s=>`<b style="color:${s.avgR>=0?'#86efac':'#fca5a5'}">${F(s.avgR)}</b>`)}
-     ${row('Resultado total',s=>F(s.totR))}</table>`;
-    txt+=`\n${lbl}\n500: señales ${a.n}, entraron ${a.nf}, T1 ${P(a.t1)}, óptimo previsto ${P(a.pred)} real ${P(a.real)}, medio ${F(a.avgR)}, total ${F(a.totR)}\n1000: señales ${b.n}, entraron ${b.nf}, T1 ${P(b.t1)}, óptimo previsto ${P(b.pred)} real ${P(b.real)}, medio ${F(b.avgR)}, total ${F(b.totR)}\n`;
-    if(verdict==null && Math.min(a.nb,b.nb)>=15) verdict={a,b,lbl};
+const RULES=[['T1','Todo en T1'],['T2','Todo en T2'],['T3','Todo en T3'],['OPT','Todo en el óptimo'],['HALF','Mitad en T1 + resto al óptimo']];
+function show(T, userMin, nPairs, L){
+  const P=x=>x==null?'—':Math.round(x*100)+' %', F=x=>x==null?'—':(x>=0?'+':'')+x.toFixed(2)+' R';
+  let h='', txt=`TEST SALIDAS 15m · ${L} velas · ${nPairs} pares · ${new Date().toLocaleString('es-SV')}\n`, verdict=null;
+  for(const [lbl,flt] of [[`Puntaje ≥ ${userMin} (tu mínimo)`, x=>x.score>=userMin], ['Puntaje ≥ 70', x=>x.score>=70]]){
+    const all=T.filter(flt), f=all.filter(x=>x.filled), wb=f.filter(x=>x.best);
+    const avg=(key,arr)=>{ const v=arr.map(x=>x.res[key]).filter(v=>v!=null); if(!v.length) return null; return v.reduce((a,b)=>a+b,0)/v.length; };
+    const net=(key,arr)=>{ const v=arr.filter(x=>x.res[key]!=null); if(!v.length) return null; return v.reduce((a,x)=>a+x.res[key]-x.fee,0)/v.length; };
+    const win=(key,arr)=>{ const v=arr.filter(x=>x.res[key]!=null); return v.length? v.filter(x=>x.res[key]-x.fee>0).length/v.length : null; };
+    // comparamos las reglas sobre las mismas operaciones (las que tienen óptimo)
+    const rows=RULES.map(([k,n])=>({k,n, a24:net(k+96,wb), a48:net(k+192,wb), w48:win(k+192,wb), g48:avg(k+192,wb)}));
+    const bestRow=rows.filter(r=>r.a48!=null).reduce((a,b)=>!a||b.a48>a.a48?b:a,null);
+    h+=`<h3>${lbl} · ${all.length} señales · ${f.length} entraron</h3><table><tr class="h"><td>Salida</td><td>24 h</td><td>48 h</td><td>Ganan</td></tr>`+
+      rows.map(r=>`<tr class="${bestRow&&r.k===bestRow.k?'best':''}"><td>${bestRow&&r.k===bestRow.k?'🏆 ':''}${r.n}</td><td>${F(r.a24)}</td><td><b style="color:${(r.a48||0)>=0?'#86efac':'#fca5a5'}">${F(r.a48)}</b></td><td>${P(r.w48)}</td></tr>`).join('')+`</table>
+      <div style="color:#94a3b8;font-size:11.5px;margin-top:4px">Resultado medio por operación, ya con comisión (0.1 % ida y vuelta). "Ganan" = % de operaciones con resultado positivo a 48 h.</div>`;
+    // calibración por objetivo
+    const cal=[...Array(8)].map((_,i)=>{ const v=f.filter(x=>x.pred[i]!=null); return v.length>=10? {pred:v.reduce((a,x)=>a+x.pred[i],0)/v.length, real:v.filter(x=>x.hit48[i]).length/v.length} : null; });
+    h+=`<table style="margin-top:8px"><tr class="h"><td>¿Se cumple el %?</td>${cal.map((_,i)=>`<td>T${i+1}</td>`).join('')}</tr>
+      <tr><td>Previsto</td>${cal.map(c=>`<td>${c?P(c.pred):'—'}</td>`).join('')}</tr>
+      <tr><td>Real 48 h</td>${cal.map(c=>`<td>${c?`<b style="color:${c.real>=c.pred-0.1?'#86efac':'#fca5a5'}">${P(c.real)}</b>`:'—'}</td>`).join('')}</tr></table>`;
+    txt+=`\n${lbl} · ${all.length} señales · ${f.length} entraron\n`+rows.map(r=>`${r.n}: 24h ${F(r.a24)} · 48h ${F(r.a48)} · ganan ${P(r.w48)}`).join('\n')+
+      `\nPrevisto: ${cal.map((c,i)=>`T${i+1} ${c?P(c.pred):'—'}`).join(' ')}\nReal 48h: ${cal.map((c,i)=>`T${i+1} ${c?P(c.real):'—'}`).join(' ')}\n`;
+    if(!verdict && wb.length>=30 && bestRow) verdict={bestRow,lbl,rows};
   }
-  let v;
-  if(!verdict) v='⚪ Pocas operaciones para decidir con seguridad. Repite el test otro día.';
-  else { const {a,b}=verdict, dR=b.avgR-a.avgR, dG=a.gap-b.gap;
-    if(Math.abs(dR)<0.05 && Math.abs(dG)<0.03) v='⚖️ <b>Empate práctico.</b> Usa 1000 por estabilidad o 500 si quieres más rapidez.';
-    else if(dR>=0.05 || (Math.abs(dR)<0.05 && dG>=0.03)) v=`🏆 <b>1000 velas es mejor</b>: ${dR>=0?'gana '+F(dR)+' más por operación':'resultado parecido'} y su probabilidad ${dG>=0?'se equivoca menos':'se equivoca un poco más'}.`;
-    else v=`🏆 <b>500 velas es mejor</b>: gana ${F(-dR)} más por operación${dG<0?' y su probabilidad se equivoca menos':''}.`; }
+  const v= verdict ? `🏆 Mejor salida: <b>${verdict.bestRow.n}</b> (${F(verdict.bestRow.a48)} por operación a 48 h, con comisión).` : '⚪ Pocas operaciones para decidir. Repite el test otro día.';
   $t('tvOut').innerHTML=`<div style="background:#111a2e;border:2px solid #22c55e;border-radius:12px;padding:10px 12px;font-size:14.5px">${v}</div>`+h+
-   `<div style="color:#94a3b8;font-size:11.5px;margin-top:10px">Reglas del test: entrada si el precio toca la zona en las 4 h siguientes; salida en el objetivo óptimo, en el stop (o stop sugerido) o al cerrar 24 h. Sin comisiones. Resultados pasados no garantizan resultados futuros.</div>`;
+   `<div style="color:#94a3b8;font-size:11.5px;margin-top:10px">Reglas: entrada si el precio toca la zona en las 4 h siguientes; stop = stop de la señal (o stop sugerido); si una vela toca stop y objetivo, cuenta el stop. Lo que no se cerró se valora al precio de cierre de las 24/48 h. Resultados pasados no garantizan resultados futuros.</div>`;
   txt+='\nVeredicto: '+v.replace(/<[^>]+>/g,'');
   $t('tvSt').textContent='✅ Test terminado.'; $t('tvGo').disabled=false; $t('tvGo').textContent='↻ Repetir test';
-  const cp=$t('tvCopy'); cp.style.display='block'; cp.onclick=()=>{ navigator.clipboard.writeText(txt).then(()=>cp.textContent='✅ Copiado'); };
+  const cp=$t('tvCopy'); cp.style.display='block'; cp.textContent='📋 Copiar'; cp.onclick=()=>{ navigator.clipboard.writeText(txt).then(()=>cp.textContent='✅ Copiado'); };
 }
 $t('tvGo').onclick=run;
 })();
