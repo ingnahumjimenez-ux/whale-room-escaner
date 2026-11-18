@@ -99,6 +99,18 @@ button{cursor:pointer;border:0;border-radius:9px;padding:10px 16px;font-weight:6
 #ctxBar .btctf{display:inline-flex;gap:5px;flex-wrap:wrap;vertical-align:middle}
 #ctxBar .sem{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:6px;box-shadow:0 0 8px currentColor}
 #ctxBar .cal{margin-top:6px;color:#fecaca}
+/* v3: Modo del día y veredicto por tarjeta */
+#modoBox{display:none;margin:0 0 12px;border:1.5px solid #f59e0b;background:var(--panel);border-radius:12px;padding:7px 10px;font-size:12px;cursor:pointer}
+#modoBox.alts{border-color:#22c55e}#modoBox.neu{border-color:#64748b}
+#modoBox .t{font-weight:900;font-size:13.5px}#modoBox .t span{font-weight:500;color:var(--mut);font-size:11.5px}#modoBox .t i{font-style:normal;font-size:12px;color:#fcd34d}
+#modoBox .r{display:flex;gap:10px;flex-wrap:wrap;margin-top:3px;font-size:11.5px}#modoBox .r b{font-weight:800}
+#modoTip{display:none;margin:-6px 0 12px;background:#0f172a;border:1px solid #f59e0b;border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.45;position:relative}
+#modoTip:before{content:'';position:absolute;top:-7px;left:40px;width:12px;height:12px;background:#0f172a;border-left:1px solid #f59e0b;border-top:1px solid #f59e0b;transform:rotate(45deg)}
+#modoTip h5{margin:0 0 4px;font-size:13px}#modoTip .m{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;margin:6px 0}#modoTip .m b{white-space:nowrap}
+#modoTip .x{float:right;color:var(--mut);cursor:pointer;padding:0 2px}#modoTip .hoy{background:#2a2306;border-radius:8px;padding:6px 8px;color:#fde68a;margin-top:6px}
+.verd{border-radius:8px;padding:4px 9px;margin:8px 0;font-size:12px;line-height:1.3}
+.verd b{font-weight:900;font-size:12.5px;margin-right:4px}.verd span{opacity:.9}
+.verd.go{background:#052e16;border:1px solid #22c55e;color:#bbf7d0}.verd.mid{background:#2a2306;border:1px solid #f59e0b;color:#fde68a}.verd.no{background:#450a0a;border:1px solid #ef4444;color:#fecaca}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:13px}
 .tpstrip{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-top:2px}
 .tpstrip .c{border-radius:7px;padding:3px 0 2px;text-align:center;border:1px solid transparent;position:relative}
@@ -525,6 +537,7 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-ap
   </div>
 
   <div id="ctxBar"></div>
+  <div id="modoBox"></div><div id="modoTip"></div>
   <div id="ctxHid" class="ctxhid" style="display:none"></div>
   <div id="results" class="grid"></div>
   <div id="emptyMsg" class="empty">Elige la temporalidad y presiona <b>Analizar todas las criptomonedas</b>.</div>
@@ -1747,6 +1760,7 @@ function cardHTML(r){
       <span class="tag ${r.pullback?'on':''}" data-pb style="cursor:pointer;position:relative">${r.dir==='short'?'Rebote':'Retroceso'} ⓘ</span>
       <span class="tag ${r.confluent?'on':''}">Confluencia</span>
     </div>
+    ${verdictRow(r)}
     <div class="kv">
       <b>Entrada</b><span>${fmt(r.entryLow,d)} – ${fmt(r.entryHigh,d)}</span>
       ${cardStopRows(r)}
@@ -1784,7 +1798,7 @@ function renderResults(){
   const key={t5:r=>-(projOfCard(r)?.prob ?? -1), score:r=>-r.score, rr:r=>-r.targets[3].rr, stop:r=>r.stopPct, vol:r=>-r.vol}[sort];
   list.sort((a,b)=>key(a)-key(b));
   list=pins.concat(list);
-  renderCtxBar();
+  renderCtxBar(); renderModo();
   const box=$('results'); box.innerHTML='';
   $('emptyMsg').style.display=list.length?'none':'block';
   if(!list.length && state.results.length>0) $('emptyMsg').innerHTML=`Ninguna señal cumple los filtros. Hay ${state.results.length} señal(es) encontradas, pero ninguna con probabilidad de T5 ≥ ${Math.round(minP*100)} % (o con ese estado). Puedes bajar "Prob. mín. T5".`;
@@ -2452,6 +2466,77 @@ function ctxChip(lbl,tr,dir){ if(!tr) return '';
 function cardCtxRow(r){
   const c=r.ctx; if(!c) return '';   // el aviso de calendario va solo arriba, en el semáforo
   return `<div class="ctxrow"><span class="lbl">Contexto</span>${ctxChip('4H',c.h4,r.dir)+ctxChip('1H',c.h1,r.dir)+(r.symbol!=='BTCUSDT'?ctxChip('₿ BTC',c.btc,r.dir):'')}</div>`;
+}
+/* ---- Modo del día (Miedo y Codicia + BTC.D + ETH/BTC) y veredicto por tarjeta ---- */
+let modoTipOpen=false, modoKey='';
+function fgQuad(B, btc7){ // casilla de BTC.D × precio de BTC (7 días)
+  if(!B || btc7==null) return null;
+  const dd=B.d7!=null?B.d7:B.d1; if(dd==null) return null;
+  const dUp=dd>0.15?true:dd<-0.15?false:null, bUp=btc7>0.01?true:btc7<-0.01?false:null;
+  return dUp==null||bUp==null ? null : (bUp?'u':'d')+(dUp?'U':'D');
+}
+function modoOf(){ try{ return modoCalc(); }catch(e){ return null; } }
+function modoCalc(){
+  if(!fgData) return null;
+  const st=fgStats(fgData), zi=FG_ZONES.indexOf(st.Z), D=fgDec||{};
+  const q=fgQuad(D.btcd, D.btc7), E=D.eth;
+  const ez=E? (E.px<E.floor?'down':E.px>E.reclaim?'up':'mid') : null;
+  const dd=D.btcd? (D.btcd.d7!=null?D.btcd.d7:D.btcd.d1) : null, dDown= dd!=null && dd<-0.15, dUp= dd!=null && dd>0.15;
+  const eUp= E && E.d7>0.01;
+  let k;
+  const altsOK = (q==='uD' && ez!=='down') || (dDown && eUp && ez!=='down') || (ez==='up' && !dUp);
+  const defen  = zi<=1 || q==='dU' || q==='dD' || ez==='down';
+  k = altsOK && zi>=1 ? 'alts' : defen ? 'def' : 'neu';
+  const Q={uU:'BTC lidera',uD:'rota a alts',dU:'peor para alts',dD:'todo cae'};
+  const why=[`${st.Z.es} ${Math.round(st.v)}`, D.btcd?`BTC.D ${q?Q[q]:'estable'}`:null, E?`ETH/BTC ${ez==='up'?'recuperó':ez==='down'?'rompió el piso':'en rango'}`:null].filter(Boolean);
+  return {k, why, zi, q, ez, v:Math.round(st.v), zes:st.Z.es};
+}
+const MODO={
+  alts:{ic:'🚀',t:'A FAVOR DE ALTS',L:['🟢','normal · busca T5+','#bbf7d0'],S:['🟡','½ dinero · T1–T2','#fde68a']},
+  neu: {ic:'⚖️',t:'NEUTRAL',        L:['⚪','según la tarjeta','#e5e7eb'],S:['⚪','según la tarjeta','#e5e7eb']},
+  def: {ic:'🛡',t:'DEFENSIVO',      L:['🟡','½ dinero · T1–T2','#fde68a'],S:['🟢','normal · parcial T1','#bbf7d0']} };
+function renderModo(){
+  const box=$('modoBox'), tip=$('modoTip'); if(!box) return;
+  const M=modoOf();
+  if(!M){ box.style.display='none'; tip.style.display='none'; return; }
+  const m=MODO[M.k];
+  box.className=M.k==='alts'?'alts':M.k==='neu'?'neu':'';
+  box.style.display='block';
+  box.innerHTML=`<div class="t">${m.ic} Modo ${m.t} <i>ⓘ</i> <span>· ${M.why.join(' · ')}</span></div>
+    <div class="r"><span style="color:${m.L[2]}"><b>LONG ${m.L[0]}</b> ${m.L[1]}</span><span style="color:${m.S[2]}"><b>SHORT ${m.S[0]}</b> ${m.S[1]}</span></div>`;
+  const hoy = M.k==='alts' ? 'BTC.D y ETH/BTC muestran que el dinero va hacia las altcoins'
+            : M.k==='def' ? [M.zi<=1?`${M.zes.toLowerCase()} (${M.v})`:null, M.q==='dD'?'BTC.D en "todo cae"':M.q==='dU'?'BTC.D en "peor para alts"':null, M.ez==='down'?'ETH/BTC rompió el piso':M.ez==='mid'?'ETH/BTC sin decidir':null].filter(Boolean).join(', ')
+            : 'no hay una señal clara a favor ni en contra de las altcoins';
+  tip.innerHTML=`<span class="x" id="modoX">✕</span><h5>¿Qué es el Modo del día?</h5>
+    Te dice <b>cómo está el mercado hoy</b> para saber qué operaciones tomar y con cuánto dinero. Se calcula solo con Miedo y Codicia, BTC.D y ETH/BTC (los datos de la burbuja 😨).
+    <div class="m"><b>🚀 A favor de alts</b><span>BTC.D baja y ETH/BTC sube. LONG en alts con dinero normal; puedes buscar objetivos lejanos.</span>
+    <b>⚖️ Neutral</b><span>Sin sesgo claro. Decide la tarjeta: estructura y semáforo de BTC.</span>
+    <b>🛡 Defensivo</b><span>Hay miedo o las alts están débiles. LONG solo pequeños y salida rápida; SHORT permitidos.</span></div>
+    <div class="hoy"><b>Hoy:</b> ${hoy} → <b>${m.t.charAt(0)+m.t.slice(1).toLowerCase()}</b>.</div>
+    <div style="font-size:10.5px;color:var(--mut);margin-top:6px">Cada tarjeta muestra su veredicto: ✅ tómala · ⚠️ solo pequeña · ⛔ no la tomes. No es una recomendación de inversión.</div>`;
+  tip.style.display=modoTipOpen?'block':'none';
+  box.onclick=()=>{ modoTipOpen=!modoTipOpen; tip.style.display=modoTipOpen?'block':'none'; };
+  const x=$('modoX'); if(x) x.onclick=e=>{ e.stopPropagation(); modoTipOpen=false; tip.style.display='none'; };
+}
+function verdictOf(r){
+  const c=r.ctx; if(!c) return null;
+  const M=modoOf(), isBtc=r.symbol==='BTCUSDT';
+  const tf=[['4H',c.h4],['1H',c.h1]].concat(isBtc?[]:[['BTC',c.btc]]);
+  const against=tf.filter(([,t])=>t && alignOf(t,r.dir)<0).map(([l])=>l);
+  const modeAg = M && !isBtc && ((M.k==='def' && r.dir==='long') || (M.k==='alts' && r.dir==='short'));
+  const n=against.length+(modeAg?1:0);
+  const why=against.map(l=>l==='BTC'?'BTC en contra':'contra '+l).concat(modeAg?[M.k==='def'?'modo defensivo':'modo a favor de alts']:[]);
+  if((against.includes('BTC') && against.includes('4H')) || n>=3)
+    return ['no','⛔ NO LA TOMES', why.join(' · ')];
+  if(n===0) return ['go','✅ TÓMALA', r.dir==='long' && M && M.k==='alts' ? 'dinero normal · puedes buscar T5+' : 'dinero normal · parcial en T1'];
+  return ['mid','⚠️ SOLO PEQUEÑA', '½ dinero · salir en T1–T2 · '+why[0]];
+}
+function verdictRow(r){ const v=verdictOf(r); return v?`<div class="verd ${v[0]}"><b>${v[1]}</b><span>· ${v[2]}</span></div>`:''; }
+async function modoRefresh(){
+  try{ if(!fgData) await fgRefresh(false); await fgLoadDec(false); }catch(e){}
+  const M=modoOf(), k=M?M.k:'';
+  if(k!==modoKey){ modoKey=k; if(typeof renderResults==='function' && state.results.length) renderResults(); else renderModo(); }
+  else renderModo();
 }
 const tfChips=o=>`<span class="btctf">${[['15m',o.m15],['30m',o.m30],['1H',o.h1],['4H',o.h4]].map(([l,t])=>`<span class="cx ${t==='up'?'ok':t==='down'?'no':t?'mid':''}">${l} ${t==='up'?'🟢':t==='down'?'🔴':t?'🟡':'⚪'}</span>`).join('')}</span>`;
 function renderCtxBar(){
@@ -3377,8 +3462,9 @@ async function fgLoadDec(force){
   if(H && H.btc.length>40){ const c=H.btc.map(x=>x[1]), n=c.length-1, hi=Math.max(...c.slice(-30));
     let live=c[n]; try{ const lp=await livePrice('spot','BTCUSDT'); if(lp>0 && Math.abs(lp/c[n]-1)<0.3) live=lp; }catch(e){}
     price={d7:live/c[n-7]-1, d30:live/c[n-30]-1, fromHi:live/hi-1}; }
-  let btc7=price?price.d7:null; if(btc7==null) btc7=await fgSafe(fgBtc7);
-  fgDec={at:Date.now(), past:H?fgPast(H):null, ext:H?fgExtreme(H):null, pos, alt, price, btcd, btc7, eth};
+  let btc7=price?price.d7:null; if(btc7==null||!isFinite(btc7)) btc7=await fgSafe(fgBtc7); if(btc7!=null&&!isFinite(btc7)) btc7=null;
+  const fgTry=f=>{ try{ return f(); }catch(e){ return null; } };
+  fgDec={at:Date.now(), past:H&&H.idx.length?fgTry(()=>fgPast(H)):null, ext:H&&H.idx.length?fgTry(()=>fgExtreme(H)):null, pos, alt, price, btcd, btc7, eth};
   return fgDec;
 }
 /* ---- Dominancia de BTC (BTC.D) ---- */
@@ -3572,13 +3658,13 @@ function renderFgPanel(){
 }
 async function fgEnsureDec(force){
   if(fgLoading) return; if(!force && fgDec && Date.now()-fgDec.at<15*60000) return;
-  fgLoading=true; try{ await fgLoadDec(true); }catch(e){} fgLoading=false;
+  fgLoading=true; try{ await fgLoadDec(true); }catch(e){} fgLoading=false; modoRefresh();
   if($('fgPanel').classList.contains('open')) renderFgPanel();
 }
 $('fgFab').onclick=async()=>{ $('fgPanel').classList.add('open'); renderFgPanel(); if(!fgData || Date.now()-fgData.at>3600e3){ $('fgSt').textContent='Actualizando…'; await fgRefresh(true); renderFgPanel(); } };
 $('fgX').onclick=()=>$('fgPanel').classList.remove('open');
 $('fgPanel').onclick=e=>{ if(e.target.id==='fgPanel') $('fgPanel').classList.remove('open'); };
-renderFgFab(); fgRefresh(false); setInterval(()=>fgRefresh(false), 15*60000);
+renderFgFab(); fgRefresh(false).finally(()=>modoRefresh()); setInterval(()=>fgRefresh(false).finally(()=>modoRefresh()), 15*60000);
 
 
 /* ===================== SUGERENCIAS AL ESCRIBIR UN PAR ===================== */
