@@ -291,6 +291,20 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-ap
 #fgPanel .fchip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px}
 #fgPanel .fchip.ok{background:#052e16;color:#86efac;border:1px solid #166534}#fgPanel .fchip.no{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d}#fgPanel .fchip.mid{background:#2a2306;color:#fcd34d;border:1px solid #713f12}
 #fgPanel .fnote{font-size:10.5px;color:var(--mut);margin-top:6px}
+#fgPanel .dbig{font-size:26px;font-weight:900;line-height:1}#fgPanel .dsub{font-size:11.5px;margin-top:4px}
+#fgPanel .dwhat{font-size:11.5px;color:var(--mut);margin-top:8px}
+#fgPanel .mx{display:grid;grid-template-columns:50px 1fr 1fr;gap:5px;margin-top:6px}#fgPanel .mx .mh{font-size:11px;color:var(--mut);display:flex;align-items:center;justify-content:center;font-weight:700}
+#fgPanel .mx .c{position:relative;border-radius:10px;padding:7px 5px;text-align:center;font-size:12px;font-weight:700;opacity:.5}#fgPanel .mx .c small{display:block;font-weight:500;font-size:10.5px;opacity:.9}
+#fgPanel .mx .g{background:#052e16;color:#86efac;border:1px solid #166534}#fgPanel .mx .r{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d}#fgPanel .mx .y{background:#2a2306;color:#fcd34d;border:1px solid #713f12}
+#fgPanel .mx .now{opacity:1;box-shadow:0 0 0 2px #f59e0b}#fgPanel .mx .now span{position:absolute;top:-8px;right:5px;background:#f59e0b;color:#1a1300;font-size:9px;font-weight:900;border-radius:6px;padding:1px 5px}
+#fgPanel .dsep{border-top:1px dashed #334155;margin:12px 0 10px}
+#fgPanel .lv{margin-top:26px}#fgPanel .lv .bar{position:relative;height:10px;border-radius:99px;background:#1e293b;overflow:visible}
+#fgPanel .lv .bar i{position:absolute;top:0;bottom:0}#fgPanel .lv .zr{background:#7f1d1d;border-radius:99px 0 0 99px}#fgPanel .lv .zy{background:#713f12}#fgPanel .lv .zg{background:#166534;border-radius:0 99px 99px 0}
+#fgPanel .lv .bar b{position:absolute;top:-4px;width:4px;height:18px;margin-left:-2px;background:#fff;border-radius:2px;box-shadow:0 0 0 2px #0b1220}
+#fgPanel .lv .tk{position:relative;height:26px;font-size:10px;color:var(--mut)}#fgPanel .lv .tk span{position:absolute;top:4px;transform:translateX(-50%);text-align:center;line-height:1.15;white-space:nowrap}
+#fgPanel .lv .tk span.l{transform:none}#fgPanel .lv .tk span.hoy{top:-30px;color:#fff;font-weight:800}#fgPanel .lv em{font-style:normal;font-size:9.5px}
+#fgPanel .conf{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:8px 10px;border-radius:10px;background:#0f172a;border:1px solid #334155;font-size:12px;gap:8px}#fgPanel .conf span{color:var(--mut)}
+#fgPanel .dread{font-size:12px;color:#e5e7eb;margin-top:6px;line-height:1.4}
 #fgPanel .fguide{background:#1e1b4b;border-color:#4338ca}#fgPanel .fguide ul{margin:0;padding-left:18px}#fgPanel .fguide li{margin:3px 0;font-size:12.5px}
 
 .actgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
@@ -3358,13 +3372,141 @@ async function fgAltSeason(){
 async function fgLoadDec(force){
   if(fgDec && !force && Date.now()-fgDec.at<15*60000) return fgDec;
   const H=await fgSafe(fgHistory);
-  const [pos, alt]=await Promise.all([fgSafe(fgPositioning), fgSafe(fgAltSeason)]);
+  const [pos, alt, btcd, eth]=await Promise.all([fgSafe(fgPositioning), fgSafe(fgAltSeason), fgSafe(fgBtcD), fgSafe(fgEthBtc)]);
   let price=null;
   if(H && H.btc.length>40){ const c=H.btc.map(x=>x[1]), n=c.length-1, hi=Math.max(...c.slice(-30));
     let live=c[n]; try{ const lp=await livePrice('spot','BTCUSDT'); if(lp>0 && Math.abs(lp/c[n]-1)<0.3) live=lp; }catch(e){}
     price={d7:live/c[n-7]-1, d30:live/c[n-30]-1, fromHi:live/hi-1}; }
-  fgDec={at:Date.now(), past:H?fgPast(H):null, ext:H?fgExtreme(H):null, pos, alt, price};
+  let btc7=price?price.d7:null; if(btc7==null) btc7=await fgSafe(fgBtc7);
+  fgDec={at:Date.now(), past:H?fgPast(H):null, ext:H?fgExtreme(H):null, pos, alt, price, btcd, btc7, eth};
   return fgDec;
+}
+/* ---- Dominancia de BTC (BTC.D) ---- */
+const BTCD_KEY='escaner_v3_btcd';
+function fgNum(o, re, d=0){ // primer número cuya clave coincide con re (búsqueda profunda)
+  if(!o||typeof o!=='object'||d>5) return null;
+  for(const k of Object.keys(o)){ const v=o[k]; if(re.test(k) && v!=null && typeof v!=='object' && isFinite(+v)) return +v; }
+  for(const k of Object.keys(o)){ const r=fgNum(o[k],re,d+1); if(r!=null) return r; }
+  return null;
+}
+function fgArr(o, d=0){ // arreglo de puntos con dominancia de BTC
+  if(!o||typeof o!=='object'||d>5) return null;
+  if(Array.isArray(o)){ if(o.length>3 && fgNum(o[0],/^btc_?dominance$/i)!=null) return o; for(const x of o){ const r=fgArr(x,d+1); if(r) return r; } return null; }
+  for(const k of Object.keys(o)){ const r=fgArr(o[k],d+1); if(r) return r; }
+  return null;
+}
+const fgTs=x=>{ for(const k of ['timestamp','time','timeOpen','date','last_updated']){ const v=x[k]; if(v==null) continue; const n=+v; const t=isFinite(n)?(n<1e12?n*1000:n):Date.parse(v); if(t) return t; } return null; };
+async function fgBtcD(){
+  let ser=[], cur=null, ch24=null, src=null;
+  const now=Math.floor(Date.now()/1000);
+  try{ const J=await fgJSON(`https://api.coinmarketcap.com/data-api/v3/global-metrics/quotes/historical?format=chart&interval=1d&timeStart=${now-40*86400}&timeEnd=${now}`);
+    const A=fgArr(J); if(A){ ser=A.map(x=>({t:fgTs(x), v:fgNum(x,/^btc_?dominance$/i)})).filter(x=>x.t&&isFinite(x.v)).sort((a,b)=>a.t-b.t); if(ser.length) src='CoinMarketCap'; } }catch(e){}
+  for(const u of ['https://pro-api.coinmarketcap.com/public-api/v1/global-metrics/quotes/latest','https://api.coinmarketcap.com/data-api/v3/global-metrics/quotes/latest']){
+    if(cur!=null || (ser.length && Date.now()-ser[ser.length-1].t<2*864e5)) break;
+    try{ const J=await fgJSON(u); const v=fgNum(J,/^btc_?dominance$/i); if(v!=null){ cur=v; src='CoinMarketCap';
+      ch24=fgNum(J,/^btc_?dominance_?(24h_?)?(percentage_?)?change(_?24h)?$|^btc_?dominance_?change$/i); const y=fgNum(J,/^btc_?dominance_?yesterday$/i); if(ch24==null && y!=null) ch24=v-y; } }catch(e){}
+  }
+  if(cur==null && !ser.length){ try{ const J=await fgJSON('https://api.coingecko.com/api/v3/global'); const v=+(J.data&&J.data.market_cap_percentage&&J.data.market_cap_percentage.btc); if(isFinite(v)){ cur=v; src='CoinGecko'; } }catch(e){} }
+  if(cur==null && ser.length) cur=ser[ser.length-1].v;
+  if(cur==null) throw new Error('sin BTC.D');
+  // registro local diario (sirve si la fuente solo da el valor actual)
+  const day=t=>new Date(t).toISOString().slice(0,10);
+  let log={}; try{ log=JSON.parse(localStorage.getItem(BTCD_KEY)||'{}'); }catch(e){}
+  for(const p of ser) log[day(p.t)]=p.v;
+  log[day(Date.now())]=cur;
+  const keys=Object.keys(log).sort().slice(-60); const lg={}; keys.forEach(k=>lg[k]=log[k]);
+  try{ localStorage.setItem(BTCD_KEY, JSON.stringify(lg)); }catch(e){}
+  const S=keys.map(k=>({t:Date.parse(k+'T00:00:00Z'), v:lg[k]}));
+  const at=d=>{ const tgt=Date.now()-d*864e5; let b=null; for(const p of S) if(p.t<=tgt) b=p; return b; };
+  const p1=at(1), p7=at(7);
+  const d1= ch24!=null && Math.abs(ch24)<5 ? ch24 : p1 ? cur-p1.v : null;
+  const d7= p7 && (Date.now()-p7.t)<10*864e5 ? cur-p7.v : null;
+  return {v:cur, d1, d7, spark:S.slice(-30).map(p=>p.v), src};
+}
+async function fgBtc7(){ // variación de BTC en 7 días (respaldo si falta el historial)
+  const K=await getJSON('spot',ENDPOINTS.spot.klines,{symbol:'BTCUSDT',interval:'1d',limit:8});
+  return +K[K.length-1][4]/+K[0][4]-1;
+}
+function fgSpark(a, col){
+  if(!a||a.length<2) return '';
+  const W=140,H=44, mn=Math.min(...a), mx=Math.max(...a), r=(mx-mn)||1;
+  const pts=a.map((v,i)=>[i*(W-6)/(a.length-1)+3, H-4-(v-mn)/r*(H-8)]);
+  const l=pts[pts.length-1];
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><polyline fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round" points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}"/><circle cx="${l[0].toFixed(1)}" cy="${l[1].toFixed(1)}" r="3.3" fill="#fff"/></svg>`;
+}
+function fgBtcDHTML(B, btc7, Z){
+  const TH=0.15; // pts: menos que esto se considera estable
+  const fmt=x=>x==null?'—':`${x>0?'▲':x<0?'▼':'•'} ${Math.abs(x).toFixed(2)} pts`;
+  const col=x=>x==null?'var(--mut)':x>0?'#86efac':x<0?'#fca5a5':'var(--mut)';
+  const dd= B.d7!=null ? B.d7 : B.d1;            // dirección de BTC.D
+  const dUp= dd==null?null: dd>TH?true: dd<-TH?false:null;
+  const bUp= btc7==null?null: btc7>0.01?true: btc7<-0.01?false:null;
+  let now=null;
+  if(dUp!=null && bUp!=null) now=(bUp?'u':'d')+(dUp?'U':'D');
+  const cell=(k,cls,t,s)=>`<div class="c ${cls} ${now===k?'now':''}">${t}<small>${s}</small>${now===k?'<span>AHORA</span>':''}</div>`;
+  const fear=FG_ZONES.indexOf(Z)<=1, greed=FG_ZONES.indexOf(Z)>=3;
+  const R={
+    uU:['mid','🟡 BTC sube y gana dominancia','BTC lidera la subida y el dinero entra primero a Bitcoin. Las altcoins suben poco o se quedan atrás: en alts prioriza las más fuertes y no persigas las rezagadas.'],
+    uD:['ok','🟢 BTC sube y pierde dominancia','El dinero está rotando hacia altcoins: es el mejor escenario para LONG en alts. '+(greed?'Con codicia alta, toma ganancias parciales a tiempo.':'Confirma con tu zona y BTC 15m 🟢.')],
+    dU:['no','🔴 BTC cae y gana dominancia','Las altcoins caen más fuerte que BTC: el peor escenario para alts. Favorece SHORT en alts a favor de tendencia y evita LONG en alts.'],
+    dD:['mid','🟡 BTC.D baja, pero BTC también cae','Las altcoins aguantan mejor que BTC, pero <b>siguen cayendo</b>. '+(fear?'Con miedo, el dinero se va a stablecoins, no a alts. ':'')+'Aún <b>no es temporada de altcoins</b>: espera que BTC se estabilice antes de priorizar LONG en alts.']
+  };
+  let chip, txt;
+  if(now){ chip=[R[now][0],R[now][1]]; txt=R[now][2]; }
+  else if(dd==null) chip=['mid','⏳ Aún sin cambio registrado'], txt='Solo hay el valor de hoy. La lectura con el precio de BTC aparecerá cuando haya al menos un día más de datos.';
+  else if(dUp==null && bUp!=null) chip=['mid','🟡 BTC.D estable'], txt='La dominancia casi no se mueve: BTC y alts van parejos. Deja que decidan la estructura y BTC 15m.';
+  else if(bUp==null && dUp!=null) chip=['mid', dUp?'🟡 BTC.D sube con BTC lateral':'🟡 BTC.D baja con BTC lateral'], txt= dUp?'Las altcoins pierden fuerza frente a BTC: sé más exigente con LONG en alts.':'Las altcoins ganan algo de fuerza frente a BTC: si BTC rompe al alza, puede venir rotación a alts.';
+  else chip=['mid','🟡 Sin dirección clara'], txt='BTC y la dominancia están casi sin cambios: sin sesgo para alts.';
+  return `<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+      <div><div class="dbig">${B.v.toFixed(2)} %</div>
+      <div class="dsub"><b style="color:${col(B.d1)}">${fmt(B.d1)} hoy</b> · <span style="color:${col(B.d7)}">${fmt(B.d7)} en 7 días</span></div></div>
+      ${fgSpark(B.spark,'#60a5fa')}</div>
+    <div class="dwhat">📘 <b style="color:var(--txt)">Qué es:</b> la parte del mercado cripto que es Bitcoin. <b style="color:#86efac">Si baja</b>, las altcoins rinden mejor que BTC. <b style="color:#fca5a5">Si sube</b>, rinden peor.</div>
+    <div class="dwhat" style="margin-top:10px">Combinado con el precio de BTC (7 días: <b style="color:${fgCol(btc7)}">${fgPct(btc7)}</b>):</div>
+    <div class="mx"><div></div><div class="mh">BTC.D ▲</div><div class="mh">BTC.D ▼</div>
+      <div class="mh">BTC ▲</div>${cell('uU','y','BTC lidera','alts suben poco')}${cell('uD','g','Mejor para alts','LONG en alts')}
+      <div class="mh">BTC ▼</div>${cell('dU','r','Peor para alts','SHORT en alts')}${cell('dD','y','Todo cae','alts caen menos')}</div>
+    <div class="frow" style="margin-top:10px"><span class="fchip ${chip[0]}">${chip[1]}</span></div>
+    <div class="dread">${txt}</div>
+    ${B.d7==null&&B.d1!=null?'<div class="fnote">El cambio de 7 días aparecerá cuando haya suficientes días registrados.</div>':''}`;
+}
+/* ---- ETH/BTC (la altcoin líder frente a BTC) ---- */
+async function fgEthBtc(){
+  const K=await getJSON('spot',ENDPOINTS.spot.klines,{symbol:'ETHBTC',interval:'1d',limit:100});
+  if(!Array.isArray(K)||K.length<30) throw new Error('sin ETHBTC');
+  const hi=K.map(k=>+k[2]), lo=K.map(k=>+k[3]), c=K.map(k=>+k[4]), n=c.length-1;
+  let px=c[n]; try{ const lp=await livePrice('spot','ETHBTC'); if(lp>0 && Math.abs(lp/c[n]-1)<0.2) px=lp; }catch(e){}
+  const end=n-2;                                            // niveles sin los 2 últimos días: así se ve una ruptura reciente
+  const floor=Math.min(...lo.slice(Math.max(0,end-90),end));  // piso: mínimo de ~90 días
+  const reclaim=Math.max(...hi.slice(Math.max(0,end-20),end)); // recupera: máximo de ~20 días
+  return {px, floor, reclaim, d7:px/c[n-7]-1, d30:px/c[Math.max(0,n-30)]-1, spark:c.slice(-30)};
+}
+function fgEthHTML(E, B){
+  const dec=E.px<0.01?6:5, f=x=>x.toFixed(dec);
+  const lo=Math.min(E.floor*0.93, E.px*0.99), hi=Math.max(E.reclaim*1.03, E.px*1.01), pos=x=>Math.max(0,Math.min(100,(x-lo)/(hi-lo)*100));
+  const pF=pos(E.floor), pR=pos(E.reclaim), pP=pos(E.px);
+  const zone= E.px<E.floor?'down': E.px>E.reclaim?'up':'mid';
+  let chip, txt;
+  if(zone==='down'){ chip=['no','🔴 Rompió el piso']; txt=`Perdió <b>${f(E.floor)}</b>: ETH y las altcoins pierden fuerza frente a BTC y quedan con más presión. Favorece SHORT en alts a favor de tendencia; sé muy exigente con LONG en alts. <b style="color:#86efac">Si vuelve sobre ${f(E.floor)}</b>, la ruptura habría sido falsa.`; }
+  else if(zone==='up'){ chip=['ok','🟢 Recuperó: alts toman fuerza']; txt=`Superó <b>${f(E.reclaim)}</b>: ETH y las alts empiezan a ganarle a BTC. Favorece LONG en alts con zona confirmada. <b style="color:#fca5a5">Si vuelve debajo de ${f(E.reclaim)}</b>, la recuperación pierde fuerza.`; }
+  else { const r=(E.px-E.floor)/((E.reclaim-E.floor)||1);
+    chip=['mid','🟡 En rango: aún no decide'];
+    txt=`${r<0.33?'Está cerca del piso de su rango.':r>0.66?'Está cerca de la parte alta de su rango.':'Está a mitad de su rango, sin romper hacia ningún lado.'} <b style="color:#86efac">Si sube de ${f(E.reclaim)}</b>, ETH y las alts empiezan a ganarle a BTC (favorece LONG en alts). <b style="color:#fca5a5">Si pierde ${f(E.floor)}</b>, las alts quedan con más presión (favorece SHORT en alts).`; }
+  const eUp= E.d7>0.01?true: E.d7<-0.01?false:null;
+  const dd= B? (B.d7!=null?B.d7:B.d1) : null, dUp= dd==null?null: dd>0.15?true: dd<-0.15?false:null;
+  const conf= dUp===false&&eUp===true ? '<b style="color:#86efac">🟢 Sí, a favor de alts</b>' : dUp===true&&eUp===false ? '<b style="color:#fca5a5">🔴 Sí, a favor de BTC</b>' : '<b>⚪ No todavía</b>';
+  const pc=x=>`<span style="color:${fgCol(x)}">${x<0?'▼':'▲'} ${Math.abs(x*100).toFixed(1)} %</span>`;
+  return `<div class="dsep"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:13.5px">⟠ ETH/BTC <span style="font-weight:500;color:var(--mut);font-size:11.5px">· la altcoin líder vs BTC</span></b><i style="font-style:normal;font-size:11px;color:var(--mut)">Binance · diario</i></div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:6px">
+      <div><div class="dbig" style="font-size:23px">${f(E.px)}</div><div class="dsub">${pc(E.d7)} en 7 días · ${pc(E.d30)} en 30 días</div></div>
+      ${fgSpark(E.spark,'#a78bfa')}</div>
+    <div class="lv"><div class="bar"><i class="zr" style="left:0;width:${pF}%"></i><i class="zy" style="left:${pF}%;width:${pR-pF}%"></i><i class="zg" style="left:${pR}%;width:${100-pR}%"></i><b style="left:${pP}%"></b></div>
+      <div class="tk"><span class="hoy" style="left:${pP}%">hoy ▼</span><span style="left:${pF}%">${f(E.floor)}<br><em>piso</em></span><span style="left:${pR}%">${f(E.reclaim)}<br><em>recupera</em></span></div></div>
+    <div class="frow" style="margin-top:12px"><span class="fchip ${chip[0]}">${chip[1]}</span></div>
+    <div class="dread">${txt}</div>
+    <div class="conf"><span>¿Confirman BTC.D y ETH/BTC?</span>${conf}</div>
+    <div class="fnote">Señal fuerte para alts = BTC.D ▼ y ETH/BTC ▲ al mismo tiempo. Niveles calculados solos: piso = mínimo de 90 días, recupera = máximo de 20 días.</div>`;
 }
 const fgPct=(x,dg=1)=>x==null?'—':`${x>0?'+':x<0?'−':''}${Math.abs(x*100).toFixed(dg)} %`;
 const fgCol=x=>x==null?'var(--txt)':x>0?'#86efac':x<0?'#fca5a5':'var(--txt)';
@@ -3382,6 +3524,8 @@ function fgGuide(Z, pos){
 function fgDecHTML(){
   const D=fgDec, st=fgStats(fgData), sec=(t,i,b)=>`<div class="fsec"><h3>${t}<i>${i}</i></h3>${b}</div>`, na='<div class="fnote">No disponible en este momento.</div>';
   let h='';
+  const B=D&&D.btcd;
+  h+=sec('👑 Dominancia de BTC (BTC.D)', B?B.src:'', (!B?na:fgBtcDHTML(B, D.btc7, st.Z)) + (D&&D.eth?fgEthHTML(D.eth,B):''));
   const P=D&&D.past;
   h+=sec('📜 ¿Qué pasó antes con BTC?', P?`desde 2018 · ${P.label}`:'', !P?na: P.n<5?`<div class="fnote">Muy pocos días históricos con una lectura parecida (${P.n}).</div>`:
     `<div class="fg3"><div class="fk"><b style="color:${P.up7>=0.5?'#86efac':'#fca5a5'}">${Math.round(P.up7*100)} %</b><span>subió en 7 días</span></div><div class="fk"><b style="color:${P.up30>=0.5?'#86efac':'#fca5a5'}">${Math.round(P.up30*100)} %</b><span>subió en 30 días</span></div><div class="fk"><b style="color:${fgCol(P.med)}">${fgPct(P.med)}</b><span>mediana 30 días</span></div></div>
@@ -3419,7 +3563,7 @@ function renderFgPanel(){
   if(fgTab==='img'){ fgCanvas=buildFGImage(fgData);
     body=`<img src="${fgCanvas.toDataURL('image/png')}" alt="Miedo y Codicia"><div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="fgDl" style="flex:1">⬇ Descargar imagen</button><button class="ghost" id="fgUpd">🔄</button></div>`; }
   else body = fgDec ? fgDecHTML()+'<div style="display:flex;justify-content:flex-end"><button class="ghost" id="fgUpd">🔄 Actualizar</button></div>'
-                    : '<div class="fsec" style="color:var(--mut)">⏳ Cargando historial, precio de BTC y futuros…</div>';
+                    : '<div class="fsec" style="color:var(--mut)">⏳ Cargando dominancia, historial, precio de BTC y futuros…</div>';
   box.innerHTML=hero+body;
   box.querySelectorAll('[data-fgt]').forEach(b=>b.onclick=()=>{ fgTab=b.dataset.fgt; renderFgPanel(); });
   const dl=$('fgDl'); if(dl) dl.onclick=e=>{ const s2=localStamp(); showAndDownload(fgCanvas, `miedo_codicia_${s2.file}.png`, e.target); };
