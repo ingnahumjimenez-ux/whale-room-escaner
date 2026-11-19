@@ -87,8 +87,34 @@ function extras(K) {
 }
 const r4 = x => (x == null || !isFinite(x)) ? null : +(+x).toPrecision(6);
 
+/* ---------- lista de acciones que se operan en BingX (futuros perpetuos) ---------- */
+async function listaBingX(cachePath) {
+  const url = 'https://open-api.bingx.com/openApi/swap/v2/quote/contracts?timestamp=' + Date.now();
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'escaner-bolsa' } });
+    const j = await r.json();
+    const lista = {};
+    for (const c of (j.data || [])) {
+      const sym = String(c.symbol || '');
+      const m = sym.match(/^NCSK([A-Z.]+?)2USD-USDT$/);     // formato de BingX para acciones (ej. NCSKTSLA2USD-USDT)
+      if (!m) continue;
+      if (c.status != null && +c.status !== 1) continue;    // solo contratos activos
+      const lev = +(c.maxLongLeverage || c.maxLeverage || c.maxShortLeverage || 0) || null;
+      lista[m[1]] = { c: sym, lev };
+    }
+    if (Object.keys(lista).length >= 5) {
+      fs.mkdirSync(path.dirname(cachePath), { recursive: true });
+      fs.writeFileSync(cachePath, JSON.stringify({ at: Date.now(), lista }));
+      log(`BingX: ${Object.keys(lista).length} acciones con futuros perpetuos.`);
+      return lista;
+    }
+    log('BingX respondió sin acciones; uso la copia guardada.');
+  } catch (e) { log('No se pudo leer la lista de BingX; uso la copia guardada:', e.message); }
+  try { return JSON.parse(fs.readFileSync(cachePath, 'utf8')).lista; } catch (e) { return null; }
+}
+
 /* ---------- principal ---------- */
-function main() {
+async function main() {
   const crudo = JSON.parse(fs.readFileSync(CRUDO, 'utf8'));
   const M = cargarMotor();
   log('Motor de v3 cargado.');
@@ -100,6 +126,8 @@ function main() {
     qqq: { h1: tr('QQQ', 4), h4: tr('QQQ', 16), ...ult('QQQ') },
     vix: ult('^VIX')
   };
+  const BX = await listaBingX(path.join(path.dirname(SALIDA), 'bingx.json'));
+  const enBX = sym => !!(BX && (BX[sym] || BX[sym.replace('.', '')]));
   const cfg = { market: 'stocks', tf: '15m', limit: VELAS, minVol: 0, minScore: MIN_PUNTAJE, dir: 'both', minCores: MIN_CONF, pivot: 5, closedOnly: false };
   const px = {}, sig = [];
   let ultima = 0, n = 0;
@@ -121,6 +149,8 @@ function main() {
       let O = null, P5 = null;
       try { O = M.optOf(r); } catch (err) {}
       try { P5 = M.computeProjection(r.K, r.close, O ? O.stop.stop : r.stop, r.targets[4].p, dir, r.atrPct, '15m'); } catch (err) {}
+      let PO = null;
+      try { if (O && O.best) PO = M.computeProjection(r.K, r.close, O.stop.stop, r.targets[O.best.k - 1].p, dir, r.atrPct, '15m'); } catch (err) {}
       const rows = O ? O.rows : [];
       sig.push({
         s: sym, n: x.n || sym, sec: x.sec || '', dir, sc: r.score, co: r.cores,
@@ -129,6 +159,7 @@ function main() {
         tp: r.targets.map(t => r4(t.p)), rr: r.targets.map(t => +(t.rr || 0).toFixed(2)),
         pr: rows.map(o => o ? +o.prob.toFixed(3) : null), ev: rows.map(o => o ? +o.ev.toFixed(2) : null), ob: O && O.best ? O.best.k : null,
         p5: P5 ? { lo: P5.loMs, hi: P5.hiMs, p: +P5.prob.toFixed(3) } : null,
+        po: PO ? { lo: PO.loMs, hi: PO.hiMs } : null, bx: enBX(sym) ? 1 : 0,
         d: r.d, c: r4(c), atr: +(r.atrPct || 0).toFixed(4), ctx: { h1, h4 }, gap: e.gap, rv: e.rv, dv: e.dv,
         K: K.slice(-VELAS_GRAFICA).map(k => [k.t, r4(k.o), r4(k.h), r4(k.l), r4(k.c)])
       });
@@ -136,14 +167,17 @@ function main() {
   }
   const veOf = x => (x.ob && x.ev[x.ob - 1] != null) ? x.ev[x.ob - 1] : -9;
   sig.sort((a, b) => (b.sc - a.sc) || (veOf(b) - veOf(a)) || ((b.dv || 0) - (a.dv || 0)));
+  const fuera = sig.slice(MAX_SENALES).filter(x => x.bx);   // las de BingX siempre se conservan
   sig.splice(MAX_SENALES);
-  const out = { v: 1, gen: Date.now(), at: ultima, n, mkt, px, sig };
+  sig.push(...fuera);
+  const bx = BX ? Object.keys(BX).filter(k => D[k] || D[k.replace(/([A-Z])([A-Z])$/, '$1.$2')]).sort() : null;
+  const out = { v: 1, gen: Date.now(), at: ultima, n, mkt, px, sig, bx, bxLev: BX ? Object.fromEntries(Object.entries(BX).filter(([, v]) => v.lev).map(([k, v]) => [k, v.lev])) : null };
   try {
     const prev = JSON.parse(fs.readFileSync(SALIDA, 'utf8'));
     if (prev.at === ultima && process.env.FORZAR !== '1') { log('Sin velas nuevas desde el último análisis (mercado cerrado o feriado). No se actualiza.'); return; }
   } catch (e) {}
   fs.mkdirSync(path.dirname(SALIDA), { recursive: true });
   fs.writeFileSync(SALIDA, JSON.stringify(out));
-  log(`Listo: ${n} acciones analizadas, ${sig.length} señales. Archivo ${(fs.statSync(SALIDA).size / 1024).toFixed(0)} KB.`);
+  log(`Listo: ${n} acciones analizadas, ${sig.length} señales, ${bx ? bx.length : 0} en BingX. Archivo ${(fs.statSync(SALIDA).size / 1024).toFixed(0)} KB.`);
 }
-main();
+main().catch(e => { console.error(e); process.exit(1); });
