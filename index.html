@@ -277,6 +277,31 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-ap
 #plusPanel .pst{font-size:12px;color:#8a9bb0;margin:0 0 10px}
 #plusPanel .no{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d}
 #fgFab{position:fixed;right:14px;bottom:82px;z-index:7;width:54px;height:54px;border-radius:50%;border:0;padding:0;cursor:pointer;background:conic-gradient(#475569 0 100%);box-shadow:0 6px 18px rgba(0,0,0,.4)}
+#fgFab{box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 0 3px rgba(148,163,184,.28)}
+/* burbuja y panel «1000 velas» */
+#k1Fab{position:fixed;right:14px;bottom:146px;z-index:7;width:54px;height:54px;border-radius:50%;border:0;padding:0;cursor:pointer;background:radial-gradient(circle at 30% 30%,#60a5fa,#1d4ed8);color:#fff;font-weight:900;font-size:15px;line-height:1.05;box-shadow:0 8px 24px rgba(29,78,216,.55),0 0 0 3px rgba(96,165,250,.25)}
+#k1Fab small{display:block;font-size:8.5px;font-weight:700;opacity:.9}
+#k1Fab i{position:absolute;top:-4px;right:-4px;background:#22d3ee;color:#04202a;font-style:normal;font-size:10.5px;font-weight:900;border-radius:99px;min-width:18px;height:18px;line-height:18px;padding:0 4px;display:none}
+#k1Panel{position:fixed;inset:0;z-index:8;background:rgba(5,8,14,.72);backdrop-filter:blur(3px);display:none}#k1Panel.open{display:block}
+#k1Panel .sheet{position:absolute;left:0;right:0;bottom:0;top:5%;max-width:560px;margin:0 auto;background:#0b0e14;border-radius:20px 20px 0 0;border-top:1px solid #1d4ed8;padding:12px 14px 40px;overflow:auto;color:#e5e7eb}
+#k1Panel .grab{width:44px;height:5px;border-radius:99px;background:#334155;margin:0 auto 10px}
+#k1Panel .ph{display:flex;align-items:center;gap:8px;margin-bottom:4px}#k1Panel .ph h2{margin:0;font-size:19px;white-space:nowrap}
+#k1Panel .ph .x{margin-left:auto;background:#18202f;border:1px solid #253047;color:#e5e7eb;border-radius:10px;width:36px;height:36px;font-size:18px;padding:0;flex:none}
+#k1Panel .pst{font-size:12px;color:#8a9bb0;margin:0 0 10px}
+.k1c{border:1.5px solid #3b82f6;border-radius:14px;padding:10px;margin-bottom:10px;background:#0f1626}
+.k1h{display:flex;align-items:center;gap:7px;margin-bottom:8px;font-size:15px}.k1h .q{color:var(--mut);font-size:13px}
+.k1h .sc{margin-left:auto;background:#1e3a5f;color:#93c5fd;border-radius:99px;padding:2px 9px;font-size:12px;font-weight:800}
+.k1h .pill{font-size:11px;font-weight:900;border-radius:7px;padding:2px 8px}.k1h .pill.l{background:#14532d;color:#86efac}.k1h .pill.s{background:#7f1d1d;color:#fecaca}
+.k1c .pz{display:block;font-size:9px;color:#cbd5e1;margin-top:1px;letter-spacing:-.3px;white-space:nowrap;overflow:hidden}
+.k1c .tpstrip .c{background:#334155}.k1c .tpstrip .c .t{color:#cbd5e1}.k1c .tpstrip .c .v{color:#f8fafc}.k1c .tpstrip .c .pz{color:#e2e8f0}
+.k1c .tpstrip .c.top{outline:3px solid #22d3ee;outline-offset:-3px}.k1c .tpstrip .c.g24{outline:3px solid #22c55e;outline-offset:-3px}.k1c .tpstrip .c.top.g24{outline:3px solid #22d3ee;box-shadow:inset 0 0 0 6px #22c55e}
+.k1c .b24{margin-top:4px;font-size:clamp(11px,3.4vw,13px);color:#86efac;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.k1c .no24{margin-top:4px;font-size:clamp(11px,3.4vw,12.5px);color:#fcd34d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.k1c .stp{margin-top:7px;font-size:13px;color:#fca5a5}.k1c .stp span{color:var(--mut);font-size:12px}
+.k1c .bst{margin-top:4px;font-size:clamp(11px,3.4vw,13px);color:#a5f3fc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.k1c .bst .ev{color:var(--mut)}
+.k1h .rk{color:#22d3ee;font-weight:900;font-size:13px}
+#k1Panel .ph .dl{margin-left:auto;white-space:nowrap;background:#1d4ed8;border:0;color:#fff;border-radius:10px;height:36px;padding:0 12px;font-weight:800;font-size:13.5px;cursor:pointer}#k1Panel .ph .dl+.x{margin-left:0}
+.k1c .tim{margin-top:4px;font-size:clamp(11px,3.4vw,13px);color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.k1c .tim span{color:var(--mut)}.k1c .tim.w{color:#fcd34d}.k1c .tim .wb{color:#fcd34d;font-weight:800}
+.k1c .nos{color:var(--mut);font-size:13px}
 #fgFab .in{position:absolute;inset:4px;border-radius:50%;background:#0b1b31;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
 #fgFab b{font-size:17px;line-height:1}#fgFab small{font-size:6.5px;font-weight:800;margin-top:2px;letter-spacing:.2px;white-space:nowrap}
 #fgPanel{position:fixed;inset:0;z-index:8;background:rgba(5,8,14,.72);backdrop-filter:blur(3px);display:none}
@@ -629,6 +654,12 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-ap
 <button id="fgFab" title="Miedo y Codicia"><span class="in"><b>?</b><small>ÍNDICE</small></span></button>
 <div id="fgPanel"><div class="sheet"><div class="grab"></div><div class="ph"><h2>😨 Miedo y Codicia</h2><button class="x" id="fgX">✕</button></div>
 <div style="font-size:12px;color:#8a9bb0;margin:0 0 10px" id="fgSt"></div><div id="fgBody"></div></div></div>
+<button id="k1Fab" title="Análisis con 1000 velas de 15m">1000<small>velas 15m</small><i id="k1Cnt"></i></button>
+<div id="k1Panel"><div class="sheet"><div class="grab"></div>
+  <div class="ph"><h2>📊 1000 velas · 15m</h2><button id="k1Dl" class="dl">⬇ Descargar</button><button class="x" id="k1X">✕</button></div>
+  <div class="pst" id="k1St"></div>
+  <div id="k1Body"></div>
+</div></div>
 <button id="plusFab" title="Escáner Plus 15m">Plus<small>15m</small></button>
 <div id="plusPanel"><div class="sheet"><div class="grab"></div>
   <div class="ph"><h2>Escáner Plus</h2><span style="font-size:11.5px;padding:2px 9px;border-radius:99px;border:1px solid #7c3aed;color:#c4b5fd">15m</span><button class="x" id="plusX">✕</button></div>
@@ -1798,7 +1829,7 @@ function renderResults(){
   const key={t5:r=>-(projOfCard(r)?.prob ?? -1), score:r=>-r.score, rr:r=>-r.targets[3].rr, stop:r=>r.stopPct, vol:r=>-r.vol}[sort];
   list.sort((a,b)=>key(a)-key(b));
   list=pins.concat(list);
-  renderCtxBar(); renderModo();
+  renderCtxBar(); renderModo(); k1Badge();
   const box=$('results'); box.innerHTML='';
   $('emptyMsg').style.display=list.length?'none':'block';
   if(!list.length && state.results.length>0) $('emptyMsg').innerHTML=`Ninguna señal cumple los filtros. Hay ${state.results.length} señal(es) encontradas, pero ninguna con probabilidad de T5 ≥ ${Math.round(minP*100)} % (o con ese estado). Puedes bajar "Prob. mín. T5".`;
@@ -3247,6 +3278,139 @@ function plusOpen(){ $('plusPanel').classList.add('open'); renderPlus(); plusRun
   clearInterval(plusTimer); plusTimer=setInterval(async()=>{ if(!$('plusPanel').classList.contains('open')) return clearInterval(plusTimer); if(!plusState.running){ await plusUpdateSeg(); renderPlus(); } }, 60000); }
 function plusClose(){ $('plusPanel').classList.remove('open'); clearInterval(plusTimer); }
 $('plusFab').onclick=plusOpen; $('plusX').onclick=plusClose;
+/* ===================== BURBUJA «1000 VELAS» ===================== */
+// Analiza de nuevo cada señal del último escaneo con 1000 velas de 15m (siempre 15m, aunque el escaneo use otra temporalidad). El % se corrige con el test de 50 pares (15m, 1000 velas, 18/11/2026).
+const K1_CAL=[0.95,0.74,0.61,0.63,0.64,0.52,0.39,0.41];
+const k1Cache=new Map(); let k1Busy=false, k1Last=[]; const K1_TOP=10;   // solo los 10 mejores del ranking
+function k1Src(){ const seen=new Set(); return state.results.filter(r=>{ if(r.pinned && !r.meetsFilters) return false; const k=r.symbol+'|'+r.dir; if(seen.has(k)) return false; seen.add(k); return true; }); }
+function k1Badge(){ const n=Math.min(K1_TOP,k1Src().length), el=$('k1Cnt'); if(!el) return; el.textContent=n; el.style.display=n?'block':'none'; }
+function k1Calc(r){
+  const O=optOf(r); const p=O.rows.map((x,i)=>x?x.prob*K1_CAL[i]:null);
+  for(let i=1;i<8;i++) if(p[i]!=null && p[i-1]!=null) p[i]=Math.min(p[i],p[i-1]);   // un objetivo más lejano nunca es más probable
+  const ev=p.map((v,i)=>v!=null&&O.rows[i]? v*O.rows[i].rr-(1-v) : null);
+  const c=ev.map((e,i)=>({e,i})).filter(x=>x.e!=null && x.e>0 && p[x.i]>=0.20);
+  const bi=c.length? c.reduce((a,b)=>b.e>a.e?b:a).i : -1;
+  return {O,p,ev,bi};
+}
+function k1When(t, now){ // "hoy 14:23", "mañana 09:10", "vie 20 12:08" (hora local)
+  const z=n=>String(n).padStart(2,'0'), d=new Date(t), n=new Date(now);
+  const dd=Math.round((new Date(d.getFullYear(),d.getMonth(),d.getDate())-new Date(n.getFullYear(),n.getMonth(),n.getDate()))/864e5);
+  const dl=dd===0?'hoy':dd===1?'mañana':['dom','lun','mar','mié','jue','vie','sáb'][d.getDay()]+' '+d.getDate();
+  return `${dl} ${z(d.getHours())}:${z(d.getMinutes())}`;
+}
+function k1TimeInfo(x){ const P=x.t, at=x.at||Date.now(); if(!P) return null;
+  const warn= P.loMs>24*36e5 ? '⚠️ más de 24 h' : P.hiMs>24*36e5 ? '⚠️ puede pasar de 24 h' : '';
+  return {range:fmtRange(P.loMs,P.hiMs), when:`${k1When(at+P.loMs,at)} – ${k1When(at+P.hiMs,at)}`, warn}; }
+function k1TimeHTML(x){ const T=k1TimeInfo(x); if(!T) return '';
+  return `<div class="tim ${T.warn?'w':''}">⏱ <b>Llegaría en ${T.range}</b> ${T.warn?`<span class="wb">${T.warn}</span>`:`<span>· ${T.when}</span>`}</div>`; }
+function k1Best24(r, k){ // mejor objetivo cuyo rango estimado completo termina dentro de 24 h
+  const H=24*36e5; let best=null;
+  for(let i=0;i<8;i++){
+    if(k.p[i]==null || k.ev[i]==null || k.ev[i]<=0 || k.p[i]<0.20) continue;
+    let P=null; try{ P=computeProjection(r.K, r.close, k.O.stop.stop, r.targets[i].p, r.dir, r.atrPct, '15m'); }catch(e){}
+    if(P && P.hiMs<=H && (!best || k.ev[i]>best.ev)) best={i, ev:k.ev[i], P};
+  }
+  return best;
+}
+function k1Info24(x){ const b=x.b24, r=x.r, at=x.at||Date.now(); if(!b) return null;
+  return {t:`T${b.i+1}`, price:fmt(r.targets[b.i].p,r.d), prob:pTxt(x.k.p[b.i]), ev:`+${b.ev.toFixed(2)} R`, range:fmtRange(b.P.loMs,b.P.hiMs), when:`${k1When(at+b.P.loMs,at)} – ${k1When(at+b.P.hiMs,at)}`}; }
+function k1Line24(x){ const I=k1Info24(x);
+  if(!I) return `<div class="no24">⏱ Ningún objetivo llega con seguridad en 24 h</div>`;
+  return `<div class="b24">🟢 <b>En 24 h: ${I.t}</b> · ${I.price} · ${I.prob} · VE <b>${I.ev}</b></div><div class="tim">⏱ <b>Llegaría en ${I.range}</b> <span>· ${I.when}</span></div>`; }
+function k1Box(x){
+  const r0=x.src, r=x.r, sh=r0.dir==='short';
+  const head=`<div class="k1h"><span class="pill ${sh?'s':'l'}">${sh?'SHORT':'LONG'}</span><b>${r0.symbol.replace(/USDT$/,'')}</b><span class="q">/USDT · 15M</span>${r?`<span class="sc">${r.score}/100</span>`:''}</div>`;
+  if(!r) return `<div class="k1c">${head}<div class="nos">${x.err?'⚠️ No se pudieron descargar las velas.':'Con 1000 velas no hay señal en esta dirección.'}</div></div>`;
+  const {O,p,ev,bi}=x.k, col=v=>v>=0.6?'#86efac':v>=0.4?'#bef264':v>=0.25?'#fcd34d':'#fca5a5', bg=v=>v>=0.6?'#052e16':v>=0.4?'#1a2e05':v>=0.25?'#2a2306':'#2a0b0b';
+  return `<div class="k1c">${head}
+    <div class="tpstrip">${p.map((v,i)=>v!=null?`<div class="c ${i===bi?'top':''} ${x.b24&&i===x.b24.i?'g24':''}"><span class="t">T${i+1}</span><span class="v">${pTxt(v)}</span><span class="pz">${fmt(r.targets[i].p,r.d)}</span></div>`:`<div class="c"><span class="t">T${i+1}</span><span class="v">—</span></div>`).join('')}</div>
+    <div class="stp">🛑 <b>STOP</b> · ${fmt(O.stop.stop,r.d)} <span>(${sh?'+':'−'}${(Math.abs(O.stop.stop/r.entryMid-1)*100).toFixed(1)} %)</span></div>
+    ${bi>=0?`<div class="bst">⭐ <b>Mejor: T${bi+1}</b> · ${fmt(r.targets[bi].p,r.d)} · ${pTxt(p[bi])} · <span class="ev">VE</span> <b style="color:#86efac">+${ev[bi].toFixed(2)} R</b></div>`:'<div class="bst" style="color:#fca5a5">⚠️ Ningún objetivo compensa el riesgo.</div>'}
+    ${k1Line24(x)}</div>`;
+}
+async function k1Open(){
+  $('k1Panel').classList.add('open');
+  const st=$('k1St'), body=$('k1Body');
+  const src=k1Src();
+  if(!src.length){ st.textContent=''; body.innerHTML='<div class="k1c"><div class="nos">Aún no hay señales. Toca «Analizar todas» y luego abre esta burbuja.</div></div>'; return; }
+  if(k1Busy) return; k1Busy=true;
+  const cfg=state.cfg||getCfg(), out=[];
+  const draw=done=>{
+    const sorted=out.slice().sort((a,b)=>{ const va=a.k&&a.k.bi>=0?a.k.ev[a.k.bi]:-9, vb=b.k&&b.k.bi>=0?b.k.ev[b.k.bi]:-9; return vb-va; });
+    k1Last=done? sorted.slice(0,K1_TOP) : [];
+    st.textContent=(done?`Top ${Math.min(K1_TOP,src.length)} de ${src.length} señal(es) del último escaneo, analizadas con 1000 velas de 15m.`:`⏳ Analizando ${out.length}/${src.length}…`)+' Ranking por valor esperado (VE) · borde celeste = mejor VE · borde verde = mejor en 24 h.';
+    body.innerHTML=sorted.slice(0,K1_TOP).map((x,i)=>k1Box(x).replace('<div class="k1h">',`<div class="k1h"><span class="rk">#${i+1}</span>`)).join('');
+  };
+  draw(false);
+  for(const r0 of src){
+    const key=`${r0.market}|${r0.symbol}|15m|${r0.dir}|${Math.floor(Date.now()/9e5)}`;   // se renueva con cada vela de 15m
+    let x=k1Cache.get(key);
+    if(!x){
+      x={src:r0, r:null, k:null};
+      try{
+        let K=await getKlines(r0.market, r0.symbol, '15m', 1000);   // siempre 15m, como en el test
+        if(cfg.closedOnly) K=K.slice(0,-1);
+        const r=analyzeDir(r0.symbol, K, {...cfg, market:r0.market, tf:'15m', limit:1000, force:true}, r0.vol, r0.dir);
+        if(r){ x.r=r; x.k=k1Calc(r); x.at=Date.now();
+          if(x.k.bi>=0){ try{ x.t=computeProjection(r.K, r.close, x.k.O.stop.stop, r.targets[x.k.bi].p, r.dir, r.atrPct, '15m'); }catch(e){ x.t=null; } }
+          x.b24=k1Best24(r, x.k); }
+      }catch(e){ x.err=true; }
+      if(!x.err) k1Cache.set(key,x);
+    }
+    out.push(x); draw(false);
+  }
+  draw(true); k1Busy=false;
+}
+function buildK1Image(list, stp){
+  const W=1080, P=50, F='system-ui,-apple-system,Segoe UI,Roboto,sans-serif', BH=250, top=300, H=top+list.length*BH+120;
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d');
+  drawWRBackground(g,W,H);
+  const txt=(t,x,y,font,col,al='left')=>{g.font=font;g.fillStyle=col;g.textAlign=al;g.fillText(t,x,y);g.textAlign='left';};
+  const rr=(x,y,w,h,r)=>{g.beginPath(); if(g.roundRect) g.roundRect(x,y,w,h,r); else g.rect(x,y,w,h);};
+  const col=v=>v>=0.6?'#86efac':v>=0.4?'#bef264':v>=0.25?'#fcd34d':'#fca5a5', bg=v=>v>=0.6?'#052e16':v>=0.4?'#1a2e05':v>=0.25?'#2a2306':'#2a0b0b';
+  drawWhaleLogo(g,96,92,46); drawWRWordmark(g,330,108,40);
+  txt(stp.text,W-P,104,`600 30px ${F}`,'#9fb6d4','right');
+  txt('📊 Top 10 · 1000 velas · 15m',P,200,`800 48px ${F}`,'#ffffff');
+  txt('% corregido con el test · celeste = mejor VE · verde = mejor en 24 h',P,246,`400 25px ${F}`,'#9fb6d4');
+  list.forEach((x,n)=>{
+    const y=top+n*BH, r0=x.src, r=x.r, sh=r0.dir==='short';
+    g.fillStyle='rgba(15,22,38,.92)'; rr(P-10,y,W-2*P+20,BH-16,18); g.fill(); g.strokeStyle='#3b82f6'; g.lineWidth=2.5; g.stroke();
+    txt(`#${n+1}`,P+8,y+44,`900 30px ${F}`,'#22d3ee');
+    g.fillStyle=sh?'#7f1d1d':'#14532d'; rr(P+70,y+16,108,38,9); g.fill(); txt(sh?'SHORT':'LONG',P+124,y+44,`900 22px ${F}`,sh?'#fecaca':'#86efac','center');
+    txt(r0.symbol.replace(/USDT$/,''),P+194,y+46,`800 32px ${F}`,'#ffffff');
+    g.font=`800 32px ${F}`; const sw=g.measureText(r0.symbol.replace(/USDT$/,'')).width;
+    txt('/USDT · 15M',P+200+sw,y+46,`400 26px ${F}`,'#94a3b8');
+    if(r) txt(`${r.score}/100`,W-P-6,y+46,`800 26px ${F}`,'#93c5fd','right');
+    if(!r){ txt(x.err?'No se pudieron descargar las velas.':'Con 1000 velas no hay señal en esta dirección.',P+8,y+110,`400 26px ${F}`,'#94a3b8'); return; }
+    const {O,p,ev,bi}=x.k, cw=(W-2*P-7*8)/8;
+    p.forEach((v,i)=>{ const cx=P+i*(cw+8), cy=y+66;
+      g.fillStyle='#334155'; rr(cx,cy,cw,84,10); g.fill();
+      const g24=x.b24&&i===x.b24.i;
+      if(i===bi){ g.strokeStyle='#22d3ee'; g.lineWidth=4; rr(cx+2,cy+2,cw-4,80,9); g.stroke(); }
+      if(g24){ g.strokeStyle='#22c55e'; g.lineWidth=4; const o=i===bi?7:2; rr(cx+o,cy+o,cw-2*o,84-2*o,i===bi?6:9); g.stroke(); }
+      txt(`T${i+1}`,cx+cw/2,cy+24,`700 19px ${F}`,'#cbd5e1','center');
+      txt(v!=null?pTxt(v):'—',cx+cw/2,cy+52,`900 25px ${F}`,'#f8fafc','center');
+      txt(fmt(r.targets[i].p,r.d),cx+cw/2,cy+75,`500 16px ${F}`,'#e2e8f0','center'); });
+    const sp=Math.abs(O.stop.stop/r.entryMid-1)*100;
+    txt(`🛑 STOP ${fmt(O.stop.stop,r.d)} (${sh?'+':'−'}${sp.toFixed(1)} %)`,P+8,y+184,`700 24px ${F}`,'#fca5a5');
+    if(bi>=0) txt(`⭐ Mejor T${bi+1} · ${fmt(r.targets[bi].p,r.d)} · ${pTxt(p[bi])} · VE +${ev[bi].toFixed(2)} R`,W-P-6,y+184,`800 24px ${F}`,'#a5f3fc','right');
+    else txt('⚠️ Ningún objetivo compensa el riesgo',W-P-6,y+184,`700 24px ${F}`,'#fca5a5','right');
+    const I=k1Info24(x);
+    if(I) txt(`🟢 En 24 h: ${I.t} · ${I.price} · ${I.prob} · VE ${I.ev} · ⏱ ${I.range}`,P+8,y+222,`700 23px ${F}`,'#86efac');
+    else txt('⏱ Ningún objetivo llega con seguridad en 24 h',P+8,y+222,`700 23px ${F}`,'#fcd34d');
+  });
+  txt(`Descargado: ${stp.text} · No es una recomendación de inversión`,W/2,H-50,`400 22px ${F}`,'#64748b','center');
+  return cv;
+}
+$('k1Dl').onclick=()=>{
+  if(k1Busy) return toast('⏳ Espera','Termina el análisis de 1000 velas y luego descarga.',3000);
+  if(!k1Last.length) return toast('Sin datos','Aún no hay señales analizadas con 1000 velas.',3000);
+  const stp=localStamp(); silentDownload(buildK1Image(k1Last, stp), `top10_1000velas_15m_${stp.file}.png`);
+};
+$('k1Fab').onclick=k1Open; $('k1X').onclick=()=>$('k1Panel').classList.remove('open');
+$('k1Panel').addEventListener('click',e=>{ if(e.target.id==='k1Panel') $('k1Panel').classList.remove('open'); });
+k1Badge();
+
 $('plusPanel').onclick=e=>{ if(e.target.id==='plusPanel') return plusClose(); if(plusState.tip && !e.target.closest('.ptip')){ plusState.tip=null; renderPlus(); } };
 
 /* ---------- imagen (la tarjeta tal cual, 1080 px) ---------- */
