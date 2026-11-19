@@ -12,7 +12,7 @@ const RAIZ = AQUI;   // todos los archivos están en la raíz del repositorio
 const HTML = process.env.HTML_V3 || path.join(RAIZ, 'index.html');
 const CRUDO = process.env.CRUDO || '/tmp/bolsa_crudo.json';
 const SALIDA = process.env.SALIDA || path.join(RAIZ, 'data', 'bolsa.json');
-const VELAS = 1000, MIN_PUNTAJE = 70, MIN_CONF = 2, VELAS_GRAFICA = 90, MAX_SENALES = 160;
+const VELAS = 1000, MIN_PUNTAJE = 70, MIN_CONF = 2, VELAS_GRAFICA = 60, MAX_SENALES = 320;
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), '|', ...a);
 
 /* ---------- carga el motor de v3 sin navegador ---------- */
@@ -134,7 +134,8 @@ function main() {
       });
     }
   }
-  sig.sort((a, b) => b.sc - a.sc);
+  const veOf = x => (x.ob && x.ev[x.ob - 1] != null) ? x.ev[x.ob - 1] : -9;
+  sig.sort((a, b) => (b.sc - a.sc) || (veOf(b) - veOf(a)) || ((b.dv || 0) - (a.dv || 0)));
   sig.splice(MAX_SENALES);
   const out = { v: 1, gen: Date.now(), at: ultima, n, mkt, px, sig };
   try {
