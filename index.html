@@ -289,7 +289,7 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-ap
 #bolPanel .grab{width:44px;height:5px;border-radius:99px;background:#334155;margin:0 auto 8px}
 #bolPanel .ph{display:flex;align-items:center;gap:8px;margin-bottom:10px}#bolPanel .ph h2{margin:0;font-size:19px;white-space:nowrap}#bolPanel .ph .bd{font-size:10.5px;background:#1e3a5f;color:#93c5fd;border-radius:99px;padding:2px 8px;white-space:nowrap}
 #bolPanel .ph .x{margin-left:auto;background:#18202f;border:1px solid #253047;color:#e5e7eb;border-radius:10px;width:36px;height:36px;font-size:18px;padding:0}
-#bolTabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}#bolTabs button{background:#111827;border:1px solid #1f2a44;border-radius:10px;padding:6px 0;font-size:11px;color:#8a9bb0}#bolTabs button b{display:block;font-size:16px}#bolTabs button.on{background:#1d4ed8;color:#fff;border-color:#3b82f6}
+#bolTabs{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:10px}#bolTabs button{background:#111827;border:1px solid #1f2a44;border-radius:10px;padding:6px 0;font-size:11px;color:#8a9bb0}#bolTabs button b{display:block;font-size:16px}#bolTabs button.on{background:#1d4ed8;color:#fff;border-color:#3b82f6}#bolTabs button[data-tab=man].on{background:#4c1d95;border-color:#8b5cf6}
 .bl-box{background:#0f1626;border:1px solid #1f2a44;border-radius:12px;padding:10px;margin-bottom:10px}.bl-mut{color:#8a9bb0}
 .bl-cfg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.bl-cfg label{background:#0b1220;border:1px solid #1f2a44;border-radius:9px;padding:4px 7px;display:block;min-width:0}.bl-cfg small{display:block;color:#8a9bb0;font-size:10px}.bl-cfg b{font-size:12.5px}
 .bl-cfg select,.bl-cfg input{width:100%;background:transparent;border:0;color:#e5e7eb;font-weight:700;font-size:12.5px;padding:0;outline:none}.bl-cfg select option{background:#0f1626}
@@ -315,6 +315,16 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-ap
 .bl-tr2{padding:9px 0;border-bottom:1px solid #1e293b;cursor:pointer}.bl-tr2:last-child{border-bottom:0}.bl-tr2 .h{display:flex;align-items:center;gap:6px}.bl-tr2 .rk{color:#22d3ee;font-weight:900;width:26px}.bl-tr2 .tk{font-size:15px}.bl-tr2 .vd{font-size:15px}.bl-tr2 .sc{margin-left:auto;font-weight:800;font-size:12.5px}
 .bl-tr2 .lv{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:5px;margin:6px 0 4px}.bl-tr2 .lv div{background:#0b1220;border-radius:8px;padding:4px 7px;min-width:0}.bl-tr2 .lv small{display:block;font-size:10px;color:#8a9bb0;white-space:nowrap}.bl-tr2 .lv b{font-size:13px;white-space:nowrap}
 .bl-tr2 .ex{display:flex;gap:12px;font-size:12px;margin:2px 0 3px;color:#e5e7eb;white-space:nowrap;overflow:hidden}.bl-tr2 .ex b{color:#fcd34d}.bl-tr2 .ex .w b{color:#fbbf24}.bl-tr2 .ex .w{color:#fde68a}.bl-tr2 .ft{font-size:11px;color:#8a9bb0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-st .steps{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}.pl-st .steps div{border-radius:10px;padding:7px 8px;font-size:12px}.pl-ok{background:#052e16;border:1px solid #166534;color:#bbf7d0}.pl-wait{background:#111827;border:1px dashed #475569;color:#94a3b8}
+.pl-how{display:flex;gap:6px;margin-top:8px;font-size:11.5px}.pl-how span{flex:1;border-radius:8px;padding:5px 6px;text-align:center}
+.pl-sec{margin:14px 0 6px;font-size:14px;font-weight:900;display:flex;align-items:center;gap:6px}.pl-sec small{font-weight:500;color:#8a9bb0;font-size:11.5px}
+.pl-row{background:#0f1626;border:1px solid #1f2a44;border-left:5px solid;border-radius:12px;padding:9px 10px;margin-bottom:8px}.pl-row.g{border-left-color:#22c55e}.pl-row.y{border-left-color:#f59e0b}.pl-row.x{opacity:.6;border-left-color:#ef4444}
+.pl-row .h{display:flex;align-items:center;gap:6px}.pl-row .tk{font-size:16px;font-weight:900}.pl-typ{font-size:11px;border-radius:99px;padding:1px 7px;background:#1e293b;color:#c4b5fd;white-space:nowrap}
+.pl-do{margin:6px 0;font-size:13px;line-height:1.35}.pl-do b{color:#fff}
+.pl-lv{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:5px}.pl-lv div{background:#0b1220;border-radius:8px;padding:4px 7px;min-width:0}.pl-lv small{display:block;font-size:10px;color:#8a9bb0;white-space:nowrap}.pl-lv b{font-size:13px;white-space:nowrap}
+.pl-meta{font-size:11.5px;color:#8a9bb0;margin-top:5px}
+.pl-am{margin-top:6px;font-size:12px;border-radius:8px;padding:5px 8px}.pl-am.p{background:#111827;color:#94a3b8;border:1px dashed #475569}.pl-am.ok{background:#052e16;color:#bbf7d0}.pl-am.ojo{background:#2a2306;color:#fde68a}.pl-am.no{background:#450a0a;color:#fecaca}
+.pl-ev{display:grid;grid-template-columns:62px 1fr auto;gap:6px;padding:6px 0;border-bottom:1px solid #1e293b;font-size:12.5px}.pl-ev:last-child{border:0}.pl-ev span{color:#8a9bb0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .bl-x{background:#18202f;border:1px solid #253047;color:#e5e7eb;border-radius:8px;width:30px;height:30px}
 .bl-er{display:grid;grid-template-columns:62px 1fr auto 62px;gap:6px;font-size:12px;padding:5px 0;border-bottom:1px solid #1e293b}.bl-er span{color:#8a9bb0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.bl-er b:last-child{text-align:right}.bl-er.w{color:#fde68a}
 .bl-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.bl-kpi div{background:#0b1220;border-radius:9px;padding:7px}.bl-kpi small{display:block;color:#8a9bb0;font-size:10.5px}.bl-kpi b{font-size:15px}
@@ -695,7 +705,7 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-ap
 <button id="bolFab" title="Escáner de acciones de EE. UU."><small>📈</small>Bolsa<i id="bolCnt"></i></button>
 <div id="bolPanel"><div class="sheet"><div class="grab"></div>
   <div class="ph"><h2>📈 Escáner Bolsa</h2><span class="bd">v1 · Contexto</span><button class="x" id="bolX">✕</button></div>
-  <div id="bolTabs"><button data-tab="esc" class="on"><b>🔍</b>Escáner</button><button data-tab="hist"><b>🗂</b>Historial</button><button data-tab="res"><b>📅</b>Resultados</button><button data-tab="port"><b>💼</b>Portafolio</button></div>
+  <div id="bolTabs"><button data-tab="esc" class="on"><b>🔍</b>Escáner</button><button data-tab="man"><b>🌙</b>Mañana</button><button data-tab="hist"><b>🗂</b>Historial</button><button data-tab="res"><b>📅</b>Result.</button><button data-tab="port"><b>💼</b>Portaf.</button></div>
   <div id="bolBody"></div>
 </div></div>
 <button id="k1Fab" title="Análisis con 1000 velas de 15m">1000<small>velas 15m</small><i id="k1Cnt"></i></button>
@@ -3486,6 +3496,7 @@ async function bolLoad(force){
     try{ const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); const j=await r.json(); if(!j||!j.sig) throw new Error('formato');
       if(!BOL.data || j.gen>=BOL.data.gen) BOL.data=j; ok=true; break; }catch(e){ BOL.err=e.message; }
   }
+  try{ const u=(ok?BOL_URLS:BOL_URLS).map(x=>x.replace('bolsa.json','plan.json')); for(const x of u){ try{ const r=await fetch(x+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) continue; const j=await r.json(); if(j&&j.para){ BOL.plan=j; break; } }catch(e){} } }catch(e){}
   BOL.loading=false;
   if(!ok) BOL.err='No se pudieron leer los datos de bolsa. Revisa que el robot de GitHub esté activo (pestaña Actions de tu repositorio).';
   bolRender(); bolBadge();
@@ -3627,7 +3638,7 @@ function bolRender(){
   const body=$('bolBody'); if(!body||!$('bolPanel').classList.contains('open')) return;
   const keep=document.activeElement&&document.activeElement.id==='bolQ';
   document.querySelectorAll('#bolTabs [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===BOL.tab));
-  body.innerHTML= BOL.tab==='esc'?bolEscHTML(): BOL.tab==='hist'?bolHistHTML(): BOL.tab==='res'?bolResHTML(): bolPortHTML();
+  body.innerHTML= BOL.tab==='esc'?bolEscHTML(): BOL.tab==='man'?bolPlanHTML(): BOL.tab==='hist'?bolHistHTML(): BOL.tab==='res'?bolResHTML(): bolPortHTML();
   if(BOL.tab==='esc'){ const L2=bolList(); body.querySelectorAll('.bl-card').forEach(el=>{ const s=L2[+el.dataset.i]; el._s=s; requestAnimationFrame(()=>bolChart(el.querySelector('canvas'),s)); }); }
   if(keep){ const q=$('bolQ'); if(q){ q.focus(); q.setSelectionRange(q.value.length,q.value.length); } }
 }
@@ -3752,6 +3763,62 @@ function buildBolsaTop(T, stp){
   txt(`Descargado: ${stp.text} · No es una recomendación de inversión`,W/2,H-46,`400 22px ${F}`,'#64748b','center');
   return cv;
 }
+/* ---- 🌙 Plan de mañana (gaps pendientes, setups listos y acciones a evitar) ---- */
+function bolNYdate(t=Date.now()){ return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York'}).format(new Date(t)); }
+function bolUniSet(){ const c=BOL.cfg, D=BOL.data; return c.uni==='lista'? new Set(c.lista.toUpperCase().split(/[\s,;]+/).filter(Boolean)) : c.uni==='bx'&&D&&D.bx? new Set(D.bx) : null; }
+function bolPlanItems(){
+  const P=BOL.plan, D=BOL.data, c=BOL.cfg; if(!P||!D) return null;
+  const U=bolUniSet(), dvOf=s=>(D.px[s]&&D.px[s][2])||0, okU=x=>(!U||U.has(x.s)) && x.c>=c.pmin && dvOf(x.s)>=c.vmin*1e6 && (c.dir==='both'||x.dir===c.dir);
+  const hoy=bolNYdate(), er=D.er||{}, avoidSet=new Set(Object.entries(er).filter(([,d])=>d===hoy||d===P.para).map(([k])=>k));
+  const avoid=[...avoidSet].filter(k=>!U||U.has(k)).map(k=>({s:k, d:er[k], n:(D.sig.find(x=>x.s===k)||P.gaps.find(x=>x.s===k)||{}).n||''}));
+  const pre=k=>P.pre&&P.pre.items&&P.pre.items[k];
+  const prep=[], vig=[];
+  for(const x of P.setups){ if(!okU(x)||avoidSet.has(x.s)||x.sc<c.min||x.co<c.conf) continue; const v=bolVerdict(x); if(v[0]==='no') continue;
+    const it={t:'set', x, v, pre:pre(`set:${x.s}:${x.dir}`)}; (v[0]==='go'?prep:vig).push(it); }
+  for(const x of P.gaps){ if(!okU(x)||avoidSet.has(x.s)) continue; const v=bolVerdict(x); if(v[0]==='no') continue;
+    const it={t:'gap', x, v, pre:pre(`gap:${x.s}:${x.dir}`)}; (v[0]==='go'&&(x.tasa||0)>=0.6?prep:vig).push(it); }
+  const ve=it=>it.t==='set'? (it.x.ob&&it.x.ev[it.x.ob-1]!=null?it.x.ev[it.x.ob-1]:0) : (it.x.tasa||0)*it.x.rr-(1-(it.x.tasa||0));
+  const ord=(a,b)=>((a.pre&&a.pre.st==='no')-(b.pre&&b.pre.st==='no')) || (ve(b)-ve(a));
+  return {prep:prep.sort(ord).slice(0,6), vig:vig.sort(ord).slice(0,6), avoid};
+}
+function bolPlanRow(it, cls){
+  const x=it.x, sh=x.dir==='short', d=x.d||2, gap=it.t==='gap', a=sh?'vender':'comprar';
+  let txt;
+  if(gap){ txt= sh? `Hueco sin cerrar <b>abajo</b>, en <b>${bolF(x.lvl,d)}</b> (${x.d.toFixed(1)} %). Si abre <b>sin subir sobre ${bolF(x.sst,d)}</b> → vender para cerrar el hueco.`
+                  : `Hueco sin cerrar <b>arriba</b>, en <b>${bolF(x.lvl,d)}</b> (+${x.d.toFixed(1)} %). Si abre <b>sin caer bajo ${bolF(x.sst,d)}</b> → comprar para cerrar el hueco.`;
+    if(cls==='y') txt+=` Solo si ${sh?'pierde el mínimo':'rompe el máximo'} de los primeros 15 min.`; }
+  else if(x.enz) txt=`Cerró <b>dentro de su zona</b> de entrada. Después de las 8:45, si sigue en la zona → <b>${a}</b>.`;
+  else txt=`Cerró a <b>${x.dz.toFixed(1)} %</b> de su zona. <b>Pon alarma en ${bolF(sh?x.el:x.eh,d)}.</b> Si ${sh?'sube':'baja'} a la zona después de las 8:45 → ${a}.`;
+  const ob=gap?null:(x.ob?x.ob-1:0);
+  const tp=gap?{l:'TP · cierre del gap', v:bolF(x.lvl,d)}:{l:`TP · T${ob+1} (${pTxt(x.pr[ob])})`, v:bolF(x.tp[ob],d)};
+  const tm=gap? `≈ ${x.ses[0]===x.ses[1]?x.ses[0]+' sesión':x.ses[0]+'–'+x.ses[1]+' sesiones'}` : bolTP(x).txt;
+  const extra=gap? (x.tasa!=null?`Gaps así se cerraron ${Math.round(x.tasa*10)} de 10 veces`:`R:R ${x.rr.toFixed(1)}`) : `VE ${(x.ev[ob]||0)>=0?'+':''}${(x.ev[ob]||0).toFixed(2)} R`;
+  const P=BOL.plan, pr=it.pre && P.pre && P.pre.at>P.gen ? it.pre : null;
+  const am= pr? `<div class="pl-am ${pr.st}">${pr.st==='ok'?'✅':pr.st==='ojo'?'🟡':'⛔'} ${pr.txt.replace('→','→ <b>')}</b></div>` : `<div class="pl-am p">⏳ Entre 8:00 y 8:25 a.m. aquí dirá si el pre-mercado lo confirma</div>`;
+  return `<div class="pl-row ${pr&&pr.st==='no'?'x':cls}" ${gap?'':`data-plgo="${x.s}|${x.dir}"`}><div class="h"><span class="bl-pill ${sh?'s':'l'}">${sh?'SHORT':'LONG'}</span><span class="tk">${x.s}</span>${x.bx?'<span class="bl-bx">BingX</span>':''}<span class="pl-typ">${gap?(x.dias===0?'Gap de hoy':'Gap pendiente'):'Setup listo'}</span><span style="margin-left:auto;font-weight:800;white-space:nowrap">${it.v[1].split(' ')[0]} ${gap?'':x.sc}</span></div>
+    <div class="pl-do">${txt}</div>
+    <div class="pl-lv"><div><small>Entrada</small><b style="color:#93c5fd">${bolF(x.el,d)} – ${bolF(x.eh,d)}</b></div><div><small>${tp.l}</small><b style="color:#86efac">${tp.v}</b></div><div><small>SL</small><b style="color:#fca5a5">${bolF(x.sst,d)}</b></div></div>
+    <div class="pl-meta">⚡ ${bolLev(x)} · ⏱ TP ${tm} · ${extra}${x.n?` · ${x.n}`:''}</div>${am}</div>`;
+}
+function bolPlanHTML(){
+  const P=BOL.plan;
+  if(!BOL.data) return `<div class="bl-box bl-mut">${BOL.loading?'⏳ Cargando…':'Toca «Analizar todas» en Escáner para cargar los datos.'}</div>`;
+  if(!P) return `<div class="bl-box bl-mut">🌙 Aún no hay plan. El robot lo arma cada día al cierre (3:15 p.m.) y lo confirma con el pre-mercado entre 8:00 y 8:25 a.m.</div>`;
+  const I=bolPlanItems(), hoy=bolNYdate(), viejo=P.para<hoy, dt=new Date(P.para+'T12:00:00');
+  const dia=dt.toLocaleDateString('es-SV',{weekday:'long'}), fecha=`${dia} ${dt.getDate()}/${dt.getMonth()+1}`;
+  const when=t=>{ const d=new Date(t), n=new Date(); const same=d.toDateString()===n.toDateString(); return `${same?'hoy':d.toLocaleDateString('es-SV',{weekday:'short',day:'numeric'})} ${bolHM(t)}`; };
+  const preOk=P.pre&&P.pre.at>P.gen;
+  let h=`<div class="bl-box pl-st"><b style="font-size:14px">🌙 Plan para el ${fecha}</b>${P.para===hoy?' <span class="bl-mut" style="font-size:12px">(hoy)</span>':''}
+    ${viejo?`<div class="pl-am ojo">⚠️ Este plan es de un día anterior. El nuevo se arma hoy al cierre (3:15 p.m.).</div>`:''}
+    <div class="steps"><div class="pl-ok">✅ <b>1. Plan armado</b><br>${when(P.gen)}</div><div class="${preOk?'pl-ok':'pl-wait'}">${preOk?'✅':'⏳'} <b>2. Confirmación</b><br>${preOk?when(P.pre.at)+' (pre-mercado)':'8:00–8:25 a.m. (pre-mercado)'}</div></div>
+    <div class="pl-how"><span class="pl-ok">🟢 PREPARAR<br>alarma lista</span><span style="background:#2a2306;color:#fde68a;border:1px solid #713f12">🟡 VIGILAR<br>solo si se confirma</span><span style="background:#450a0a;color:#fecaca;border:1px solid #7f1d1d">⛔ EVITAR<br>no tocar</span></div>
+    <div class="bl-mut" style="font-size:11.5px;margin-top:7px">Regla de oro: <b style="color:#e5e7eb">no entrar antes de las 8:45 a.m.</b> Los primeros 15 min son ruido. Universo: ${bolUniName()}.</div></div>`;
+  h+=`<div class="pl-sec">🟢 PREPARAR <small>· ${I.prep.length} ${I.prep.length===1?'acción':'acciones'}</small></div>`+(I.prep.length?I.prep.map(it=>bolPlanRow(it,'g')).join(''):`<div class="bl-box bl-mut">Nada claro para preparar con tus filtros.</div>`);
+  h+=`<div class="pl-sec">🟡 VIGILAR <small>· solo si el pre-mercado lo confirma</small></div>`+(I.vig.length?I.vig.map(it=>bolPlanRow(it,'y')).join(''):`<div class="bl-box bl-mut">Nada para vigilar.</div>`);
+  h+=`<div class="pl-sec">⛔ EVITAR <small>· resultados hoy o en la próxima sesión</small></div><div class="bl-box" style="padding:6px 10px">`+(I.avoid.length?I.avoid.map(a=>`<div class="pl-ev"><b>${a.s}</b><span>${a.n} · resultados ${a.d===hoy?'hoy':'el '+a.d}</span><b style="color:#fca5a5">⛔</b></div>`).join('')+`<div class="bl-mut" style="font-size:11px;margin-top:4px">Pueden abrir con saltos de 5–10 % hacia cualquier lado.</div>`:`<div class="bl-mut" style="font-size:12px">Ninguna acción de tu lista reporta resultados.</div>`)+`</div>`;
+  const st=P.stats||[]; h+=`<div class="bl-mut" style="font-size:11px;margin-top:8px">Gaps cerrados en ≤3 sesiones (últimos 60 días, todas las acciones): <1 % ${st[0]!=null?Math.round(st[0]*100)+' %':'—'} · 1–2 % ${st[1]!=null?Math.round(st[1]*100)+' %':'—'} · 2–4 % ${st[2]!=null?Math.round(st[2]*100)+' %':'—'} · >4 % ${st[3]!=null?Math.round(st[3]*100)+' %':'—'}. No es una recomendación de inversión.</div>`;
+  return h;
+}
 function bolInit(){
   $('bolFab').onclick=()=>{ $('bolPanel').classList.add('open'); bolRender(); if(!BOL.data||Date.now()-BOL.data.gen>10*6e4) bolLoad(); };
   $('bolX').onclick=()=>$('bolPanel').classList.remove('open');
@@ -3765,6 +3832,7 @@ function bolInit(){
     if(e.target.id==='bolSearch'){ BOL.searching=!BOL.searching; if(!BOL.searching) BOL.cfg.q=''; bolRender(); const q=$('bolQ'); if(q) q.focus(); return; }
     if(e.target.id==='bolTopDl'){ const T=bolTop(bolList()); if(T.length){ const stp=localStamp(); silentDownload(buildBolsaTop(T,stp), `top10_bolsa_${bolUniName().replace(/\W+/g,'')}_${stp.file}.png`); } return; }
     const gt=e.target.closest('[data-goto]'); if(gt){ const el=document.querySelector(`.bl-card[data-i="${gt.dataset.goto}"]`); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+    const pg=e.target.closest('[data-plgo]'); if(pg){ const [sy,dr]=pg.dataset.plgo.split('|'); BOL.tab='esc'; bolRender(); const i=bolList().findIndex(x=>x.s===sy&&x.dir===dr); const el=document.querySelector(`.bl-card[data-i="${i}"]`); if(el) setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),60); return; }
     const vb=e.target.closest('[data-vista]'); if(vb){ BOL.vista=vb.dataset.vista; bolRender(); return; }
     const del=e.target.closest('[data-del]'); if(del){ BOL.seg.splice(+del.dataset.del,1); bolSave(); bolRender(); return; }
     const b=e.target.closest('[data-act]'); if(!b) return; const s=b.closest('.bl-card')._s; if(!s) return;

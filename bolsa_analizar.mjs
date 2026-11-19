@@ -113,6 +113,75 @@ async function listaBingX(cachePath) {
   try { return JSON.parse(fs.readFileSync(cachePath, 'utf8')).lista; } catch (e) { return null; }
 }
 
+
+/* =====================================================================
+   PLAN DE MAÑANA (se ejecuta al cierre con PLAN=1): gaps pendientes,
+   setups que quedaron cerca de su entrada y acciones a evitar por resultados.
+   ===================================================================== */
+function proximaSesion(t) {   // siguiente día hábil (no considera feriados)
+  const d = new Date(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(t)) + 'T12:00:00Z');
+  do { d.setUTCDate(d.getUTCDate() + 1); } while (d.getUTCDay() === 0 || d.getUTCDay() === 6);
+  return d.toISOString().slice(0, 10);
+}
+function atrDiario(dias) { const r = dias.slice(-15, -1).map(d => (Math.max(...d.map(k => k.h)) - Math.min(...d.map(k => k.l)))); return r.length ? r.reduce((a, b) => a + b, 0) / r.length : null; }
+function atr15(K) { let s = 0, n = 0; for (let i = Math.max(1, K.length - 14); i < K.length; i++) { s += Math.max(K[i].h - K[i].l, Math.abs(K[i].h - K[i - 1].c), Math.abs(K[i].l - K[i - 1].c)); n++; } return n ? s / n : null; }
+function gapsDe(dias) {   // todos los gaps entre días con su estado (rellenado o pendiente)
+  const out = [];
+  for (let i = 1; i < dias.length; i++) {
+    const pc = dias[i - 1][dias[i - 1].length - 1].c, op = dias[i][0].o, g = op / pc - 1;
+    if (Math.abs(g) < 0.003) continue;
+    let lleno = -1;   // índice del día en que se rellenó
+    for (let j = i; j < dias.length && lleno < 0; j++) for (const k of dias[j]) { if (g > 0 ? k.l <= pc : k.h >= pc) { lleno = j; break; } }
+    out.push({ i, pc, g, lleno });
+  }
+  return out;
+}
+function planCierre(D, M, out, BX) {
+  const PLAN = path.join(path.dirname(SALIDA), 'plan.json');
+  // 1) estadística de relleno: gaps de cada tamaño cerrados en ≤ 3 sesiones (todas las acciones)
+  const cubo = g => { const a = Math.abs(g) * 100; return a < 1 ? 0 : a < 2 ? 1 : a < 4 ? 2 : 3; };
+  const st = [0, 1, 2, 3].map(() => ({ n: 0, ok: 0 }));
+  const porSym = {};
+  for (const [sym, x] of Object.entries(D)) {
+    if (sym === '^VIX') continue;
+    const K = aVelas(x), dias = porDia(K); if (dias.length < 10) continue;
+    const G = gapsDe(dias); porSym[sym] = { K, dias, G };
+    for (const g of G) { if (g.i > dias.length - 4) continue; const c = st[cubo(g.g)]; c.n++; if (g.lleno >= 0 && g.lleno - g.i <= 2) c.ok++; }
+  }
+  const tasa = g => { const c = st[cubo(g)]; return c.n >= 20 ? +(c.ok / c.n).toFixed(2) : null; };
+  // 2) gaps pendientes cerca del precio
+  const gaps = [];
+  for (const [sym, { K, dias, G }] of Object.entries(porSym)) {
+    if (sym === 'SPY' || sym === 'QQQ') continue;
+    const c = K[K.length - 1].c, ad = atrDiario(dias); if (!ad) continue;
+    const pend = G.filter(g => g.lleno < 0 && g.i >= dias.length - 30).map(g => ({ ...g, d: g.pc / c - 1 })).filter(g => Math.abs(g.d) >= 0.003 && Math.abs(g.d) <= 0.03);
+    if (!pend.length) continue;
+    const g = pend.sort((a, b) => Math.abs(a.d) - Math.abs(b.d))[0];
+    const dir = g.d > 0 ? 'long' : 'short', sh = dir === 'short';
+    const sl = sh ? c + 0.5 * ad : c - 0.5 * ad, rr = Math.abs(g.pc - c) / Math.abs(c - sl);
+    if (rr < 0.8) continue;
+    const a15 = atr15(K) || ad / 26;
+    const ses = Math.abs(g.pc - c) / ad < 0.5 ? [1, 1] : Math.abs(g.pc - c) / ad < 1 ? [1, 2] : [2, 3];
+    let h1 = null, h4 = null; try { h1 = M.trendOf(agrupar(K.slice(-VELAS), 4)); h4 = M.trendOf(agrupar(K.slice(-VELAS), 16)); } catch (e) {}
+    gaps.push({ s: sym, n: D[sym].n || sym, dir, c: r4(c), lvl: r4(g.pc), d: +(g.d * 100).toFixed(2), gp: +(g.g * 100).toFixed(2), dias: dias.length - 1 - g.i,
+      el: r4(sh ? c : c - 0.2 * a15), eh: r4(sh ? c + 0.2 * a15 : c), em: r4(c), sst: r4(sl), rr: +rr.toFixed(2), ses, tasa: tasa(g.g), ctx: { h1, h4 },
+      bx: BX && (BX[sym] || BX[sym.replace('.', '')]) ? 1 : 0, dv: out.px[sym] ? out.px[sym][2] : 0 });
+  }
+  gaps.sort((a, b) => Math.abs(a.d) - Math.abs(b.d));
+  // 3) setups del escáner que cerraron dentro o cerca de su zona de entrada (≤ 3 ATR de 15m)
+  const setups = [];
+  for (const s of out.sig) {
+    const pz = porSym[s.s]; if (!pz) continue;
+    const a15 = atr15(pz.K); if (!a15) continue;
+    const dist = s.c < s.el ? s.el - s.c : s.c > s.eh ? s.c - s.eh : 0;
+    if (dist > 3 * a15) continue;
+    const { K, ...rest } = s;
+    setups.push({ ...rest, dz: +(dist / s.c * 100).toFixed(2), enz: dist === 0 ? 1 : 0 });
+  }
+  const plan = { v: 1, gen: Date.now(), at: out.at, para: proximaSesion(out.at), stats: st.map(c => c.n ? +(c.ok / c.n).toFixed(2) : null), gaps: gaps.slice(0, 80), setups: setups.slice(0, 120), pre: null };
+  fs.writeFileSync(PLAN, JSON.stringify(plan));
+  log(`Plan de mañana (${plan.para}): ${setups.length} setups cerca de su entrada, ${gaps.length} gaps pendientes. Relleno ≤3 sesiones por tamaño: ${plan.stats.map(x => x == null ? '—' : Math.round(x * 100) + '%').join(' / ')}`);
+}
 /* ---------- principal ---------- */
 async function main() {
   const crudo = JSON.parse(fs.readFileSync(CRUDO, 'utf8'));
@@ -179,5 +248,6 @@ async function main() {
   fs.mkdirSync(path.dirname(SALIDA), { recursive: true });
   fs.writeFileSync(SALIDA, JSON.stringify(out));
   log(`Listo: ${n} acciones analizadas, ${sig.length} señales, ${bx ? bx.length : 0} en BingX. Archivo ${(fs.statSync(SALIDA).size / 1024).toFixed(0)} KB.`);
+  if (process.env.PLAN === '1') planCierre(D, M, out, BX);
 }
 main().catch(e => { console.error(e); process.exit(1); });
