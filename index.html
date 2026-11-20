@@ -3579,7 +3579,7 @@ function bolCard(s,i){
     <div class="bl-acts"><button data-act="img" class="dl">⬇ Descargar imagen</button><button data-act="p" class="${segP?'on':''}">⭐ Personal</button><button data-act="g" class="${segG?'on':''}">👥 Grupo</button><button data-act="tv">📈 TradingView</button><button data-act="copy">Copiar señal</button></div></div>`;
 }
 function bolEscHTML(){
-  const c=BOL.cfg, D=BOL.data, mk=bolMarket(), mo=bolModo(), M=D&&D.mkt;
+  const c=BOL.cfg, D=BOL.data, mk=bolMarket(), mo=bolModo(), M=(D&&D.mkt)||(BOL.base&&BOL.base.mkt);
   const sel=(id,opts,val)=>`<select data-k="${id}">${opts.map(([v,t])=>`<option value="${v}" ${String(val)===String(v)?'selected':''}>${t}</option>`).join('')}</select>`;
   const num=(id,val,step)=>`<input data-k="${id}" type="number" step="${step||1}" value="${val}">`;
   const tr=t=>t==='up'?'#22c55e':t==='down'?'#ef4444':'#f59e0b', L=(t,l)=>`<i style="background:${tr(t)}"></i>${l}`;
