@@ -282,6 +282,14 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-ap
 #k1Fab{position:fixed;right:14px;bottom:146px;z-index:7;width:54px;height:54px;border-radius:50%;border:0;padding:0;cursor:pointer;background:radial-gradient(circle at 30% 30%,#60a5fa,#1d4ed8);color:#fff;font-weight:900;font-size:15px;line-height:1.05;box-shadow:0 8px 24px rgba(29,78,216,.55),0 0 0 3px rgba(96,165,250,.25)}
 /* v3: burbuja y panel "Bolsa" (acciones de EE. UU.) */
 #bolFab{position:fixed;right:14px;bottom:210px;z-index:7;width:54px;height:54px;border-radius:50%;border:0;padding:0;cursor:pointer;background:radial-gradient(circle at 30% 30%,#a78bfa,#6d28d9);color:#fff;font-weight:900;font-size:12.5px;line-height:1.05;box-shadow:0 8px 24px rgba(109,40,217,.55),0 0 0 3px rgba(167,139,250,.25)}
+/* v3: burbuja y panel "Jaxon" (escáner Estilo Jaxon, archivo jaxon.html) */
+#jxFab{position:fixed;right:14px;bottom:274px;z-index:7;width:54px;height:54px;border-radius:50%;border:0;padding:0;cursor:pointer;background:radial-gradient(circle at 30% 30%,#f472b6,#be185d);color:#fff;font-weight:900;font-size:12px;line-height:1.05;box-shadow:0 8px 24px rgba(190,24,93,.55),0 0 0 3px rgba(244,114,182,.25)}
+#jxFab small{display:block;font-size:15px;margin-bottom:1px}
+#jxPanel{position:fixed;inset:0;z-index:8;background:rgba(5,8,14,.72);backdrop-filter:blur(3px);display:none}#jxPanel.open{display:block}
+#jxPanel .sheet{position:absolute;left:0;right:0;bottom:0;top:4%;max-width:900px;margin:0 auto;background:#0e131b;border-radius:20px 20px 0 0;border-top:1px solid #be185d;overflow:hidden}
+#jxPanel .bar{display:flex;align-items:center;gap:8px;padding:10px 12px 4px}#jxPanel .bar b{font-size:13px;color:#f9a8d4}
+#jxPanel .bar .x{margin-left:auto;background:#18202f;border:1px solid #253047;color:#e5e7eb;border-radius:10px;width:36px;height:36px;font-size:18px;padding:0}
+#jxPanel iframe{border:0;width:100%;height:calc(100% - 54px);background:#0e131b}
 #bolFab small{display:block;font-size:15px;margin-bottom:1px}
 #bolFab i{position:absolute;top:-4px;right:-4px;background:#22d3ee;color:#04202a;font-style:normal;font-size:10.5px;font-weight:900;border-radius:99px;min-width:18px;height:18px;line-height:18px;padding:0 4px;display:none}
 #bolPanel{position:fixed;inset:0;z-index:8;background:rgba(5,8,14,.72);backdrop-filter:blur(3px);display:none}#bolPanel.open{display:block}
@@ -704,6 +712,8 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-ap
 <button id="fgFab" title="Miedo y Codicia"><span class="in"><b>?</b><small>ÍNDICE</small></span></button>
 <div id="fgPanel"><div class="sheet"><div class="grab"></div><div class="ph"><h2>😨 Miedo y Codicia</h2><button class="x" id="fgX">✕</button></div>
 <div style="font-size:12px;color:#8a9bb0;margin:0 0 10px" id="fgSt"></div><div id="fgBody"></div></div></div>
+<button id="jxFab" title="Escáner Estilo Jaxon"><small>📍</small>Jaxon</button>
+<div id="jxPanel"><div class="sheet"><div class="bar"><b>📍 Escáner Estilo Jaxon · Binance 1H</b><button class="x" id="jxX">✕</button></div><iframe id="jxFrame" title="Escáner Estilo Jaxon"></iframe></div></div>
 <button id="bolFab" title="Escáner de acciones de EE. UU."><small>📈</small>Bolsa<i id="bolCnt"></i></button>
 <div id="bolPanel"><div class="sheet"><div class="grab"></div>
   <div class="ph"><h2>📈 Escáner Bolsa</h2><span class="bd">v1 · Contexto</span><button class="x" id="bolX">✕</button></div>
@@ -3841,6 +3851,13 @@ function bolSesHTML(){ const S=bolSes(); const L=bolLocal;
   return `<div class="bl-ses" style="border-color:${S.c};background:${S.bg}"><div class="t">${S.ic} BingX · ${S.t} <span style="color:${S.c}">· ${S.liq}</span></div><div class="r">${S.txt}</div>
     <div class="sb">${seg.map(([k,a,b])=>`<div class="${k===S.k?'on':''}" style="${k===S.k?`outline:2px solid ${S.c}`:''}">${a}<br>${b.replace(/ (a|p)\.m\./g,'')}</div>`).join('')}</div></div>`;
 }
+function jxInit(){
+  const f=$('jxFrame');
+  $('jxFab').onclick=()=>{ if(!f.src) f.src='jaxon.html'; $('jxPanel').classList.add('open'); try{ f.contentWindow.renderModo&&f.contentWindow.renderModo(); }catch(e){} };
+  $('jxX').onclick=()=>$('jxPanel').classList.remove('open');
+  $('jxPanel').addEventListener('click',e=>{ if(e.target.id==='jxPanel') $('jxPanel').classList.remove('open'); });
+}
+jxInit();
 function bolInit(){
   $('bolFab').onclick=()=>{ $('bolPanel').classList.add('open'); bolRender(); if(!BOL.base||Date.now()-BOL.base.gen>10*6e4) bolLoad(); };
   $('bolX').onclick=()=>$('bolPanel').classList.remove('open');

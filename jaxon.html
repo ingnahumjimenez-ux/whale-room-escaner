@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escáner Estilo Jaxon</title>
+<style>
+  :root{--bg:#0e131b;--card:#18202a;--card2:#1f2833;--line:#2b3542;--tx:#eef1f5;--mut:#8d97a6;--acc:#5aa9f5;--pur:#7c4dff;
+        --ok:#22c55e;--okbg:rgba(34,197,94,.13);--bad:#ef4b5a;--badbg:rgba(239,75,90,.14);--warn:#f2b33d;--warnbg:rgba(242,179,61,.13)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1240px;margin:0 auto;padding:18px 14px 50px}
+  h1{font-size:22px;margin:0 0 4px;letter-spacing:.02em} h1 span{color:var(--acc)}
+  .sub{color:var(--mut);margin:0 0 16px;font-size:13px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:0 0 10px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .params{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  label{display:block;font-size:11px;color:var(--mut);margin-bottom:3px}
+  input{width:100%;background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:8px 9px;font-size:14px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  input:focus{outline:none;border-color:var(--pur)}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  button{padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--tx);font-size:14px;cursor:pointer}
+  button.primary{background:var(--pur);border-color:var(--pur);color:#fff;font-weight:700}
+  button:disabled{opacity:.5;cursor:default}
+  .prog{flex:1;min-width:180px;height:8px;background:var(--card2);border-radius:5px;overflow:hidden}
+  .prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pur),var(--acc));transition:width .2s}
+  #status{color:var(--mut);font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .crit{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px 18px;font-size:13px;color:var(--mut)}
+  .crit b{color:var(--tx)}
+  .tabs{display:flex;gap:6px;margin-bottom:12px}
+  .tabs button{font-size:13px;padding:7px 12px}
+  .tabs button.on{border-color:var(--pur);color:#b9a2ff}
+  .res{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
+  .sig{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .sig canvas{width:100%;display:block}
+  .meta{padding:10px 14px 14px}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+  .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .b-ok{background:var(--okbg);color:var(--ok)} .b-warn{background:var(--warnbg);color:var(--warn)} .b-no{background:var(--badbg);color:var(--bad)}
+  .score{font-size:12px;color:var(--mut);font-family:ui-monospace,Menlo,Consolas,monospace}
+  .alert{border-radius:8px;padding:7px 9px;margin-top:8px;font-size:12px}
+  .a-bad{background:var(--badbg);color:var(--bad)} .a-ok{background:var(--okbg);color:var(--ok)}
+  details{margin-top:8px;font-size:12px} summary{cursor:pointer;color:var(--mut)}
+  .checks{display:grid;gap:2px;margin-top:6px}
+  .checks span.p::before{content:"✔ ";color:var(--ok)} .checks span.f::before{content:"✘ ";color:var(--bad)} .checks span.f{color:var(--mut)}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:12px;margin-top:6px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  td,th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:right} td:first-child,th:first-child{text-align:left} th{color:var(--mut);font-weight:600}
+  .pos{color:var(--ok)} .neg{color:var(--bad)}
+  .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .acts button{font-size:12px;padding:7px 10px}
+  .links{margin-top:8px;font-size:12px} .links a{color:var(--acc);margin-right:12px}
+  .empty{color:var(--mut);padding:20px;text-align:center}
+  .foot{color:var(--mut);font-size:12px;text-align:center;margin-top:20px}
+  .err{background:var(--badbg);color:var(--bad);padding:10px;border-radius:8px;margin-top:10px;display:none}
+  /* v3: contexto, veredicto, modo del día y seguimiento */
+  .jx-modo{border:1.5px solid var(--warn);border-radius:12px;padding:8px 11px;margin-bottom:12px;background:var(--card);font-size:12.5px}
+  .jx-modo.alts{border-color:var(--ok)} .jx-modo.neu{border-color:#64748b}
+  .jx-modo .t{font-weight:900;font-size:14px} .jx-modo .t span{font-weight:500;color:var(--mut);font-size:12px}
+  .ctxl{font-size:12px;color:var(--mut);margin:3px 0} .ctxl i{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 3px 0 8px;vertical-align:middle}
+  .verd{border-radius:8px;padding:5px 9px;margin:6px 0 8px;font-size:12.5px} .verd b{font-weight:900;margin-right:4px}
+  .verd.go{background:#052e16;border:1px solid var(--ok);color:#bbf7d0} .verd.mid{background:#2a2306;border:1px solid var(--warn);color:#fde68a} .verd.no{background:#450a0a;border:1px solid var(--bad);color:#fecaca}
+  .acts button.fp.on{background:#3b2f0b;border-color:var(--warn);color:#fde68a;font-weight:700} .acts button.fg.on{background:#0c2a4a;border-color:#3b82f6;color:#bfdbfe;font-weight:700}
+  .acts button.fp,.acts button.fg{font-weight:700}
+  .seg{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px}
+  .seg .h{display:flex;align-items:center;gap:8px} .seg .h b{font-size:15px} .seg .x{margin-left:auto;padding:3px 9px}
+  .seg .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px} .seg .kv div{background:var(--card2);border-radius:8px;padding:5px 7px} .seg .kv small{display:block;color:var(--mut);font-size:10.5px}
+  .vista{display:flex;gap:6px;margin-bottom:10px} .vista button{flex:1} .vista button.on{border-color:var(--pur);color:#b9a2ff}
+  .gtag{font-size:11px;color:#bfdbfe;background:#0c2a4a;border-radius:99px;padding:1px 7px}
+  #jxToast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#14532d;color:#dcfce7;border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px;display:none;z-index:9}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📍 Escáner <span>Estilo Jaxon</span></h1>
+  <p class="sub">Busca en todos los futuros USDT de Binance el mismo arranque que tuvo GRAM. A diferencia del canal, usa un stop estructural y calcula el tamaño de posición según tu riesgo.</p>
+
+  <div class="card">
+    <h2>Qué busca (la huella de GRAM, gráfico 1h)</h2>
+    <div class="crit">
+      <div><b>1. Liquidez baja pero operable:</b> volumen 24h entre el mínimo y el máximo (GRAM: $5.7M)</div>
+      <div><b>2. Soporte con ≥2 toques</b> en las últimas 48 velas (base)</div>
+      <div><b>3. Precio pegado al soporte</b> (GRAM entró +0.7% sobre el mínimo)</div>
+      <div><b>4. Piso que aguanta:</b> sin mínimo nuevo frente a los días previos</div>
+      <div><b>5. Giro de momentum:</b> RSI sube desde &lt;45 y cierre &gt; EMA9</div>
+      <div><b>6. Volumen entrando:</b> últimas 3 velas ≥ 1.2× el promedio</div>
+      <div><b>7. Espacio:</b> resistencia de 7 días por encima del TP final</div>
+      <div><b>8. Stop estructural</b> (soporte − ½ ATR) dentro del máximo y R/B en TP3 ≥ mínimo</div>
+    </div>
+    <p class="sub" style="margin:10px 0 0">Los objetivos usan la misma escalera de JaXon: 5 escalones iguales (2.35% por defecto). Las <b>señales</b> cumplen los 8 criterios. En <b>vigilar</b> quedan las que solo fallan el giro o el volumen, porque todavía pueden activarse.</p>
+  </div>
+
+  <div class="card">
+    <h2>Parámetros</h2>
+    <div class="params">
+      <div><label>Capital (USDT)</label><input id="capital" type="number" value="1000"></div>
+      <div><label>Riesgo por trade (%)</label><input id="riesgo" type="number" step="0.1" value="1"></div>
+      <div><label>Volumen 24h mín. ($M)</label><input id="volMin" type="number" step="0.5" value="2"></div>
+      <div><label>Volumen 24h máx. ($M)</label><input id="volMax" type="number" step="1" value="40"></div>
+      <div><label>Escalón de TP (%)</label><input id="step" type="number" step="0.05" value="2.35"></div>
+      <div><label>Número de TP</label><input id="nTp" type="number" value="5"></div>
+      <div><label>Distancia máx. al soporte (%)</label><input id="maxAbove" type="number" step="0.5" value="3"></div>
+      <div><label>Stop máx. (%)</label><input id="maxStop" type="number" step="0.5" value="6"></div>
+      <div><label>R/B mín. en TP3</label><input id="minRR" type="number" step="0.1" value="1.5"></div>
+      <div><label>Comisión por lado (%)</label><input id="fee" type="number" step="0.01" value="0.05"></div>
+      <div><label>Mantenimiento (%)</label><input id="mmr" type="number" step="0.1" value="0.5"></div>
+      <div><label>Analizar un solo par</label><input id="one" placeholder="ej. GRAMUSDT"></div>
+      <div><label>Mapa de liquidaciones</label><label style="display:flex;align-items:center;gap:8px;height:37px;color:var(--tx);font-size:13px"><input id="liqOn" type="checkbox" checked style="width:auto"> Mostrar</label></div>
+      <div><label>Umbral de liquidez = <span id="umbVal">0.25</span></label><input id="umbral" type="range" min="0" max="0.9" step="0.05" value="0.25" style="padding:0;height:37px"></div>
+    </div>
+    <div class="bar">
+      <button class="primary" id="go">Escanear todo</button>
+      <button id="goOne">Analizar par</button>
+      <button id="csv" disabled>Descargar CSV</button>
+      <div class="prog"><i id="pbar"></i></div>
+      <span id="status">Listo.</span>
+    </div>
+    <p class="sub" style="margin:8px 0 0">El mapa de liquidaciones es una <b>estimación</b>, igual que los "Model" de CoinGlass: a partir del volumen de cada vela supone posiciones abiertas con 10×, 25×, 50× y 100×, y borra cada nivel cuando el precio lo toca. Sirve para ubicar zonas imán; los montos no son los reales del exchange.</p>
+    <div class="err" id="err"></div>
+  </div>
+
+  <div class="card">
+    <div id="jxModo"></div>
+    <div class="tabs"><button id="tSig" class="on">Señales (0)</button><button id="tWatch">Vigilar (0)</button><button id="tSeg">Seguidas (0)</button></div>
+    <div class="res" id="res"><div class="empty">Pulsa "Escanear todo". Tarda 1–2 minutos.</div></div>
+  </div>
+
+  <div id="jxToast"></div>
+  <p class="foot">Datos públicos de Binance Futures. Herramienta de búsqueda y cálculo, no es asesoría financiera. Revisa cada gráfico antes de operar.</p>
+</div>
+
+<script id="core">
+// ====================== NÚCLEO (sin DOM) ======================
+function ema(a,p){const k=2/(p+1);let e=a[0];const o=[e];for(let i=1;i<a.length;i++){e=a[i]*k+e*(1-k);o.push(e)}return o}
+function rsi(C,p=14){const o=new Array(C.length).fill(50);let g=0,l=0;
+  for(let i=1;i<=p&&i<C.length;i++){const d=C[i]-C[i-1];if(d>0)g+=d;else l-=d}
+  g/=p;l/=p;if(C.length>p)o[p]=l===0?100:100-100/(1+g/l);
+  for(let i=p+1;i<C.length;i++){const d=C[i]-C[i-1];g=(g*(p-1)+Math.max(d,0))/p;l=(l*(p-1)+Math.max(-d,0))/p;o[i]=l===0?100:100-100/(1+g/l)}return o}
+function atr(H,L,C,p=14){let s=0;const n=C.length;const tr=i=>Math.max(H[i]-L[i],Math.abs(H[i]-C[i-1]),Math.abs(L[i]-C[i-1]));
+  let a=0;for(let i=1;i<=p;i++)a+=tr(i);a/=p;for(let i=p+1;i<n;i++)a=(a*(p-1)+tr(i))/p;return a}
+const avg=a=>a.reduce((s,x)=>s+x,0)/a.length;
+
+function analizar(d,cfg){
+  const {H,L,C,V}=d, P=d.price, n=C.length;
+  const r={checks:[],trade:null,pasa:0,score:0,estado:'no'};
+  if(n<170) {r.checks.push({t:'Historial insuficiente',p:false});return r}
+  const W=48;
+  const lowW=L.slice(n-W), S=Math.min(...lowW);
+  // 2. toques al soporte (visitas separadas por >3 velas)
+  let toques=0,ult=-99; for(let x=n-W;x<n;x++){ if(L[x]<=S*1.012){ if(x-ult>3)toques++; ult=x; } }
+  const c2=toques>=2;
+  // 3. precio pegado al soporte
+  const sobre=P/S-1; const c3=sobre>=-0.003 && sobre<=cfg.maxAbove;
+  // 4. piso que aguanta
+  const prevLow=Math.min(...L.slice(n-120,n-W)); const c4=S>=prevLow*0.97;
+  // 5. giro de momentum
+  const R=rsi(C), E9=ema(C,9); const rNow=R[n-1], rMin=Math.min(...R.slice(n-8,n));
+  const c5=rMin<45 && rNow>rMin+3 && C[n-1]>E9[n-1];
+  // 6. volumen entrando
+  const vNow=avg(V.slice(n-3)), vBase=avg(V.slice(n-27,n-3)); const vr=vBase>0?vNow/vBase:0; const c6=vr>=1.2;
+  // stop estructural y escalera
+  const A=atr(H,L,C); const stop=S-0.5*A; const dist=(P-stop)/P;
+  const tps=[];for(let k=1;k<=cfg.nTp;k++)tps.push(P*(1+cfg.step*k));
+  // 7. espacio hasta resistencia de 7 días
+  const res=Math.max(...H.slice(Math.max(0,n-168),n)); const espacio=res/P-1; const c7=res>=tps[tps.length-1];
+  // 8. stop dentro del máximo y R/B en TP3
+  const rr=tps.map(t=>(t/P-1)/dist); const i3=Math.min(2,tps.length-1);
+  const c8=dist>0 && dist<=cfg.maxStop && rr[i3]>=cfg.minRR;
+  const pct=x=>(x*100).toFixed(2)+'%';
+  r.checks=[
+    {t:`Soporte con ≥2 toques (${toques})`,p:c2},
+    {t:`Precio cerca del soporte (${pct(sobre)} sobre el mínimo)`,p:c3},
+    {t:`Piso que aguanta (mín. 48h ${S.toPrecision(5)} vs previo ${prevLow.toPrecision(5)})`,p:c4},
+    {t:`Giro de momentum (RSI ${rMin.toFixed(0)}→${rNow.toFixed(0)}, cierre ${C[n-1]>E9[n-1]?'>':'≤'} EMA9)`,p:c5},
+    {t:`Volumen entrando (${vr.toFixed(2)}× promedio)`,p:c6},
+    {t:`Espacio hasta resistencia 7d (${pct(espacio)})`,p:c7},
+    {t:`Stop estructural ${pct(dist)} y R/B TP3 ${(rr[i3]||0).toFixed(2)}`,p:c8},
+  ];
+  r.pasa=r.checks.filter(c=>c.p).length;
+  const nucleo=c2&&c3&&c4&&c7&&c8;
+  if(nucleo && c5 && c6) r.estado='senal'; else if(nucleo && (c5||c6)) r.estado='vigilar';
+  // puntaje 0-100
+  const cl=(x)=>Math.max(0,Math.min(1,x));
+  r.score=Math.round(100*(cl(toques/4)*.15 + cl(1-Math.max(sobre,0)/cfg.maxAbove)*.15 + cl(vr-1)*.20 +
+          cl((rNow-rMin)/15)*.15 + cl(espacio/(2*cfg.step*cfg.nTp))*.15 + cl((rr[i3]||0)/3)*.20));
+  // gestión de riesgo
+  const riesgo=cfg.capital*cfg.riesgo, nocional=riesgo/(dist+2*cfg.fee);
+  const seguro=Math.max(1,Math.min(20,Math.floor(1/(dist+cfg.mmr+0.01)))); // tope prudente 20×
+  const liq50=P*(1-1/50+cfg.mmr);
+  r.trade={P,S,stop,dist,tps,rr,res,atrPct:A/P,riesgo,nocional,seguro,margen:nocional/seguro,liq50,liq50Antes:liq50>=stop};
+  return r;
+}
+if(typeof module!=='undefined') module.exports={analizar,rsi,ema,atr};
+</script>
+
+<script>
+// ====================== INTERFAZ ======================
+const API='https://fapi.binance.com';
+const $=id=>document.getElementById(id);
+let resultados=[], tab='senal', lista_=[];
+
+function cfg(){return{capital:+$('capital').value,riesgo:+$('riesgo').value/100,volMin:+$('volMin').value*1e6,volMax:+$('volMax').value*1e6,
+  step:+$('step').value/100,nTp:Math.max(3,Math.min(8,+$('nTp').value||5)),maxAbove:+$('maxAbove').value/100,maxStop:+$('maxStop').value/100,
+  minRR:+$('minRR').value,fee:+$('fee').value/100,mmr:+$('mmr').value/100}}
+
+async function api(path,intentos=3){
+  for(let i=0;i<intentos;i++){
+    try{const r=await fetch(API+path);
+      if(r.status===451)throw new Error('BLOQUEO451');
+      if(r.status===429||r.status===418){await new Promise(s=>setTimeout(s,8000*(i+1)));continue}
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return await r.json();
+    }catch(e){ if(e.message==='BLOQUEO451')throw e; if(i===intentos-1)throw e; await new Promise(s=>setTimeout(s,1500)); }
+  }
+}
+
+// ====== v3: contexto (4H, 1H, BTC), Modo del día, veredicto y seguimiento ======
+const SEG_KEY='jaxon_v3_seguidas';
+let seguidas=[]; try{seguidas=JSON.parse(localStorage.getItem(SEG_KEY)||'[]')}catch(e){}
+const segSave=()=>{try{localStorage.setItem(SEG_KEY,JSON.stringify(seguidas))}catch(e){}};
+let BTCV=null, vista='p';
+function tendencia(Cs){ // misma regla que v3: EMA50/EMA200 y pendiente
+  if(!Cs||Cs.length<60) return null; const n=Cs.length-1, e50=ema(Cs,50), e200=ema(Cs,Math.min(200,n));
+  const pts=(Cs[n]>e200[n])+(e50[n]>e200[n])+(e50[n]>e50[n-10]);
+  return pts>=2&&Cs[n]>e200[n]?'up':pts<=1&&Cs[n]<e200[n]?'down':'flat';
+}
+const a4h=C=>{const o=[];for(let i=C.length%4;i<C.length;i+=4)o.push(C[Math.min(i+3,C.length-1)]);return o};
+function ctxDe(d){ return {h1:tendencia(d.C), h4:tendencia(a4h(d.C)), btc:BTCV}; }
+async function btcCtx(){ try{const d=await velas('BTCUSDT'); const h1=tendencia(d.C), h4=tendencia(a4h(d.C)); BTCV=h1&&h1===h4?h1:'flat';}catch(e){BTCV=null} }
+function modoV3(){ try{ if(window.parent&&window.parent!==window&&typeof window.parent.modoOf==='function') return window.parent.modoOf(); }catch(e){} return null; }
+const MODO_TXT={alts:['🚀','A FAVOR DE ALTS','LONG 🟢 normal · busca T5+','alts'],neu:['⚖️','NEUTRAL','LONG ⚪ según la tarjeta','neu'],def:['🛡','DEFENSIVO','LONG 🟡 ½ dinero · T1–T2','']};
+function renderModo(){ const el=$('jxModo'); if(!el) return; const M=modoV3(); if(!M){el.innerHTML='';return}
+  const m=MODO_TXT[M.k]; el.innerHTML=`<div class="jx-modo ${m[3]}"><div class="t">${m[0]} Modo ${m[1]} <span>· ${M.why.join(' · ')}</span></div><div style="margin-top:3px"><b>${m[2]}</b> <span style="color:var(--mut)">(Jaxon solo busca LONG)</span></div></div>`; }
+const alinea=t=>!t||t==='flat'?0:t==='up'?1:-1;   // Jaxon siempre es LONG
+function veredicto(r){ const c=r.ctx; if(!c) return null; const M=modoV3();
+  const ag=[['4H',c.h4],['1H',c.h1],['BTC',c.btc]].filter(([,t])=>alinea(t)<0).map(([l])=>l);
+  const modeAg=M&&M.k==='def', n=ag.length+(modeAg?1:0), why=ag.map(l=>l==='BTC'?'BTC en contra':'contra '+l).concat(modeAg?['modo defensivo']:[]);
+  if((ag.includes('BTC')&&ag.includes('4H'))||n>=3) return ['no','⛔ NO LA TOMES',why.join(' · ')];
+  if(n===0) return ['go','✅ TÓMALA', M&&M.k==='alts'?'dinero normal · puedes buscar T5':'dinero normal · parcial en T1'];
+  return ['mid','⚠️ SOLO PEQUEÑA','½ dinero · salir en T1–T2 · '+why[0]]; }
+function ctxHTML(r){ const c=r.ctx; if(!c) return ''; const col=t=>alinea(t)>0?'#22c55e':alinea(t)<0?'#ef4444':'#f2b33d';
+  const v=veredicto(r); return `<div class="ctxl">Contexto${[['4H',c.h4],['1H',c.h1],['BTC',c.btc]].filter(([,t])=>t).map(([l,t])=>`<i style="background:${col(t)}"></i>${l}`).join('')}</div>${v?`<div class="verd ${v[0]}"><b>${v[1]}</b>· ${v[2]}</div>`:''}`; }
+function toast(t){const e=$('jxToast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2500)}
+function segDe(r){return seguidas.find(x=>x.sym===r.sym&&Math.abs(x.P-r.trade.P)/x.P<1e-6)}
+function seguir(i,grupo){ const r=lista_[i]; if(!r) return; const x=segDe(r);
+  if(!x){ seguidas.push({id:sigId(r),sym:r.sym,P:r.trade.P,stop:r.trade.stop,tps:r.trade.tps,score:r.score,at:Date.now(),g:grupo}); descargarPNG(i,true); }
+  else if(grupo&&!x.g){ x.g=true; descargarPNG(i,true); }
+  else if(grupo) x.g=false;
+  else seguidas=seguidas.filter(y=>y!==x);
+  segSave(); render(); }
+async function precios(){ const out={}; await Promise.all([...new Set(seguidas.map(x=>x.sym))].map(async s=>{try{const t=await api('/fapi/v1/ticker/price?symbol='+s); out[s]=+t.price}catch(e){}})); return out; }
+async function renderSeg(){
+  const box=$('res'); const L=(vista==='g'?seguidas.filter(x=>x.g):seguidas).slice().reverse();
+  let h=`<div class="vista"><button data-v="p" class="${vista==='p'?'on':''}">⭐ Personal (todas)</button><button data-v="g" class="${vista==='g'?'on':''}">👥 Grupo</button></div>`;
+  if(!L.length){ box.innerHTML=h+'<div class="empty">Aún no sigues ninguna señal. En una tarjeta toca ⭐ Personal o 👥 Grupo.</div>'; bindSeg(); return; }
+  box.innerHTML=h+'<div class="empty">Cargando precios…</div>'; bindSeg();
+  const px=await precios(); if(tab!=='seg') return;
+  box.innerHTML=h+'<div style="display:grid;gap:10px">'+L.map(x=>{ const cur=px[x.sym], risk=x.P-x.stop, R=cur==null?null:(cur-x.P)/risk, hit=cur==null?0:x.tps.filter(t=>cur>=t).length, st=cur!=null&&cur<=x.stop;
+    const d=new Date(x.at), z=n=>String(n).padStart(2,'0');
+    return `<div class="seg"><div class="h"><b>#${x.id} ${base(x.sym)}</b>${x.g?'<span class="gtag">👥 Grupo</span>':''}<span class="score">${z(d.getDate())}/${z(d.getMonth()+1)} ${z(d.getHours())}:${z(d.getMinutes())}</span><button class="x" data-del="${seguidas.indexOf(x)}">✕</button></div>
+      <div class="kv"><div><small>Entrada</small>${fp(x.P)}</div><div><small>Ahora</small>${cur!=null?fp(cur):'—'}</div><div><small>Resultado</small><b class="${R>=0?'pos':'neg'}">${R==null?'—':(R>=0?'+':'')+R.toFixed(2)+' R'}</b></div></div>
+      <div class="score" style="margin-top:6px">${st?'🟥 En el stop o más abajo':hit?`✅ Pasó T${hit}`:'🟦 En curso'} · SL ${fp(x.stop)} · T${x.tps.length} ${fmt(x.tps[x.tps.length-1])}</div></div>`; }).join('')+'</div>';
+  bindSeg();
+}
+function bindSeg(){ const box=$('res');
+  box.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{vista=b.dataset.v;renderSeg()});
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{seguidas.splice(+b.dataset.del,1);segSave();$('tSeg').textContent=`Seguidas (${seguidas.length})`;renderSeg()}); }
+
+async function velas(sym){
+  const k=await api(`/fapi/v1/klines?symbol=${sym}&interval=1h&limit=250`);
+  const c=k.slice(0,-1);
+  return{T:c.map(x=>+x[0]),O:c.map(x=>+x[1]),H:c.map(x=>+x[2]),L:c.map(x=>+x[3]),C:c.map(x=>+x[4]),V:c.map(x=>+x[7]),price:+k[k.length-1][4]};
+}
+function fmt(v){ if(!isFinite(v))return'—'; if(v>=100)return v.toFixed(2); if(v>=1)return v.toFixed(4); const d=Math.min(10,Math.max(4,3-Math.floor(Math.log10(v))+2)); return v.toFixed(d) }
+const usd=v=>'$'+v.toLocaleString('es',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=(v,d=2)=>(v*100).toFixed(d)+'%';
+function errorMsg(e){
+  const box=$('err');box.style.display='block';
+  if(e.message==='BLOQUEO451') box.innerHTML='Binance bloquea las conexiones desde tu ubicación (error 451). Prueba con otra red, sin VPN de EE. UU.';
+  else if(e instanceof TypeError) box.innerHTML='No se pudo conectar con Binance. Abre este archivo en <b>Chrome o Edge de tu computadora</b> (doble clic al archivo). Si estás dentro de una vista previa o un visor, descárgalo primero.';
+  else box.textContent='Error: '+e.message;
+}
+
+async function escanear(){
+  $('err').style.display='none'; $('go').disabled=$('goOne').disabled=true; resultados=[]; render();
+  const c=cfg();
+  try{
+    $('status').textContent='Descargando lista de contratos…';
+    await btcCtx();
+    const [info,tick]=await Promise.all([api('/fapi/v1/exchangeInfo'),api('/fapi/v1/ticker/24hr')]);
+    const ok=new Set(info.symbols.filter(s=>s.contractType==='PERPETUAL'&&s.quoteAsset==='USDT'&&s.status==='TRADING').map(s=>s.symbol));
+    const pares=tick.filter(t=>ok.has(t.symbol)&&+t.quoteVolume>=c.volMin&&+t.quoteVolume<=c.volMax).map(t=>({sym:t.symbol,vol:+t.quoteVolume}));
+    let hechos=0;
+    const tarea=async p=>{
+      try{const d=await velas(p.sym); const r=analizar(d,c);
+        if(r.estado!=='no'){ r.sym=p.sym;r.vol=p.vol;r.d=d; r.ctx=ctxDe(d); resultados.push(r); render(); }
+      }catch(e){ if(e.message==='BLOQUEO451')throw e }
+      hechos++; $('pbar').style.width=(100*hechos/pares.length)+'%'; $('status').textContent=`${hechos}/${pares.length} pares analizados`;
+    };
+    let i=0; const workers=Array(6).fill(0).map(async()=>{while(i<pares.length){const p=pares[i++];await tarea(p)}});
+    await Promise.all(workers);
+    // open interest de los candidatos
+    for(const r of resultados){ try{const oi=await api(`/fapi/v1/openInterest?symbol=${r.sym}`); r.oi=+oi.openInterest*r.trade.P;}catch(e){} }
+    render();
+    $('status').textContent=`Listo: ${pares.length} pares · ${resultados.filter(r=>r.estado==='senal').length} señales · ${resultados.filter(r=>r.estado==='vigilar').length} para vigilar · ${new Date().toLocaleTimeString()}`;
+  }catch(e){errorMsg(e);$('status').textContent='Error.'}
+  $('go').disabled=$('goOne').disabled=false; $('csv').disabled=!resultados.length;
+}
+
+async function uno(){
+  const sym=$('one').value.trim().toUpperCase(); if(!sym)return;
+  $('err').style.display='none'; $('status').textContent='Analizando '+sym+'…';
+  try{ if(BTCV==null) await btcCtx(); const d=await velas(sym); const r=analizar(d,cfg()); r.sym=sym; r.d=d; r.forzado=true; r.ctx=ctxDe(d);
+    try{const t=await api('/fapi/v1/ticker/24hr?symbol='+sym); r.vol=+t.quoteVolume}catch(e){}
+    try{const oi=await api('/fapi/v1/openInterest?symbol='+sym); r.oi=+oi.openInterest*d.price}catch(e){}
+    resultados=resultados.filter(x=>x.sym!==sym); resultados.unshift(r); tab=r.estado==='vigilar'?'vigilar':'senal'; render();
+    $('status').textContent=`${sym}: ${r.estado==='senal'?'SEÑAL':r.estado==='vigilar'?'vigilar':'no cumple'} (${r.pasa}/7 criterios)`;
+    $('csv').disabled=false;
+  }catch(e){errorMsg(e)}
+}
+
+function render(){
+  renderModo(); $('tSeg').textContent=`Seguidas (${seguidas.length})`; $('tSeg').classList.toggle('on',tab==='seg');
+  if(tab==='seg'){ $('tSig').classList.remove('on'); $('tWatch').classList.remove('on'); renderSeg(); return; }
+  const sig=resultados.filter(r=>r.estado==='senal'), wat=resultados.filter(r=>r.estado==='vigilar'), forz=resultados.filter(r=>r.forzado&&r.estado==='no');
+  $('tSig').textContent=`Señales (${sig.length})`; $('tWatch').textContent=`Vigilar (${wat.length})`;
+  $('tSig').classList.toggle('on',tab==='senal'); $('tWatch').classList.toggle('on',tab==='vigilar');
+  let lista=(tab==='senal'?sig:wat).slice().sort((a,b)=>b.score-a.score);
+  lista=forz.concat(lista);
+  const box=$('res');
+  if(!lista.length){box.innerHTML='<div class="empty">'+(resultados.length||$('go').disabled?'Nada en esta pestaña todavía.':'Pulsa "Escanear todo". Tarda 1–2 minutos.')+'</div>';return}
+  lista_=lista; box.innerHTML=lista.map((r,i)=>tarjeta(r,i)).join('');
+  lista.forEach((r,i)=>{dibujar($('cv'+i),r); const el=$('liq'+i), bs=bolsas(r);
+    if(el&&bs){const u=bs.up[0],dn=bs.dn[0]; el.innerHTML=`Liquidez estimada · arriba: ${u?`<b style="color:#f7c948">${fp(u.p)}</b> (${Math.round(u.pct*100)}%, +${pct(u.p/r.d.price-1,1)})`:'—'} · abajo: ${dn?`<b style="color:#7fe3f5">${fp(dn.p)}</b> (${Math.round(dn.pct*100)}%, −${pct(1-dn.p/r.d.price,1)})`:'—'}`; if(dn&&dn.p>r.trade.stop) el.innerHTML+=' · <span style="color:var(--warn)">bolsa grande entre la entrada y el stop: el precio puede ir a buscarla</span>';}});
+  box.querySelectorAll('[data-png]').forEach(b=>b.onclick=()=>descargarPNG(+b.dataset.png));
+  box.querySelectorAll('[data-txt]').forEach(b=>b.onclick=()=>copiar(+b.dataset.txt,b));
+  box.querySelectorAll('[data-fp]').forEach(b=>b.onclick=()=>seguir(+b.dataset.fp,false));
+  box.querySelectorAll('[data-fg]').forEach(b=>b.onclick=()=>seguir(+b.dataset.fg,true));
+}
+
+const fp=v=>!isFinite(v)?'—':v>=1?v.toFixed(4):Number(v.toPrecision(4)).toString();
+function sigId(r){
+  if(r.id)return r.id;
+  let n=1; try{n=(+localStorage.getItem('jaxon-signal-id')||0)+1;localStorage.setItem('jaxon-signal-id',n)}catch(e){n=(window._sid=(window._sid||0)+1)}
+  return r.id=n;
+}
+const base=s=>s.replace(/USDT$/,'');
+function levRango(t){const hi=t.seguro, lo=Math.max(1,Math.round(hi/3)); return lo===hi?`${hi}x`:`${lo}-${hi}x`}
+function textoSenal(r){const t=r.trade;
+  return `📍 SIGNAL ID: #${r.id} 📍\nCOIN: $${base(r.sym)}/USDT (${levRango(t)})\nDirection: LONG\n— — — — — — — — — — —\nENTRY: ${fp(t.P)}\n\nTARGETS: ${t.tps.map(fmt).join(' – ')}\n\nSTOP LOSS: ${fp(t.stop)}`}
+
+function tarjeta(r,i){
+  const t=r.trade; sigId(r);
+  const b=r.estado==='senal'?'<span class="badge b-ok">SEÑAL</span>':r.estado==='vigilar'?'<span class="badge b-warn">VIGILAR</span>':'<span class="badge b-no">NO CUMPLE</span>';
+  const filas=t.tps.map((tp,k)=>`<tr><td>T${k+1}</td><td>${fmt(tp)}</td><td class="pos">+${pct(tp/t.P-1)}</td><td>${t.rr[k].toFixed(2)}</td><td class="pos">${usd(t.nocional*(tp/t.P-1-0.001))}</td></tr>`).join('');
+  return `<div class="sig">
+    <canvas id="cv${i}" width="1080" height="1150"></canvas>
+    <div class="meta">
+      <div class="top"><span class="score">#${r.id} · ${r.sym} · puntaje ${r.score}/100</span>${b}</div>
+      ${ctxHTML(r)}
+      <div class="score" id="liq${i}"></div>
+      <div class="score">vol 24h ${r.vol?'$'+(r.vol/1e6).toFixed(1)+'M':'—'} · OI ${r.oi?'$'+(r.oi/1e6).toFixed(2)+'M':'—'} · ATR 1h ${pct(t.atrPct)}</div>
+      <div class="alert a-ok">Tamaño <b>${usd(t.nocional)}</b> · apalancamiento máx. seguro <b>${t.seguro}×</b> · margen ${usd(t.margen)} · pérdida en SL ${usd(t.riesgo)}</div>
+      ${t.liq50Antes?`<div class="alert a-bad">Con 50× (como JaXon) te liquidan en ~${fmt(t.liq50)}, antes del stop.</div>`:''}
+      <details><summary>Objetivos y criterios</summary>
+        <table><tr><th>Nivel</th><th>Precio</th><th>Mov.</th><th>R/B</th><th>Cierre 100%</th></tr>${filas}
+        <tr><td>SL</td><td>${fmt(t.stop)}</td><td class="neg">−${pct(t.dist)}</td><td>—</td><td class="neg">−${usd(t.riesgo)}</td></tr></table>
+        <div class="checks">${r.checks.map(c=>`<span class="${c.p?'p':'f'}">${c.t}</span>`).join('')}</div>
+      </details>
+      <div class="acts"><button class="fp ${segDe(r)?'on':''}" data-fp="${i}">⭐ Personal</button><button class="fg ${segDe(r)&&segDe(r).g?'on':''}" data-fg="${i}">👥 Grupo</button><button data-png="${i}">Descargar PNG</button><button data-txt="${i}">Copiar señal</button></div>
+      <div class="links"><a href="https://www.tradingview.com/chart/?symbol=BINANCE:${r.sym}.P" target="_blank" rel="noopener">TradingView</a><a href="https://www.binance.com/es/futures/${r.sym}" target="_blank" rel="noopener">Binance</a><a href="https://www.bitget.com/futures/usdt/${r.sym}" target="_blank" rel="noopener">Bitget</a></div>
+    </div></div>`;
+}
+
+function wrapText(ctx,txt,x,y,maxW,lh){
+  const words=txt.split(' ');let line='';
+  for(const w of words){const test=line?line+' '+w:w; if(ctx.measureText(test).width>maxW&&line){ctx.fillText(line,x,y);line=w;y+=lh}else line=test}
+  ctx.fillText(line,x,y);return y;
+}
+
+
+// ====== MAPA DE LIQUIDACIONES (estimado, estilo CoinGlass Model 1) ======
+const TIERS=[{L:10,w:.30},{L:25,w:.30},{L:50,w:.25},{L:100,w:.15}];
+function liqMapa(d,s,lo,hi,nb,mmr){
+  const n=d.C.length, ini=Math.max(1,n-240); let act=[];
+  const grid=[], bin=v=>Math.floor((v-lo)/(hi-lo)*nb);
+  for(let i=ini;i<n;i++){
+    act=act.filter(l=>l.side>0? d.L[i]>l.p : d.H[i]<l.p);           // niveles tocados = liquidados
+    const tp=(d.H[i]+d.L[i]+d.C[i])/3, v=d.V[i]||0;
+    for(const t of TIERS){ act.push({p:tp*(1-1/t.L+mmr),a:v*t.w/2,side:1}); act.push({p:tp*(1+1/t.L-mmr),a:v*t.w/2,side:-1}); }
+    if(i>=s){ const col=new Float32Array(nb); for(const l of act){const b=bin(l.p); if(b>=0&&b<nb)col[b]+=l.a} grid.push(col); }
+  }
+  // perfil final: lo que sigue vivo ahora
+  const prof=new Float32Array(nb); let total=0;
+  for(const l of act){const b=bin(l.p); if(b>=0&&b<nb){prof[b]+=l.a;total+=l.a}}
+  let max=0; for(const c of grid)for(const x of c)if(x>max)max=x;
+  return{grid,max,prof,total};
+}
+function viridis(t){ // 0..1
+  const st=[[68,1,84],[72,40,120],[62,74,137],[49,104,142],[38,130,142],[31,158,137],[53,183,121],[109,205,89],[180,222,44],[253,231,37]];
+  t=Math.max(0,Math.min(1,t))*(st.length-1); const i=Math.floor(t), f=t-i, a=st[i], b=st[Math.min(i+1,st.length-1)];
+  return `rgb(${a.map((x,k)=>Math.round(x+(b[k]-x)*f)).join(',')})`;
+}
+function bolsas(r){ // bolsas = picos agrupados (±2 franjas), separados entre sí
+  const m=r._mapa; if(!m)return null; const {prof,total,lo,hi,nb}=m, P=r.d.price, out={up:[],dn:[]};
+  const sum=b=>{let s=0;for(let k=b-2;k<=b+2;k++)if(k>=0&&k<nb)s+=prof[k];return s};
+  const cand=[]; for(let b=0;b<nb;b++)if(prof[b])cand.push({b,a:sum(b)}); cand.sort((x,y)=>y.a-x.a);
+  const used=[];
+  for(const c of cand){ if(used.some(u=>Math.abs(u-c.b)<6))continue; used.push(c.b);
+    const p=lo+(c.b+.5)/nb*(hi-lo); (p>P?out.up:out.dn).push({p,a:c.a,pct:total?c.a/total:0}); if(used.length>12)break; }
+  return out;
+}
+
+function dibujar(cv,r,stamp){
+  if(!cv)return; const ctx=cv.getContext('2d'), d=r.d, t=r.trade;
+  const W=1080, CH=620, AX=950, BX0=705, BX1=822, MONO='"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace';
+  // fondo
+  ctx.fillStyle='#0f141c';ctx.fillRect(0,0,W,cv.height);
+  ctx.fillStyle='#1c1233';ctx.fillRect(0,0,AX,CH-40);
+  const N=110, s=Math.max(0,d.C.length-N), xs=d.C.length-s;
+  let lo=Math.min(...d.L.slice(s),t.stop), hi=Math.max(...d.H.slice(s),t.tps[t.tps.length-1]);
+  const m=(hi-lo)*0.06; lo-=m; hi+=m;
+  const top=10, bot=CH-50, y=v=>top+(hi-v)/(hi-lo)*(bot-top);
+  const liqOn=$('liqOn')?$('liqOn').checked:false, umb=$('umbral')?+$('umbral').value:0.25, NB=110;
+  const bw=(BX0-10)/xs;
+  if(liqOn){
+    const mp=liqMapa(d,s,lo,hi,NB,(cfg().mmr||0.005)); r._mapa={...mp,lo,hi,nb:NB};
+    const rowH=(bot-top)/NB, yb=b=>top+(NB-1-b)*rowH;
+    mp.grid.forEach((col,ci)=>{ for(let b=0;b<NB;b++){ const t=mp.max?col[b]/mp.max:0; if(t<umb||t<=0.01)continue;
+      ctx.fillStyle=viridis(Math.pow((t-umb)/(1-umb||1),0.75)*0.92+0.08); ctx.fillRect(ci*bw,yb(b),bw+1,rowH+0.6);} });
+    // continuación hacia la derecha (niveles vivos) bajo la caja
+    const last=mp.grid[mp.grid.length-1]; if(last){ for(let b=0;b<NB;b++){const t=mp.max?last[b]/mp.max:0; if(t<umb||t<=0.01)continue;
+      ctx.fillStyle=viridis(Math.pow((t-umb)/(1-umb||1),0.75)*0.92+0.08); ctx.globalAlpha=.55; ctx.fillRect(xs*bw,yb(b),AX-xs*bw,rowH+0.6); ctx.globalAlpha=1;} }
+  } else { r._mapa=null; }
+  // bandas de zonas (pivotes visibles) + soporte y resistencia
+  const k=4;
+  if(!liqOn) for(let i=s+k;i<d.C.length-k;i++){
+    const isH=d.H[i]===Math.max(...d.H.slice(i-k,i+k+1)), isL=d.L[i]===Math.min(...d.L.slice(i-k,i+k+1));
+    if(isH){ctx.fillStyle='rgba(140,90,255,.13)';ctx.fillRect(0,y(d.H[i])-4,AX,8)}
+    if(isL){ctx.fillStyle='rgba(140,90,255,.13)';ctx.fillRect(0,y(d.L[i])-4,AX,8)}
+  }
+  ctx.fillStyle=liqOn?'rgba(150,95,255,.28)':'rgba(150,95,255,.45)';ctx.fillRect(0,y(t.S*1.012),AX,Math.max(8,y(t.S)-y(t.S*1.012)));
+  if(t.res<hi){ctx.fillStyle='rgba(150,95,255,.30)';ctx.fillRect(0,y(t.res)-5,AX,10)}
+  // velas
+  for(let i=0;i<xs;i++){const q=s+i, up=d.C[q]>=d.O[q], col=up?'#e9e7f2':'#ef4b5a', x=i*bw+bw/2;
+    ctx.strokeStyle=col;ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x,y(d.H[q]));ctx.lineTo(x,y(d.L[q]));ctx.stroke();
+    ctx.fillStyle=col;const yo=y(d.O[q]),yc=y(d.C[q]);ctx.fillRect(x-bw*0.32,Math.min(yo,yc),Math.max(1.5,bw*0.64),Math.max(1.5,Math.abs(yc-yo)));}
+  // caja de objetivos / SL
+  const last=t.tps[t.tps.length-1];
+  ctx.fillStyle='rgba(16,40,28,.92)';ctx.fillRect(BX0,y(last)-14,BX1-BX0,y(t.P)-y(last)+14);
+  ctx.fillStyle='rgba(120,30,40,.75)';ctx.fillRect(BX0,y(t.P),BX1-BX0,y(t.stop)-y(t.P));
+  ctx.fillStyle='rgba(41,182,246,.25)';ctx.fillRect(BX0-105,y(t.P)-7,BX1-BX0+105,14);
+  ctx.strokeStyle='#29b6f6';ctx.lineWidth=1;ctx.strokeRect(BX0-105,y(t.P)-7,BX1-BX0+105,14);
+  ctx.font=`600 19px ${MONO}`;ctx.textBaseline='middle';
+  t.tps.forEach((v,k2)=>{ctx.strokeStyle='#3ddc84';ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(BX0,y(v));ctx.lineTo(BX1,y(v));ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#8ff0b4';ctx.fillText('T'+(k2+1),BX0+8,y(v)-14)});
+  ctx.strokeStyle='#ff5c6c';ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(BX0,y(t.stop));ctx.lineTo(BX1,y(t.stop));ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#ff9aa5';ctx.fillText('SL',BX0+8,y(t.stop)+18);
+  // etiquetas de nivel tipo "precio · %"
+  const tag=(v,txt,col,bg)=>{ctx.font=`500 17px ${MONO}`;const w=ctx.measureText(txt).width+14;ctx.fillStyle=bg;ctx.fillRect(14,y(v)-12,w,24);ctx.fillStyle=col;ctx.fillText(txt,21,y(v))};
+  tag(t.S,`${fp(t.S)} · soporte`,'#7fe3f5','rgba(15,20,28,.85)');
+  if(t.res<hi) tag(t.res,`${fp(t.res)} · resist. 7d`,'#f7c948','rgba(15,20,28,.85)');
+  if(liqOn && r._mapa){
+    const mp=r._mapa, NB=mp.nb, rowH=(bot-top)/NB, yb=b=>top+(NB-1-b)*rowH; let pm=0; for(const x of mp.prof)if(x>pm)pm=x;
+    const PX0=830, PW=AX-6-PX0;
+    for(let b=0;b<NB;b++){ const a=mp.prof[b]; if(!a||a/pm<0.04)continue; const p=lo+(b+.5)/NB*(hi-lo), w=PW*a/pm;
+      ctx.fillStyle=p>d.price?'rgba(232,170,40,.9)':'rgba(38,190,215,.9)'; ctx.fillRect(AX-6-w,yb(b)+1,w,Math.max(2,rowH-1.5)); }
+    const bs=bolsas(r); ctx.font=`500 17px ${MONO}`; ctx.textBaseline='middle';
+    const lab=(o,col)=>{const yy2=y(o.p), txt=`${fp(o.p)} · ${Math.round(o.pct*100)}%`, w=ctx.measureText(txt).width+12;
+      ctx.fillStyle='rgba(12,16,24,.88)';ctx.fillRect(BX0-4-w,yy2-12,w,24);ctx.fillStyle=col;ctx.fillText(txt,BX0-4-w+6,yy2);
+      ctx.strokeStyle=col;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(BX0-2,yy2);ctx.lineTo(AX-8,yy2);ctx.stroke();ctx.setLineDash([]);};
+    const puestos=[y(d.price)]; const libre=o=>puestos.every(p=>Math.abs(p-y(o.p))>26);
+    [[bs.up,'#f7c948'],[bs.dn,'#7fe3f5']].forEach(([arr,col])=>{let c=0;for(const o of arr){if(c>=2)break;if(!libre(o))continue;lab(o,col);puestos.push(y(o.p));c++}});
+    ctx.font=`600 19px ${MONO}`;ctx.fillStyle='rgba(12,16,24,.9)';ctx.fillRect(BX0+4,y(t.stop)+6,34,24);ctx.fillStyle='#ff9aa5';ctx.fillText('SL',BX0+8,y(t.stop)+18);
+  }
+  // eje derecho
+  ctx.fillStyle='#0f141c';ctx.fillRect(AX,0,W-AX,CH);
+  ctx.font=`400 18px ${MONO}`;ctx.fillStyle='#8d97a6';
+  for(let g=0;g<=5;g++){const v=lo+(hi-lo)*(g+0.5)/6;ctx.fillText(fp(v),AX+12,y(v))}
+  ctx.fillStyle='#22c55e';ctx.fillRect(AX,y(d.price)-14,W-AX,28);ctx.fillStyle='#06240f';ctx.font=`700 19px ${MONO}`;ctx.fillText(fp(d.price),AX+10,y(d.price));
+  // marca
+  ctx.font=`600 16px ${MONO}`;ctx.fillStyle='rgba(185,162,255,.75)';ctx.fillText(`${r.sym} · 1H · ESTILO JAXON`,14,CH-25);
+  // tarjeta de señal
+  const c0=CH; ctx.fillStyle='#18202a';ctx.fillRect(0,c0,W,cv.height-c0);
+  const SANS='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; ctx.textBaseline='alphabetic';
+  let yy=c0+78; ctx.font=`700 31px ${SANS}`;ctx.fillStyle='#fff';ctx.fillText(`📍 SIGNAL ID: #${r.id} 📍`,48,yy);
+  yy+=52; ctx.fillText('COIN: ',48,yy); let x=48+ctx.measureText('COIN: ').width;
+  ctx.fillStyle='#5aa9f5';const sb='$'+base(r.sym);ctx.fillText(sb,x,yy);x+=ctx.measureText(sb).width;
+  ctx.fillStyle='#fff';ctx.fillText(`/USDT (${levRango(t)})`,x,yy);
+  yy+=50; ctx.fillText('Direction: LONG',48,yy);
+  yy+=46; ctx.strokeStyle='#5d6878';ctx.lineWidth=2;ctx.setLineDash([16,13]);ctx.beginPath();ctx.moveTo(48,yy);ctx.lineTo(370,yy);ctx.stroke();ctx.setLineDash([]);
+  ctx.font=`400 31px ${SANS}`;ctx.fillStyle='#eef1f5';
+  yy+=52; ctx.fillText(`ENTRY: ${fp(t.P)}`,48,yy);
+  yy+=92; yy=wrapText(ctx,`TARGETS: ${t.tps.map(fmt).join(' – ')}`,48,yy,W-96,46);
+  yy+=92; ctx.fillText(`STOP LOSS: ${fp(t.stop)}`,48,yy);
+  if(stamp){ctx.font=`500 24px ${SANS}`;ctx.fillStyle='#8d97a6';ctx.textAlign='right';
+    ctx.fillText(`📅 ${stamp}`,W-48,c0+78);ctx.textAlign='left';}
+}
+
+function descargarPNG(i,auto){const r=lista_[i],cv=$('cv'+i);if(!cv)return;
+  const now=new Date(), z=n=>String(n).padStart(2,'0');
+  const stamp=`${z(now.getDate())}/${z(now.getMonth()+1)}/${now.getFullYear()} · ${z(now.getHours())}:${z(now.getMinutes())}`;
+  const fecha=`${now.getFullYear()}-${z(now.getMonth()+1)}-${z(now.getDate())}_${z(now.getHours())}${z(now.getMinutes())}`;
+  dibujar(cv,r,stamp);
+  cv.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);
+    a.download=`senal_${r.id}_${r.sym}_1h_${fecha}.png`;a.click(); if(auto) toast('✅ Imagen descargada')})}
+async function copiar(i,btn){try{await navigator.clipboard.writeText(textoSenal(lista_[i]));btn.textContent='¡Copiada!'}catch(e){btn.textContent='No se pudo copiar'}setTimeout(()=>btn.textContent='Copiar señal',1500)}
+
+function csv(){
+  const head=['simbolo','estado','puntaje','precio','soporte','stop','dist_stop_%','tp1','tp2','tp3','tp4','tp5','rr_tp3','apalancamiento_seguro','tamano_usdt','vol24h_usdt','oi_usdt','criterios'];
+  const rows=resultados.map(r=>{const t=r.trade;return[r.sym,r.estado,r.score,t.P,t.S,t.stop,(t.dist*100).toFixed(2),...[0,1,2,3,4].map(k=>t.tps[k]??''),(t.rr[2]||0).toFixed(2),t.seguro,t.nocional.toFixed(2),r.vol||'',r.oi?r.oi.toFixed(0):'',r.checks.map(c=>(c.p?'OK ':'NO ')+c.t).join(' | ')]});
+  const txt=[head,...rows].map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+txt],{type:'text/csv'}));
+  a.download='escaner_estilo_jaxon_'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'')+'.csv';a.click();
+}
+
+$('umbral').oninput=()=>{$('umbVal').textContent=(+$('umbral').value).toFixed(2);render()};
+$('liqOn').onchange=render;
+$('go').onclick=escanear; $('goOne').onclick=uno; $('csv').onclick=csv;
+$('one').addEventListener('keydown',e=>{if(e.key==='Enter')uno()});
+$('tSig').onclick=()=>{tab='senal';render()}; $('tWatch').onclick=()=>{tab='vigilar';render()}; $('tSeg').onclick=()=>{tab='seg';render()};
+render();
+window.addEventListener('focus',renderModo); setInterval(renderModo,60000);
+</script>
+</body>
+</html>
