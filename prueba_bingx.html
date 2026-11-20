@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prueba BingX en vivo</title>
+<style>body{font-family:system-ui,sans-serif;background:#0b1020;color:#e5e7eb;padding:20px;font-size:18px}
+.r{padding:14px;border-radius:12px;margin:10px 0;background:#141b2e}.ok{border:2px solid #22c55e}.no{border:2px solid #ef4444}
+b{font-size:22px}small{color:#94a3b8}</style></head><body>
+<h2>🔌 Prueba: ¿BingX responde directo desde la app?</h2>
+<div id="out">Probando…</div>
+<script>
+const B='https://open-api.bingx.com';
+const tests=[
+ ['Velas 15m PFE', B+'/openApi/swap/v1/market/markPriceKlines?symbol=NCSKPFE2USD-USDT&interval=15m&limit=5'],
+ ['Precio actual', B+'/openApi/swap/v2/quote/price?symbol=NCSKPFE2USD-USDT'],
+ ['Lista de contratos', B+'/openApi/swap/v2/quote/contracts']
+];
+(async()=>{let h='',okAll=true;
+ for(const [n,u] of tests){const t0=Date.now();
+  try{const r=await fetch(u);const j=await r.json();const ms=Date.now()-t0;
+   const ok=j&&j.code===0;okAll=okAll&&ok;
+   h+=`<div class="r ${ok?'ok':'no'}">${ok?'✅':'⚠️'} ${n} · ${ms} ms<br><small>${ok?'responde bien':'respuesta: '+JSON.stringify(j).slice(0,120)}</small></div>`;
+  }catch(e){okAll=false;h+=`<div class="r no">⛔ ${n}<br><small>bloqueado: ${e.message}</small></div>`;}
+  document.getElementById('out').innerHTML=h;}
+ h+=`<div class="r ${okAll?'ok':'no'}"><b>${okAll?'✅ FUNCIONA — Bolsa puede ser en vivo':'⛔ BLOQUEADO — usar plan B'}</b></div>`;
+ document.getElementById('out').innerHTML=h;})();
+</script></body></html>
