@@ -325,6 +325,8 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-ap
 .pl-meta{font-size:11.5px;color:#8a9bb0;margin-top:5px}
 .pl-am{margin-top:6px;font-size:12px;border-radius:8px;padding:5px 8px}.pl-am.p{background:#111827;color:#94a3b8;border:1px dashed #475569}.pl-am.ok{background:#052e16;color:#bbf7d0}.pl-am.ojo{background:#2a2306;color:#fde68a}.pl-am.no{background:#450a0a;color:#fecaca}
 .pl-ev{display:grid;grid-template-columns:62px 1fr auto;gap:6px;padding:6px 0;border-bottom:1px solid #1e293b;font-size:12.5px}.pl-ev:last-child{border:0}.pl-ev span{color:#8a9bb0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.bl-ses{border-radius:12px;padding:8px 10px;margin-bottom:10px;border:1.5px solid}.bl-ses .t{font-weight:900;font-size:14px}.bl-ses .t span{font-weight:500;font-size:12px}.bl-ses .r{font-size:12px;color:#e5e7eb;margin-top:2px}.bl-ses .sb{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:7px}.bl-ses .sb div{font-size:9.5px;text-align:center;border-radius:6px;padding:3px 0;background:#0b1220;color:#8a9bb0}.bl-ses .sb .on{color:#fff}
+.bl-src{font-size:10px;background:#0b1220;border:1px solid #334155;color:#cbd5e1;border-radius:6px;padding:1px 5px;margin-left:4px;white-space:nowrap}
 .bl-x{background:#18202f;border:1px solid #253047;color:#e5e7eb;border-radius:8px;width:30px;height:30px}
 .bl-er{display:grid;grid-template-columns:62px 1fr auto 62px;gap:6px;font-size:12px;padding:5px 0;border-bottom:1px solid #1e293b}.bl-er span{color:#8a9bb0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.bl-er b:last-child{text-align:right}.bl-er.w{color:#fde68a}
 .bl-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.bl-kpi div{background:#0b1220;border-radius:9px;padding:7px}.bl-kpi small{display:block;color:#8a9bb0;font-size:10.5px}.bl-kpi b{font-size:15px}
@@ -3467,9 +3469,9 @@ $('k1Dl').onclick=()=>{
    de mercado y los publica en data/bolsa.json. Aquí solo se leen, filtran y muestran. */
 const BOL_CFG_KEY='escaner_v3_bolsa_cfg', BOL_SEG_KEY='escaner_v3_bolsa_seg';
 const BOL_URLS=['data/bolsa.json','https://raw.githubusercontent.com/ingnahumjimenez-ux/whale-room-escaner/main/data/bolsa.json'];
-const BOL_DEF={v:2, uni:'bx', lista:'NVDA, TSLA, AAPL, MSFT, AMZN, META, GOOGL, SPY, QQQ', min:90, conf:3, pmin:10, vmin:50, cap:5000, rsk:1.5, dir:'both', q:''};
+const BOL_DEF={v:3, uni:'bx', lista:'NVDA, TSLA, AAPL, MSFT, AMZN, META, GOOGL, SPY, QQQ', min:90, conf:3, pmin:10, vmin:50, cap:5000, rsk:1.5, dir:'both', q:''};
 const BOL={data:null, loading:false, err:'', tab:'esc', cfg:{...BOL_DEF}, seg:[], searching:false, vista:'p'};
-try{ const sv=JSON.parse(localStorage.getItem(BOL_CFG_KEY)||'{}'); BOL.cfg={...BOL_DEF, ...sv, q:''}; if(!sv.v){ BOL.cfg.uni='bx'; BOL.cfg.v=2; } }catch(e){}
+try{ const sv=JSON.parse(localStorage.getItem(BOL_CFG_KEY)||'{}'); BOL.cfg={...BOL_DEF, ...sv, q:''}; if(!sv.v){ BOL.cfg.uni='bx'; } if(BOL.cfg.uni==='lista') BOL.cfg.uni='bx'; BOL.cfg.v=3; }catch(e){}
 try{ BOL.seg=JSON.parse(localStorage.getItem(BOL_SEG_KEY)||'[]'); }catch(e){}
 const bolSave=()=>{ try{ const c={...BOL.cfg}; delete c.q; localStorage.setItem(BOL_CFG_KEY, JSON.stringify(c)); localStorage.setItem(BOL_SEG_KEY, JSON.stringify(BOL.seg)); }catch(e){} };
 
@@ -3494,19 +3496,22 @@ async function bolLoad(force){
   let ok=false;
   for(const u of BOL_URLS){
     try{ const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); const j=await r.json(); if(!j||!j.sig) throw new Error('formato');
-      if(!BOL.data || j.gen>=BOL.data.gen) BOL.data=j; ok=true; break; }catch(e){ BOL.err=e.message; }
+      if(!BOL.base || j.gen>=BOL.base.gen) BOL.base=j; ok=true; break; }catch(e){ BOL.err=e.message; }
   }
+  for(const x of BOL_URLS.map(x=>x.replace('bolsa.json','bolsa24.json'))){ try{ const r=await fetch(x+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) continue; const j=await r.json(); if(j&&j.sig){ if(!BOL.d24||j.gen>=BOL.d24.gen) BOL.d24=j; break; } }catch(e){} }
   try{ const u=(ok?BOL_URLS:BOL_URLS).map(x=>x.replace('bolsa.json','plan.json')); for(const x of u){ try{ const r=await fetch(x+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) continue; const j=await r.json(); if(j&&j.para){ BOL.plan=j; break; } }catch(e){} } }catch(e){}
   BOL.loading=false;
-  if(!ok) BOL.err='No se pudieron leer los datos de bolsa. Revisa que el robot de GitHub esté activo (pestaña Actions de tu repositorio).';
+  if(ok||BOL.d24) BOL.err='';
+  if(!ok&&!BOL.d24) BOL.err='No se pudieron leer los datos de bolsa. Revisa que el robot de GitHub esté activo (pestaña Actions de tu repositorio).';
   bolRender(); bolBadge();
 }
-function bolBadge(){ const b=$('bolCnt'); if(!b) return; const n=BOL.data?bolList().length:0; b.textContent=n; b.style.display=n?'block':'none'; }
+function bolSync(){ BOL.data= BOL.cfg.uni==='bx24' ? (BOL.d24||null) : (BOL.base||null); }
+function bolBadge(){ const b=$('bolCnt'); if(!b) return; bolSync(); const n=BOL.data?bolList().length:0; b.textContent=n; b.style.display=n?'block':'none'; }
 
 /* ---- reglas: modo del día, filtros y veredicto ---- */
 function bolVixTxt(v){ return v==null?'—':v<15?'muy calmo':v<20?'calmo':v<25?'tenso':v<30?'miedo':'pánico'; }
 function bolModo(){
-  const M=BOL.data&&BOL.data.mkt; if(!M) return null;
+  const DD=BOL.data||BOL.base, M=DD&&DD.mkt; if(!M||!M.spy) return null;
   const v=M.vix&&M.vix.c, s=M.spy||{}, q=M.qqq||{};
   let k='neu';
   if(v!=null && v<20 && s.h4!=='down' && q.h4!=='down' && (s.h1==='up'||q.h1==='up')) k='fav';
@@ -3519,12 +3524,12 @@ const BOL_MODO={fav:{ic:'🚀',t:'A FAVOR',c:'#22c55e',L:['🟢','tamaño normal
   def:{ic:'🛡',t:'DEFENSIVO',c:'#f59e0b',L:['🟡','½ tamaño','#fde68a'],S:['🟢','tamaño normal','#bbf7d0']}};
 function bolList(){
   const D=BOL.data; if(!D) return [];
-  const c=BOL.cfg, lst=c.uni==='lista'? new Set(c.lista.toUpperCase().split(/[\s,;]+/).filter(Boolean)) : c.uni==='bx'&&D.bx? new Set(D.bx) : null, q=(c.q||'').trim().toUpperCase();
-  return D.sig.filter(s=>(!lst||lst.has(s.s)) && (!q||s.s.includes(q)) && s.sc>=c.min && s.co>=c.conf && s.c>=c.pmin && (s.dv||0)>=c.vmin*1e6 && (c.dir==='both'||s.dir===c.dir));
+  const c=BOL.cfg, m24=!!D.m24, lst=c.uni==='bx'&&D.bx? new Set(D.bx) : null, q=(c.q||'').trim().toUpperCase();
+  return D.sig.filter(s=>(!lst||lst.has(s.s)) && (!q||s.s.includes(q)) && s.sc>=c.min && s.co>=c.conf && s.c>=c.pmin && (m24||(s.dv||0)>=c.vmin*1e6) && (c.dir==='both'||s.dir===c.dir));
 }
 const bolAl=(t,dir)=>t==null||t==='flat'?0:(t==='up')===(dir==='long')?1:-1;
 function bolVerdict(s){
-  const M=BOL.data.mkt, mo=bolModo();
+  const M=(BOL.data||BOL.base).mkt, mo=bolModo();
   const tf=[['4H',s.ctx.h4],['1H',s.ctx.h1],['SPY',M.spy&&M.spy.h1]];
   const ag=tf.filter(([,t])=>bolAl(t,s.dir)<0).map(([l])=>l);
   const modeAg= mo && ((mo.k==='def'&&s.dir==='long')||(mo.k==='fav'&&s.dir==='short'));
@@ -3535,7 +3540,7 @@ function bolVerdict(s){
 }
 const bolF=(p,d)=>p==null?'—':(+p).toFixed(Math.max(2,Math.min(d??2,4)));
 function bolSize(s){ const risk=Math.abs(s.em-s.sst); if(!(risk>0)) return null; const usd=BOL.cfg.cap*BOL.cfg.rsk/100, n=Math.floor(usd/risk); return n>0?{n, usd:Math.round(n*risk), cost:Math.round(n*s.em)}:null; }
-function bolErTxt(sym){ const d=BOL.data.er&&BOL.data.er[sym]; if(!d) return null; const days=Math.round((Date.parse(d+'T12:00:00')-Date.now())/864e5); return {d, days}; }
+function bolErTxt(sym){ const E=(BOL.data&&BOL.data.er)||(BOL.base&&BOL.base.er); const d=E&&E[sym]; if(!d) return null; const days=Math.round((Date.parse(d+'T12:00:00')-Date.now())/864e5); return {d, days}; }
 
 /* ---- gráfica ---- */
 function bolChart(cv, s){
@@ -3552,7 +3557,7 @@ function bolChart(cv, s){
 
 /* ---- tarjetas y pestañas ---- */
 function bolCard(s,i){
-  const sh=s.dir==='short', M=BOL.data.mkt, v=bolVerdict(s), z=bolSize(s), er=bolErTxt(s.s);
+  const sh=s.dir==='short', M=(BOL.data||BOL.base).mkt, v=bolVerdict(s), z=bolSize(s), er=bolErTxt(s.s);
   const light=(t,l)=>{ const a=bolAl(t,s.dir); return `<span class="bl-l"><i style="background:${a>0?'#22c55e':a<0?'#ef4444':'#f59e0b'}"></i>${l}</span>`; };
   const tg=[['FVG',s.tg[0]],['Tendencia',s.tg[1]],['Nivel',s.tg[2]],[sh?'Rebote':'Retroceso',s.tg[3]],['Confluencia',s.tg[4]]];
   const col=p=>p>=0.6?'#86efac':p>=0.4?'#bef264':p>=0.25?'#fcd34d':'#fca5a5', bg=p=>p>=0.6?'#052e16':p>=0.4?'#1a2e05':p>=0.25?'#2a2306':'#2a0b0b';
@@ -3561,7 +3566,7 @@ function bolCard(s,i){
   if(s.gap) info.push(`<span>${s.gap.p>0?'📈':'📉'} Gap de apertura <b>${s.gap.p>0?'+':''}${s.gap.p.toFixed(1)} %</b> (rellenado ${Math.round(s.gap.f*100)} %)</span>`);
   if(er) info.push(er.days<=2&&er.days>=0?`<span class="w">⚠️ <b>Resultados ${er.days===0?'hoy':er.days===1?'mañana':'en 2 días'}</b> · riesgo de gap</span>`:`<span>📅 Resultados en <b>${er.days} días</b> (${er.d})</span>`);
   return `<div class="bl-card" data-i="${i}"><canvas class="bl-cv"></canvas>
-    <div class="bl-hd"><div><span class="bl-pill ${sh?'s':'l'}">${sh?'SHORT':'LONG'}</span> <b class="bl-tk">${s.s}</b>${s.bx?'<span class="bl-bx">BingX</span>':''} <span class="bl-mut">· 15M</span><div class="bl-nm">${s.n}${s.sec?` · <span>${s.sec}</span>`:''}</div></div><span class="bl-sc">${s.sc}/100</span></div>
+    <div class="bl-hd"><div><span class="bl-pill ${sh?'s':'l'}">${sh?'SHORT':'LONG'}</span> <b class="bl-tk">${s.s}</b>${s.bx?`<span class="bl-bx">BingX${BOL.data&&BOL.data.m24?' 24/7':''}</span>`:''} <span class="bl-mut">· 15M</span>${BOL.data&&BOL.data.m24?'<span class="bl-src">precio BingX</span>':''}${s.sp===0?'<span class="bl-src">no está en el S&P 500</span>':''}<div class="bl-nm">${s.n}${s.sec?` · <span>${s.sec}</span>`:''}</div></div><span class="bl-sc">${s.sc}/100</span></div>
     <div class="bl-ctx"><span class="bl-mut">Contexto</span>${light(s.ctx.h4,'4H')}${light(s.ctx.h1,'1H')}${light(M.spy&&M.spy.h1,'SPY')}${light(M.qqq&&M.qqq.h1,'QQQ')}</div>
     <div class="verd ${v[0]}"><b>${v[1]}</b><span>· ${v[2]}</span></div>
     <div class="bl-tags">${tg.map(([t,on])=>`<span class="${on?'on':''}">${t}</span>`).join('')}${s.rv!=null?`<span class="${s.rv>=1.5?'on':''}">Vol. relativo ${s.rv.toFixed(1)}×</span>`:''}</div>
@@ -3579,22 +3584,23 @@ function bolEscHTML(){
   const num=(id,val,step)=>`<input data-k="${id}" type="number" step="${step||1}" value="${val}">`;
   const tr=t=>t==='up'?'#22c55e':t==='down'?'#ef4444':'#f59e0b', L=(t,l)=>`<i style="background:${tr(t)}"></i>${l}`;
   let h=`<div class="bl-box"><div class="bl-cfg">
-    <label><small>Universo</small>${sel('uni',[['bx',`BingX${D&&D.bx?` (${D.bx.length})`:''}`],['sp','S&P 500'],['lista','Mi lista']],c.uni)}</label>
+    <label><small>Universo</small>${sel('uni',[['bx24','BingX 24/7'],['bx',`BingX${BOL.base&&BOL.base.bx?` (${BOL.base.bx.length})`:''}`],['sp','S&P 500']],c.uni)}</label>
     <label><small>Temporalidad</small><b>15m</b></label><label><small>Velas</small><b>1000</b></label>
     <label><small>Puntaje mín.</small>${num('min',c.min)}</label><label><small>Confluencias</small>${sel('conf',[[2,'2 de 3'],[3,'3 de 3']],c.conf)}</label><label><small>Dirección</small>${sel('dir',[['both','Ambas'],['long','LONG'],['short','SHORT']],c.dir)}</label>
     <label><small>Precio mín. $</small>${num('pmin',c.pmin)}</label><label><small>Vol. mín./día $M</small>${num('vmin',c.vmin)}</label><label><small>Capital $</small>${num('cap',c.cap,100)}</label>
     <label><small>Riesgo / op. %</small>${num('rsk',c.rsk,0.25)}</label></div>
-    ${c.uni==='lista'?`<input class="bl-in" data-k="lista" value="${c.lista}" placeholder="Tickers separados por coma">`:''}
     <div class="bl-btns"><button id="bolRun">${BOL.loading?'⏳ Cargando…':'🔍 Analizar todas'}</button><button id="bolSearch">✍️ Escribir ticker</button></div>
     ${BOL.searching||c.q?`<input class="bl-in" id="bolQ" value="${c.q}" placeholder="Escribir (p. ej. NVDA)" autocomplete="off">`:''}</div>`;
+  if(c.uni==='bx24') h+=bolSesHTML();
   h+=`<div class="bl-box"><div class="bl-mkt"><b style="color:${mk.open?'#86efac':'#fca5a5'}">${mk.open?'🟢 Mercado abierto':'🔴 Mercado cerrado'}</b><span class="bl-mut">${mk.txt}</span></div>`;
   if(M) h+=`<div class="bl-sem"><span>SPY ${L(M.spy.m15,'15m')}${L(M.spy.h1,'1H')}${L(M.spy.h4,'4H')}</span><span>QQQ ${L(M.qqq.h1,'1H')}${L(M.qqq.h4,'4H')}</span><span>😨 VIX <b>${M.vix&&M.vix.c!=null?M.vix.c.toFixed(1):'—'}</b> · ${bolVixTxt(M.vix&&M.vix.c)}</span></div>`;
   h+=`<div class="bl-mut" style="font-size:11.5px;margin-top:6px">Mejores horas: ${bolLocal(570)}–${bolLocal(660)} y ${bolLocal(900)}–${bolLocal(960)} (tu hora)</div>`;
-  if(D) h+=`<div class="bl-mut" style="font-size:11px;margin-top:3px">Datos de Yahoo · última vela ${bolHM(D.at)} · actualizado hace ${bolDur((Date.now()-D.gen)/6e4)} · ${D.n} acciones</div>`;
+  if(D) h+= D.m24 ? `<div class="bl-mut" style="font-size:11px;margin-top:3px">Precios de <b style="color:#e5e7eb">BingX</b> · última vela ${bolHM(D.at)} · actualizado hace ${bolDur((Date.now()-D.gen)/6e4)} · ${D.n} acciones<br>⏱ Escaneo: cada 15 min con la bolsa abierta · cada hora el resto del día y fines de semana</div>`
+    : `<div class="bl-mut" style="font-size:11px;margin-top:3px">Datos de Yahoo · última vela ${bolHM(D.at)} · actualizado hace ${bolDur((Date.now()-D.gen)/6e4)} · ${D.n} acciones</div>`;
   h+=`</div>`;
   if(mo){ const m=BOL_MODO[mo.k]; h+=`<div class="bl-modo" style="border-color:${m.c}"><div class="t">${m.ic} Modo ${m.t} <span>· ${mo.why.join(' · ')}</span></div><div class="r"><span style="color:${m.L[2]}"><b>LONG ${m.L[0]}</b> ${m.L[1]}</span><span style="color:${m.S[2]}"><b>SHORT ${m.S[0]}</b> ${m.S[1]}</span></div></div>`; }
   if(BOL.err && !D) h+=`<div class="bl-box bl-mut">⚠️ ${BOL.err}</div>`;
-  else if(!D) h+=`<div class="bl-box bl-mut">${BOL.loading?'⏳ Cargando datos de bolsa…':'Toca «Analizar todas» para cargar los datos.'}</div>`;
+  else if(!D) h+=`<div class="bl-box bl-mut">${BOL.loading?'⏳ Cargando datos de bolsa…':c.uni==='bx24'&&BOL.base?'🕐 Aún no hay datos de BingX 24/7. Aparecen después de la primera ejecución del robot «Escaner Bolsa BingX 24-7».':'Toca «Analizar todas» para cargar los datos.'}</div>`;
   else { const L2=bolList(); if(c.uni==='bx'&&!D.bx) h+=`<div class="bl-box bl-mut">⚠️ La lista de BingX aún no está disponible; se muestran todas las acciones del S&P 500.</div>`;
     h+= L2.length? bolTopHTML(L2)+L2.map((s,i)=>bolCard(s,i)).join('') : `<div class="bl-box bl-mut">No hay señales con esos filtros. Prueba bajar el puntaje mínimo o usar 2 de 3 confluencias.${c.q?` Ningún resultado para «${c.q}».`:''}</div>`; }
   return h;
@@ -3605,8 +3611,7 @@ function bolHistHTML(){ return bolVistaHTML()+bolHistBody(); }
 function bolHistBody(){
   const SEG=bolSegList();
   if(!SEG.length) return `<div class="bl-box bl-mut">Aún no sigues ninguna acción${BOL.vista==='g'?' en Grupo':''}. En una tarjeta toca <b>⭐ Personal</b> o <b>👥 Grupo</b>.</div>`;
-  const px=BOL.data?BOL.data.px:{};
-  return SEG.slice().reverse().map((x,j)=>{ const sh=x.dir==='short', cur=px[x.s]?px[x.s][0]:null, risk=Math.abs(x.em-x.sst);
+  return SEG.slice().reverse().map((x,j)=>{ const sh=x.dir==='short', cur=bolPx(x), risk=Math.abs(x.em-x.sst);
     const R=cur==null?null:(sh?x.em-cur:cur-x.em)/risk, hit=cur==null?0:x.tp.filter(t=>sh?cur<=t:cur>=t).length, stop=cur!=null&&(sh?cur>=x.sst:cur<=x.sst);
     const usd=cur==null||!x.n?null:Math.round((sh?x.em-cur:cur-x.em)*x.n);
     return `<div class="bl-box bl-h"><div class="bl-hd"><div><span class="bl-pill ${sh?'s':'l'}">${sh?'SHORT':'LONG'}</span> <b class="bl-tk">${x.s}</b>${x.g?' <span class="bl-g">👥 Grupo</span>':''} <span class="bl-mut">· ${new Date(x.at).toLocaleDateString('es-SV')} ${bolHM(x.at)}</span></div><button class="bl-x" data-del="${BOL.seg.indexOf(x)}">✕</button></div>
@@ -3614,15 +3619,15 @@ function bolHistBody(){
       <div class="bl-mut" style="font-size:12px;margin-top:5px">${stop?'🟥 Precio en el stop o más allá':hit?`✅ Pasó T${hit}`:'🟦 En curso'} · Stop ${bolF(x.sst,x.d)} · T5 ${bolF(x.tp[4],x.d)}</div></div>`; }).join('')+`<div class="bl-mut" style="font-size:11px">El precio "Ahora" es el de la última vela del robot (cada 15 min).</div>`;
 }
 function bolResHTML(){
-  const er=BOL.data&&BOL.data.er; if(!er) return `<div class="bl-box bl-mut">Aún no hay fechas de resultados. Aparecen después de la primera ejecución del robot.</div>`;
-  const mine=new Set(BOL.seg.map(x=>x.s)), sig=new Set((BOL.data.sig||[]).map(s=>s.s));
+  const B=BOL.base; const er=B&&B.er; if(!er) return `<div class="bl-box bl-mut">Aún no hay fechas de resultados. Aparecen después de la primera ejecución del robot.</div>`;
+  const mine=new Set(BOL.seg.map(x=>x.s)), sig=new Set((B.sig||[]).map(s=>s.s));
   const rows=Object.entries(er).map(([s,d])=>({s,d,days:Math.round((Date.parse(d+'T12:00:00')-Date.now())/864e5)})).filter(x=>x.days>=0).sort((a,b)=>a.days-b.days).slice(0,40);
   return `<div class="bl-box"><div class="bl-mut" style="font-size:12px;margin-bottom:6px">Próximos resultados trimestrales (acciones con señal y las de más volumen). ⭐ = las que sigues.</div>`+
-    rows.map(x=>`<div class="bl-er ${x.days<=2?'w':''}"><b>${mine.has(x.s)?'⭐ ':''}${x.s}</b><span>${(BOL.data.sig.find(s=>s.s===x.s)||{}).n||''}</span><span>${x.d}</span><b>${x.days===0?'hoy':x.days===1?'mañana':x.days+' días'}</b></div>`).join('')+`</div>`;
+    rows.map(x=>`<div class="bl-er ${x.days<=2?'w':''}"><b>${mine.has(x.s)?'⭐ ':''}${x.s}</b><span>${(B.sig.find(s=>s.s===x.s)||{}).n||''}</span><span>${x.d}</span><b>${x.days===0?'hoy':x.days===1?'mañana':x.days+' días'}</b></div>`).join('')+`</div>`;
 }
 function bolStats(S){
-  const px=BOL.data?BOL.data.px:{}; let n=0,win=0,sumR=0,usd=0,cost=0;
-  for(const x of S){ const cur=px[x.s]?px[x.s][0]:null; if(cur==null) continue; const sh=x.dir==='short', r=(sh?x.em-cur:cur-x.em)/Math.abs(x.em-x.sst); n++; sumR+=r; if(r>0) win++; if(x.n){ usd+=(sh?x.em-cur:cur-x.em)*x.n; cost+=x.em*x.n; } }
+  let n=0,win=0,sumR=0,usd=0,cost=0;
+  for(const x of S){ const cur=bolPx(x); if(cur==null) continue; const sh=x.dir==='short', r=(sh?x.em-cur:cur-x.em)/Math.abs(x.em-x.sst); n++; sumR+=r; if(r>0) win++; if(x.n){ usd+=(sh?x.em-cur:cur-x.em)*x.n; cost+=x.em*x.n; } }
   return {tot:S.length,n,win,sumR,usd,cost};
 }
 function bolKpis(t, S){
@@ -3635,6 +3640,7 @@ function bolPortHTML(){
   return bolKpis('⭐ Todas (Personal)', BOL.seg)+bolKpis('👥 Grupo', BOL.seg.filter(x=>x.g))+`<div class="bl-mut" style="font-size:11.5px">Calculado con el tamaño sugerido (capital × riesgo) y el precio de la última vela.</div>`;
 }
 function bolRender(){
+  bolSync();
   const body=$('bolBody'); if(!body||!$('bolPanel').classList.contains('open')) return;
   const keep=document.activeElement&&document.activeElement.id==='bolQ';
   document.querySelectorAll('#bolTabs [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===BOL.tab));
@@ -3721,21 +3727,22 @@ function bolTP(s){ // tiempo estimado al objetivo óptimo, en horas de mercado o
   if(s.po){ lo=s.po.lo; hi=s.po.hi; } else if(s.p5){ const f=Math.abs(s.tp[ob]-s.em)/Math.abs(s.tp[4]-s.em||1); lo=s.p5.lo*f; hi=s.p5.hi*f; }
   if(lo==null) return {txt:'—', warn:false};
   const hL=lo/36e5, hH=hi/36e5, S=6.5;
+  if(BOL.data&&BOL.data.m24){ const f=h=>h<1?`${Math.max(15,Math.round(h*4)*15)} min`:h<24?`${Math.round(h)} h`:`${(h/24).toFixed(h<72?1:0)} d`; return {txt:`${f(hL)} – ${f(hH)}`, warn:hH>24}; }
   if(hH<=S){ const f=h=>h<1?`${Math.max(15,Math.round(h*4)*15)} min`:`${Math.round(h)} h`; return {txt:`${f(hL)} – ${f(hH)}`, warn:false}; }
   const a=Math.max(1,Math.round(hL/S)), b=Math.max(a,Math.ceil(hH/S)); return {txt:a===b?`≈ ${a} sesión${a>1?'es':''}`:`≈ ${a}–${b} sesiones`, warn:true};
 }
 const bolRank=v=>v[0]==='go'?0:v[0]==='mid'?1:2;
 function bolTop(L){ const ve=s=>s.ob&&s.ev[s.ob-1]!=null?s.ev[s.ob-1]:-9;
   return L.map(s=>({s,v:bolVerdict(s)})).sort((a,b)=>(bolRank(a.v)-bolRank(b.v))||(b.s.sc-a.s.sc)||(ve(b.s)-ve(a.s))).slice(0,10); }
-function bolUniName(){ const u=BOL.cfg.uni; return u==='bx'&&BOL.data&&BOL.data.bx?'BingX':u==='lista'?'Mi lista':'S&P 500'; }
+function bolUniName(){ const u=BOL.cfg.uni; return u==='bx24'?'BingX 24/7':u==='bx'&&BOL.base&&BOL.base.bx?'BingX':'S&P 500'; }
 function bolTopHTML(L){
   const T=bolTop(L); if(!T.length) return '';
-  return `<div class="bl-top"><h4>🏆 Top 10 · ${bolUniName()}<button id="bolTopDl">⬇ Descargar Top 10</button></h4><div class="bl-mut" style="font-size:11.5px;margin-bottom:4px">${bolUniName()==='BingX'?'Solo acciones que se pueden operar en BingX (futuros perpetuos) · ':''}orden: veredicto → puntaje → valor esperado · toca una fila para ver su tarjeta</div>`+
+  return `<div class="bl-top"><h4>🏆 Top 10 · ${bolUniName()}<button id="bolTopDl">⬇ Descargar Top 10</button></h4><div class="bl-mut" style="font-size:11.5px;margin-bottom:4px">${bolUniName().startsWith('BingX')?`Solo acciones que se pueden operar en BingX${BOL.data&&BOL.data.m24?' 24/7, con precios de BingX':''} · `:''}orden: veredicto → puntaje → valor esperado · toca una fila para ver su tarjeta</div>`+
     T.map((x,i)=>{ const s=x.s, sh=s.dir==='short', ob=s.ob?s.ob-1:0, d=s.d, ve=s.ev[ob], tp=bolTP(s);
       return `<div class="bl-tr2" data-goto="${L.indexOf(s)}"><div class="h"><span class="rk">#${i+1}</span><span class="bl-pill ${sh?'s':'l'}">${sh?'SHORT':'LONG'}</span><b class="tk">${s.s}</b>${s.bx?'<span class="bl-bx">BingX</span>':''}<span class="vd">${x.v[1].split(' ')[0]}</span><span class="sc">${s.sc}/100</span></div>
         <div class="lv"><div><small>Entrada</small><b style="color:#93c5fd">${bolF(s.el,d)} – ${bolF(s.eh,d)}</b></div><div><small>TP · T${ob+1} (${pTxt(s.pr[ob])})</small><b style="color:#86efac">${bolF(s.tp[ob],d)}</b></div><div><small>SL</small><b style="color:#fca5a5">${bolF(s.sst,d)}</b></div></div>
-        <div class="ex"><span>⚡ Apalancamiento <b>${bolLev(s)}</b></span><span class="${tp.warn?'w':''}">⏱ TP en <b>${tp.txt}</b>${tp.warn?'':' de mercado'}</span></div>
-        <div class="ft">${s.n} · VE <b style="color:${(ve||0)>=0?'#86efac':'#fca5a5'}">${(ve||0)>=0?'+':''}${(ve||0).toFixed(2)} R</b> · ${x.v[1].replace(/^\S+\s/,'')}</div></div>`; }).join('')+`</div>`;
+        <div class="ex"><span>⚡ Apalancamiento <b>${bolLev(s)}</b></span><span class="${tp.warn?'w':''}">⏱ TP en <b>${tp.txt}</b>${tp.warn||(BOL.data&&BOL.data.m24)?'':' de mercado'}</span></div>
+        <div class="ft">${s.n}${s.sp===0?' · <span class="bl-src">no está en el S&P 500</span>':''} · VE <b style="color:${(ve||0)>=0?'#86efac':'#fca5a5'}">${(ve||0)>=0?'+':''}${(ve||0).toFixed(2)} R</b> · ${x.v[1].replace(/^\S+\s/,'')}</div></div>`; }).join('')+`</div>`;
 }
 function buildBolsaTop(T, stp){
   const W=1080, P=46, F='system-ui,-apple-system,Segoe UI,Roboto,sans-serif', RH=232, top=330, H=top+T.length*RH+110;
@@ -3757,7 +3764,7 @@ function buildBolsaTop(T, stp){
     const cols=[['Entrada',`${bolF(s.el,d)} – ${bolF(s.eh,d)}`,'#93c5fd',1.4],[`TP · T${ob+1} (${pTxt(s.pr[ob])})`,bolF(s.tp[ob],d),'#86efac',1],['SL',bolF(s.sst,d),'#fca5a5',1]];
     const tot=cols.reduce((a,c)=>a+c[3],0), avail=W-2*P-16; let cx=P;
     cols.forEach(([l,v,c,w])=>{ const cw=avail*w/tot; g.fillStyle='#0b1220'; rr(cx,y+70,cw,78,12); g.fill(); txt(l,cx+14,y+98,`500 21px ${F}`,'#8a9bb0'); txt(v,cx+14,y+134,`800 29px ${F}`,c); cx+=cw+8; });
-    txt(`⚡ Apalancamiento ${bolLev(s)}   ⏱ TP en ${tp.txt}${tp.warn?'':' de mercado'}`,P+6,y+184,`700 25px ${F}`,tp.warn?'#fde68a':'#e5e7eb');
+    txt(`⚡ Apalancamiento ${bolLev(s)}   ⏱ TP en ${tp.txt}${tp.warn||(BOL.data&&BOL.data.m24)?'':' de mercado'}`,P+6,y+184,`700 25px ${F}`,tp.warn?'#fde68a':'#e5e7eb');
     txt(`VE ${ve>=0?'+':''}${ve.toFixed(2)} R`,W-P-6,y+184,`800 25px ${F}`,ve>=0?'#86efac':'#fca5a5','right');
   });
   txt(`Descargado: ${stp.text} · No es una recomendación de inversión`,W/2,H-46,`400 22px ${F}`,'#64748b','center');
@@ -3765,9 +3772,9 @@ function buildBolsaTop(T, stp){
 }
 /* ---- 🌙 Plan de mañana (gaps pendientes, setups listos y acciones a evitar) ---- */
 function bolNYdate(t=Date.now()){ return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York'}).format(new Date(t)); }
-function bolUniSet(){ const c=BOL.cfg, D=BOL.data; return c.uni==='lista'? new Set(c.lista.toUpperCase().split(/[\s,;]+/).filter(Boolean)) : c.uni==='bx'&&D&&D.bx? new Set(D.bx) : null; }
+function bolUniSet(){ const c=BOL.cfg, D=BOL.base; return (c.uni==='bx'||c.uni==='bx24')&&D&&D.bx? new Set(D.bx) : null; }
 function bolPlanItems(){
-  const P=BOL.plan, D=BOL.data, c=BOL.cfg; if(!P||!D) return null;
+  const P=BOL.plan, D=BOL.base, c=BOL.cfg; if(!P||!D) return null;
   const U=bolUniSet(), dvOf=s=>(D.px[s]&&D.px[s][2])||0, okU=x=>(!U||U.has(x.s)) && x.c>=c.pmin && dvOf(x.s)>=c.vmin*1e6 && (c.dir==='both'||x.dir===c.dir);
   const hoy=bolNYdate(), er=D.er||{}, avoidSet=new Set(Object.entries(er).filter(([,d])=>d===hoy||d===P.para).map(([k])=>k));
   const avoid=[...avoidSet].filter(k=>!U||U.has(k)).map(k=>({s:k, d:er[k], n:(D.sig.find(x=>x.s===k)||P.gaps.find(x=>x.s===k)||{}).n||''}));
@@ -3802,7 +3809,7 @@ function bolPlanRow(it, cls){
 }
 function bolPlanHTML(){
   const P=BOL.plan;
-  if(!BOL.data) return `<div class="bl-box bl-mut">${BOL.loading?'⏳ Cargando…':'Toca «Analizar todas» en Escáner para cargar los datos.'}</div>`;
+  if(!BOL.base) return `<div class="bl-box bl-mut">${BOL.loading?'⏳ Cargando…':'Toca «Analizar todas» en Escáner para cargar los datos.'}</div>`;
   if(!P) return `<div class="bl-box bl-mut">🌙 Aún no hay plan. El robot lo arma cada día al cierre (3:15 p.m.) y lo confirma con el pre-mercado entre 8:00 y 8:25 a.m.</div>`;
   const I=bolPlanItems(), hoy=bolNYdate(), viejo=P.para<hoy, dt=new Date(P.para+'T12:00:00');
   const dia=dt.toLocaleDateString('es-SV',{weekday:'long'}), fecha=`${dia} ${dt.getDate()}/${dt.getMonth()+1}`;
@@ -3812,15 +3819,30 @@ function bolPlanHTML(){
     ${viejo?`<div class="pl-am ojo">⚠️ Este plan es de un día anterior. El nuevo se arma hoy al cierre (3:15 p.m.).</div>`:''}
     <div class="steps"><div class="pl-ok">✅ <b>1. Plan armado</b><br>${when(P.gen)}</div><div class="${preOk?'pl-ok':'pl-wait'}">${preOk?'✅':'⏳'} <b>2. Confirmación</b><br>${preOk?when(P.pre.at)+' (pre-mercado)':'8:00–8:25 a.m. (pre-mercado)'}</div></div>
     <div class="pl-how"><span class="pl-ok">🟢 PREPARAR<br>alarma lista</span><span style="background:#2a2306;color:#fde68a;border:1px solid #713f12">🟡 VIGILAR<br>solo si se confirma</span><span style="background:#450a0a;color:#fecaca;border:1px solid #7f1d1d">⛔ EVITAR<br>no tocar</span></div>
-    <div class="bl-mut" style="font-size:11.5px;margin-top:7px">Regla de oro: <b style="color:#e5e7eb">no entrar antes de las 8:45 a.m.</b> Los primeros 15 min son ruido. Universo: ${bolUniName()}.</div></div>`;
+    <div class="bl-mut" style="font-size:11.5px;margin-top:7px">Regla de oro: <b style="color:#e5e7eb">no entrar antes de las 8:45 a.m.</b> Los primeros 15 min son ruido. Universo: ${BOL.cfg.uni==='sp'?'S&P 500':'BingX'} (el plan usa los gaps de la bolsa de EE. UU.).</div></div>`;
   h+=`<div class="pl-sec">🟢 PREPARAR <small>· ${I.prep.length} ${I.prep.length===1?'acción':'acciones'}</small></div>`+(I.prep.length?I.prep.map(it=>bolPlanRow(it,'g')).join(''):`<div class="bl-box bl-mut">Nada claro para preparar con tus filtros.</div>`);
   h+=`<div class="pl-sec">🟡 VIGILAR <small>· solo si el pre-mercado lo confirma</small></div>`+(I.vig.length?I.vig.map(it=>bolPlanRow(it,'y')).join(''):`<div class="bl-box bl-mut">Nada para vigilar.</div>`);
   h+=`<div class="pl-sec">⛔ EVITAR <small>· resultados hoy o en la próxima sesión</small></div><div class="bl-box" style="padding:6px 10px">`+(I.avoid.length?I.avoid.map(a=>`<div class="pl-ev"><b>${a.s}</b><span>${a.n} · resultados ${a.d===hoy?'hoy':'el '+a.d}</span><b style="color:#fca5a5">⛔</b></div>`).join('')+`<div class="bl-mut" style="font-size:11px;margin-top:4px">Pueden abrir con saltos de 5–10 % hacia cualquier lado.</div>`:`<div class="bl-mut" style="font-size:12px">Ninguna acción de tu lista reporta resultados.</div>`)+`</div>`;
   const st=P.stats||[]; h+=`<div class="bl-mut" style="font-size:11px;margin-top:8px">Gaps cerrados en ≤3 sesiones (últimos 60 días, todas las acciones): <1 % ${st[0]!=null?Math.round(st[0]*100)+' %':'—'} · 1–2 % ${st[1]!=null?Math.round(st[1]*100)+' %':'—'} · 2–4 % ${st[2]!=null?Math.round(st[2]*100)+' %':'—'} · >4 % ${st[3]!=null?Math.round(st[3]*100)+' %':'—'}. No es una recomendación de inversión.</div>`;
   return h;
 }
+function bolPx(x){ const D=x.src==='24'&&BOL.d24?BOL.d24:BOL.base; return D&&D.px&&D.px[x.s]?D.px[x.s][0]:null; }
+function bolSes(){ // sesión de BingX para acciones de EE. UU. según la hora de Nueva York
+  const N=bolNY(), wd=N.wd, m=N.m;
+  const fin= (wd===5&&m>=1200)||wd===6||(wd===0&&m<1200);
+  if(fin) return {k:'fin', ic:'📅', t:'Fin de semana', liq:'liquidez baja', c:'#ef4444', bg:'#2a0b0b', txt:'Precios con poco volumen y mechas falsas. No abras posiciones nuevas; espera al domingo 7:00 p.m. o al lunes.'};
+  if(wd>=1&&wd<=5&&m>=570&&m<960) return {k:'ab', ic:'🟢', t:'Mercado abierto', liq:'alta liquidez', c:'#22c55e', bg:'#052e16', txt:'El mejor momento para operar: spreads chicos y movimientos limpios.'};
+  if(m>=240&&m<570) return {k:'pre', ic:'🌅', t:'Pre-mercado', liq:'liquidez moderada', c:'#f59e0b', bg:'#1c1606', txt:'Puedes operar, pero con spreads más amplios. Mejor entrar desde las 8:45 a.m.'};
+  if(m>=960&&m<1200) return {k:'fuera', ic:'🌆', t:'Fuera de horario', liq:'liquidez moderada', c:'#f59e0b', bg:'#1c1606', txt:'Puedes operar, pero con spreads más amplios. Mejor entrar de 8:45 a.m. a 2:30 p.m.'};
+  return {k:'noche', ic:'🌙', t:'Overnight', liq:'liquidez baja', c:'#ef4444', bg:'#2a0b0b', txt:'Poca liquidez: evita abrir posiciones nuevas y cuida los stops de las que tengas.'};
+}
+function bolSesHTML(){ const S=bolSes(); const L=bolLocal;
+  const seg=[['pre','🌅 Pre',`${L(240)}–${L(570)}`],['ab','🟢 Abierto',`${L(570)}–${L(960)}`],['fuera','🌆 Fuera',`${L(960)}–${L(1200)}`],['noche','🌙 Noche',`${L(1200)}–${L(240)}`],['fin','📅 Fin sem.',`vie ${L(1200)}`]];
+  return `<div class="bl-ses" style="border-color:${S.c};background:${S.bg}"><div class="t">${S.ic} BingX · ${S.t} <span style="color:${S.c}">· ${S.liq}</span></div><div class="r">${S.txt}</div>
+    <div class="sb">${seg.map(([k,a,b])=>`<div class="${k===S.k?'on':''}" style="${k===S.k?`outline:2px solid ${S.c}`:''}">${a}<br>${b.replace(/ (a|p)\.m\./g,'')}</div>`).join('')}</div></div>`;
+}
 function bolInit(){
-  $('bolFab').onclick=()=>{ $('bolPanel').classList.add('open'); bolRender(); if(!BOL.data||Date.now()-BOL.data.gen>10*6e4) bolLoad(); };
+  $('bolFab').onclick=()=>{ $('bolPanel').classList.add('open'); bolRender(); if(!BOL.base||Date.now()-BOL.base.gen>10*6e4) bolLoad(); };
   $('bolX').onclick=()=>$('bolPanel').classList.remove('open');
   $('bolPanel').addEventListener('click',e=>{ if(e.target.id==='bolPanel') $('bolPanel').classList.remove('open'); });
   $('bolTabs').onclick=e=>{ const b=e.target.closest('[data-tab]'); if(!b) return; BOL.tab=b.dataset.tab; bolRender(); };
@@ -3840,7 +3862,7 @@ function bolInit(){
     if(b.dataset.act==='copy') bolCopy(s);
     if(b.dataset.act==='img') bolDownload(s);
     if(b.dataset.act==='p'||b.dataset.act==='g'){ const i=BOL.seg.findIndex(x=>x.s===s.s&&x.dir===s.dir), grp=b.dataset.act==='g';
-      if(i<0){ const z=bolSize(s); BOL.seg.push({s:s.s, nm:s.n, n:z?z.n:0, dir:s.dir, em:s.em, sst:s.sst, tp:s.tp, d:s.d, at:Date.now(), g:grp}); bolDownload(s); }
+      if(i<0){ const z=bolSize(s); BOL.seg.push({s:s.s, src:BOL.data&&BOL.data.m24?'24':'y', nm:s.n, n:z?z.n:0, dir:s.dir, em:s.em, sst:s.sst, tp:s.tp, d:s.d, at:Date.now(), g:grp}); bolDownload(s); }
       else if(grp && !BOL.seg[i].g){ BOL.seg[i].g=true; bolDownload(s); }
       else if(grp) BOL.seg[i].g=false;
       else BOL.seg.splice(i,1);

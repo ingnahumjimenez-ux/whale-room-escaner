@@ -190,12 +190,14 @@ async function main() {
   const D = crudo.d;
   const tr = (sym, n) => D[sym] ? M.trendOf(n ? agrupar(aVelas(D[sym]).slice(-VELAS), n) : aVelas(D[sym]).slice(-VELAS)) : null;
   const ult = sym => { if (!D[sym]) return null; const K = aVelas(D[sym]), e = extras(K); return { c: K[K.length - 1].c, ch: e.ch == null ? null : +e.ch.toFixed(2) }; };
-  const mkt = {
+  const M24 = process.env.MODO === '24' || crudo.fuente === 'bingx';   // universo BingX 24/7 (precios de BingX)
+  let base = null; if (M24) { try { base = JSON.parse(fs.readFileSync(path.join(RAIZ, 'data', 'bolsa.json'), 'utf8')); } catch (e) {} }
+  const mkt = M24 ? ((base && base.mkt) || { spy: {}, qqq: {}, vix: null }) : {
     spy: { m15: tr('SPY'), h1: tr('SPY', 4), h4: tr('SPY', 16), ...ult('SPY') },
     qqq: { h1: tr('QQQ', 4), h4: tr('QQQ', 16), ...ult('QQQ') },
     vix: ult('^VIX')
   };
-  const BX = await listaBingX(path.join(path.dirname(SALIDA), 'bingx.json'));
+  const BX = M24 ? Object.fromEntries(Object.keys(D).map(k => [k, { c: D[k].bxs, lev: (crudo.lev || {})[k] || null }])) : await listaBingX(path.join(path.dirname(SALIDA), 'bingx.json'));
   const enBX = sym => !!(BX && (BX[sym] || BX[sym.replace('.', '')]));
   const cfg = { market: 'stocks', tf: '15m', limit: VELAS, minVol: 0, minScore: MIN_PUNTAJE, dir: 'both', minCores: MIN_CONF, pivot: 5, closedOnly: false };
   const px = {}, sig = [];
@@ -205,6 +207,7 @@ async function main() {
     const K = aVelas(x).slice(-VELAS);
     if (K.length < 300) continue;
     const e = extras(K), c = K[K.length - 1].c;
+    if (M24) e.gap = null;   // en BingX el precio se mueve toda la noche: no hay gap de apertura
     ultima = Math.max(ultima, K[K.length - 1].t);
     px[sym] = [r4(c), e.ch == null ? null : +e.ch.toFixed(2), e.dv];
     n++;
@@ -222,7 +225,7 @@ async function main() {
       try { if (O && O.best) PO = M.computeProjection(r.K, r.close, O.stop.stop, r.targets[O.best.k - 1].p, dir, r.atrPct, '15m'); } catch (err) {}
       const rows = O ? O.rows : [];
       sig.push({
-        s: sym, n: x.n || sym, sec: x.sec || '', dir, sc: r.score, co: r.cores,
+        s: sym, n: x.n || sym, sec: x.sec || '', sp: M24 ? (x.sp ? 1 : 0) : 1, dir, sc: r.score, co: r.cores,
         tg: [!!r.hasFVG, !!r.hasTL, !!r.hasLvl, !!r.pullback, !!r.confluent],
         el: r4(r.entryLow), eh: r4(r.entryHigh), em: r4(r.entryMid), st: r4(r.stop), sst: O ? r4(O.stop.stop) : r4(r.stop),
         tp: r.targets.map(t => r4(t.p)), rr: r.targets.map(t => +(t.rr || 0).toFixed(2)),
@@ -240,7 +243,7 @@ async function main() {
   sig.splice(MAX_SENALES);
   sig.push(...fuera);
   const bx = BX ? Object.keys(BX).filter(k => D[k] || D[k.replace(/([A-Z])([A-Z])$/, '$1.$2')]).sort() : null;
-  const out = { v: 1, gen: Date.now(), at: ultima, n, mkt, px, sig, bx, bxLev: BX ? Object.fromEntries(Object.entries(BX).filter(([, v]) => v.lev).map(([k, v]) => [k, v.lev])) : null };
+  const out = { v: 1, m24: M24 ? 1 : 0, er: M24 && base ? base.er : undefined, gen: Date.now(), at: ultima, n, mkt, px, sig, bx, bxLev: BX ? Object.fromEntries(Object.entries(BX).filter(([, v]) => v.lev).map(([k, v]) => [k, v.lev])) : null };
   try {
     const prev = JSON.parse(fs.readFileSync(SALIDA, 'utf8'));
     if (prev.at === ultima && process.env.FORZAR !== '1') { log('Sin velas nuevas desde el último análisis (mercado cerrado o feriado). No se actualiza.'); return; }
@@ -248,6 +251,6 @@ async function main() {
   fs.mkdirSync(path.dirname(SALIDA), { recursive: true });
   fs.writeFileSync(SALIDA, JSON.stringify(out));
   log(`Listo: ${n} acciones analizadas, ${sig.length} señales, ${bx ? bx.length : 0} en BingX. Archivo ${(fs.statSync(SALIDA).size / 1024).toFixed(0)} KB.`);
-  if (process.env.PLAN === '1') planCierre(D, M, out, BX);
+  if (process.env.PLAN === '1' && !M24) planCierre(D, M, out, BX);
 }
 main().catch(e => { console.error(e); process.exit(1); });
