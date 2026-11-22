@@ -467,6 +467,41 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-ap
 .legend{grid-template-columns:1fr 1fr 1fr;font-size:10.5px;gap:5px 10px}
 .pbtip{position:absolute;left:0;right:0;z-index:5;background:#1e1b4b;border:1px solid #6d28d9;color:#e0e7ff;font-size:12.5px;line-height:1.45;padding:10px 12px;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.5);text-align:left;font-weight:400}
 .pbtip .ar{position:absolute;top:-7px;width:12px;height:12px;background:#1e1b4b;border-left:1px solid #6d28d9;border-top:1px solid #6d28d9;transform:rotate(45deg)}
+
+/* ===== Diseño 1 · Clásico refinado (tarjeta de par) ===== */
+.card{border-radius:16px;border-color:#1e293b}
+.card .cbody{gap:9px;padding:12px 14px 14px}
+.card .cbody .sym{font-size:19px;font-weight:800;letter-spacing:-.2px}
+.card .cbody .ctxrow{border-top:1px solid #1e293b;padding-top:9px}
+.card .cbody .verd{margin:0;border-radius:10px;padding:7px 10px;font-size:12.5px}
+.card .cbody > .kv{border-top:1px solid #1e293b;padding-top:9px;gap:3px 10px;font-size:12px;grid-template-columns:auto 1fr}
+.card .cbody > .kv span{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;letter-spacing:-.4px;overflow-wrap:anywhere}
+.card .cbody > .kv b{color:var(--mut);font-weight:500}
+.card .cbody .optbox{background:#0b1222;border-color:#1e293b;padding:9px}
+.card .cbody .sym{font-size:17px}
+.card .cbody > .kv{font-size:11px}
+.card .cbody .verd{font-size:11.5px}.card .cbody .verd b{font-size:12px}
+.card .cbody .ctxrow .lbl{font-size:10.5px}
+.card .cbody .optbox .h{font-size:11px}.card .cbody .optbox .best{font-size:12px}
+.card .cbody .optbox .best div{font-size:10.5px!important}
+.card .cbody .score{font-size:11.5px}
+.card .cbody > div[style*="font-size:12px"]{font-size:11px!important}
+
+/* ===== Menú de burbujas (una burbuja que abre las demás · estilo vidrio con borde azul) ===== */
+#menuFab{position:fixed;right:14px;bottom:18px;z-index:9;width:58px;height:58px;border-radius:50%;padding:0;cursor:pointer;
+  background:rgba(255,255,255,.08);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:2px solid #3b82f6;color:#93c5fd;
+  font-size:24px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 14px rgba(59,130,246,.35);transition:transform .2s}
+#menuFab .ic{display:inline-block;transition:transform .25s}
+body.fabs-open #menuFab .ic{transform:rotate(90deg)}
+#menuFab i{position:absolute;top:-5px;right:-5px;background:#22d3ee;color:#04202a;font-style:normal;font-size:10.5px;font-weight:900;border-radius:99px;min-width:19px;height:19px;line-height:19px;padding:0 4px;display:none}
+#menuShade{position:fixed;inset:0;z-index:6;background:rgba(5,8,14,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s}
+body.fabs-open #menuShade{opacity:1;pointer-events:auto}
+#plusFab,#fgFab,#k1Fab,#bolFab,#jxFab{opacity:0;pointer-events:none;transform:translateY(24px) scale(.8);transition:opacity .2s,transform .22s}
+body.fabs-open #plusFab,body.fabs-open #fgFab,body.fabs-open #k1Fab,body.fabs-open #bolFab,body.fabs-open #jxFab{opacity:1;pointer-events:auto;transform:none}
+#plusFab{bottom:90px}#fgFab{bottom:154px}#k1Fab{bottom:218px}#bolFab{bottom:282px}#jxFab{bottom:346px}
+#plusFab,#k1Fab,#bolFab,#jxFab{background:rgba(255,255,255,.08)!important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1.5px solid #3b82f6;color:#bfdbfe;box-shadow:0 6px 20px rgba(0,0,0,.45)!important}
+#fgFab{border:1.5px solid #3b82f6}
+
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b1a33">
@@ -709,6 +744,7 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-ap
   </div>
 </div>
 
+<div id="menuShade"></div><button id="menuFab" title="Escáneres y herramientas"><span class="ic">☰</span><i id="menuCnt"></i></button>
 <button id="fgFab" title="Miedo y Codicia"><span class="in"><b>?</b><small>ÍNDICE</small></span></button>
 <div id="fgPanel"><div class="sheet"><div class="grab"></div><div class="ph"><h2>😨 Miedo y Codicia</h2><button class="x" id="fgX">✕</button></div>
 <div style="font-size:12px;color:#8a9bb0;margin:0 0 10px" id="fgSt"></div><div id="fgBody"></div></div></div>
@@ -4393,6 +4429,21 @@ document.addEventListener('click',e=>{
   tip.querySelector('.ar').style.left=Math.max(10,t.offsetLeft+t.offsetWidth/2-6)+'px';
 });
 
+
+/* ===== Menú de burbujas ===== */
+(function(){
+  const L={plusFab:'Plus 15m',fgFab:'Miedo y Codicia',k1Fab:'1000 velas 15m',bolFab:'Bolsa',jxFab:'Jaxon'};
+  Object.entries(L).forEach(([id,t])=>{ const b=document.getElementById(id); if(!b) return; b.dataset.lbl=t;
+    b.addEventListener('click',()=>document.body.classList.remove('fabs-open')); });
+  const m=document.getElementById('menuFab'), ic=m.querySelector('.ic');
+  const set=o=>{ document.body.classList.toggle('fabs-open',o); ic.textContent=o?'✕':'☰'; };
+  m.onclick=()=>set(!document.body.classList.contains('fabs-open'));
+  document.getElementById('menuShade').onclick=()=>set(false);
+  const cnt=()=>{ let n=0; ['bolCnt','k1Cnt'].forEach(id=>{ const e=document.getElementById(id); if(e && getComputedStyle(e).display!=='none') n+=parseInt(e.textContent)||0; });
+    const c=document.getElementById('menuCnt'); c.textContent=n; c.style.display=n?'block':'none'; };
+  ['bolCnt','k1Cnt'].forEach(id=>{ const e=document.getElementById(id); if(e) new MutationObserver(cnt).observe(e,{attributes:true,childList:true,characterData:true,subtree:true}); });
+  cnt();
+})();
 </script>
 <script id="pwa">
 // App instalable: el escáner funciona igual; esto solo permite instalarlo y abrirlo sin barra del navegador
