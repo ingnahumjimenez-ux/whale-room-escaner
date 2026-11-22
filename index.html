@@ -502,6 +502,50 @@ body.fabs-open #plusFab,body.fabs-open #fgFab,body.fabs-open #k1Fab,body.fabs-op
 #plusFab,#k1Fab,#bolFab,#jxFab{background:rgba(255,255,255,.08)!important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1.5px solid #3b82f6;color:#bfdbfe;box-shadow:0 6px 20px rgba(0,0,0,.45)!important}
 #fgFab{border:1.5px solid #3b82f6}
 
+
+/* ===== Tarjeta compacta (más pequeña y mejor acomodada) ===== */
+.card .cbody{gap:7px;padding:10px 12px 12px}
+.card canvas{height:170px}
+.card .cbody .sym{font-size:15.5px}
+.card .cbody .score{font-size:11px;padding:2px 9px}
+.card .cbody .scoreadj{font-size:9.5px}
+.card .cbody .cmeta{gap:6px;align-items:center}
+.card .cbody .cses{display:flex;flex-wrap:wrap;align-items:center;gap:4px 5px;min-width:0}
+.card .cbody .cses .badge-new,.card .cbody .cses .badge-pin{order:1}.card .cbody .cses .sesn{order:2;flex-basis:100%}
+.card .cbody .cses .sesn{font-size:10.5px;color:var(--mut);white-space:nowrap}
+.card .cbody .cses .badge-new,.card .cbody .cses .badge-pin{margin-left:0;font-size:9px;padding:1px 6px}
+.card .cbody .st{font-size:10.5px;padding:2px 8px}
+.card .cbody .fbtns{gap:5px}.card .cbody .fbtns .star{padding:5px 9px;font-size:11.5px;border-radius:8px}
+.card .cbody .ctxrow{gap:4px;padding-top:7px}
+.card .cbody .cx{font-size:10px;padding:1px 7px}
+.card .cbody .tags.row1 .tag{font-size:9.5px;padding:2px 4px}
+.card .cbody .verd{font-size:11px;padding:5px 9px}.card .cbody .verd b{font-size:11.5px}
+.card .cbody > .kv{font-size:11px;padding-top:7px;gap:2px 8px;grid-template-columns:86px 1fr;align-items:baseline}
+.card .cbody > .kv b{font-size:10.5px}
+.card .cbody > .kv span{font-family:inherit;letter-spacing:0;font-variant-numeric:tabular-nums}
+.card .cbody .optbox{padding:7px 8px}
+.card .cbody .optbox .h{font-size:10.5px;margin-bottom:3px}
+.card .cbody .tpstrip{gap:3px}
+.card .cbody .tpstrip .c{padding:2px 0 1px;border-radius:6px}
+.card .cbody .tpstrip .c .t{font-size:8.5px}.card .cbody .tpstrip .c .v{font-size:10.5px}
+.card .cbody .optbox .best{font-size:11px;margin-top:5px}
+.card .row.acts{gap:5px;grid-template-columns:1fr 1fr 1fr}.card .row.acts>button{height:32px;font-size:11.5px;padding:0 2px;white-space:nowrap;border-radius:9px}
+.card .cbody > button.primary{padding:8px 0;font-size:13px;border-radius:10px}
+
+.card .cbody .verd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px;padding:5px 9px;cursor:pointer}
+.card .cbody .verd b{font-size:11px}
+.card .cbody .verd.full{white-space:normal}
+
+.card .cbody .ctxline{display:flex;align-items:center;gap:5px;border-top:1px solid #1e293b;padding-top:7px;position:relative}
+.card .cbody .ctxline .ctxrow{border:0;padding:0;flex:none;flex-wrap:nowrap;gap:3px}
+.card .cbody .ctxline .ctxrow .lbl{display:none}
+.card .cbody .ctxline .cx{font-size:9.5px;padding:1px 5px}
+.card .cbody .ctxline .ctxrow::after{content:'';width:1px;height:16px;background:#334155;margin-left:2px}
+.card .cbody .ctxline .tags.row1{flex:1;gap:3px;position:static!important}
+.card .cbody .ctxline .tags.row1 .tag{font-size:9.5px;padding:2px 3px}
+
+.card .cbody .optbox .best{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .cbody .optbox .best div{white-space:normal}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b1a33">
@@ -1861,7 +1905,7 @@ function cardOptBox(r){
   const O=optOf(r), d=r.d, col=p=>p>=0.6?'#86efac':p>=0.4?'#bef264':p>=0.25?'#fcd34d':'#fca5a5', bg=p=>p>=0.6?'#052e16':p>=0.4?'#1a2e05':p>=0.25?'#2a2306':'#2a0b0b';
   return `<div class="optbox"><div class="h"><span>🎯 Probabilidad de llegar antes del stop${O.stop.ok?'':' <span class="stopwarn">(con stop sugerido)</span>'}</span></div>
     <div class="tpstrip">${O.rows.map((x,i)=>x?`<div class="c ${O.best&&O.best.k===x.k?'best':''}" style="background:${bg(x.prob)}"><span class="t">T${x.k}</span><span class="v" style="color:${col(x.prob)}">${pTxt(x.prob)}</span></div>`:`<div class="c"><span class="t">T${i+1}</span><span class="v">—</span></div>`).join('')}</div>
-    <div class="best">${O.best?`🎯 <b>Objetivo óptimo: T${O.best.k}</b> · ${fmt(O.best.p,d)} · <b style="color:${col(O.best.prob)}">${Math.round(O.best.prob*100)} %</b> · <span style="color:var(--mut)">valor esperado</span> <b style="color:#86efac">+${O.best.ev.toFixed(2)} R</b>`
+    <div class="best">${O.best?`🎯 <b>Óptimo T${O.best.k}</b> · ${fmt(O.best.p,d)} · <b style="color:${col(O.best.prob)}">${Math.round(O.best.prob*100)} %</b> · <span style="color:var(--mut)">valor esp.</span> <b style="color:#86efac">+${O.best.ev.toFixed(2)} R</b>`
       :'<span style="color:#fca5a5">⚠️ Ningún objetivo tiene suficiente probabilidad y compensa el riesgo.</span>'}${O.low?'<div style="font-size:11.5px;color:#fcd34d;margin-top:2px">Probabilidad moderada: ningún objetivo rentable llega a 50 %.</div>':''}</div></div>`;
 }
 function cardStopRows(r){
@@ -1882,17 +1926,16 @@ function cardHTML(r){
   <div class="cbody">
     <div class="row"><span class="sym"><span class="st" style="background:${r.dir==='short'?'#7f1d1d':'#14532d'};color:${r.dir==='short'?'#fecaca':'#bbf7d0'};margin-right:6px;vertical-align:2px">${r.dir==='short'?'SHORT':'LONG'}</span>${r.symbol.replace('USDT','')}<span style="color:var(--mut);font-weight:400">/USDT · ${TF_LABEL[r.tf]}</span></span>
       <span class="scorebox"><span class="score" style="background:${scoreColor(r.score)}">${r.score}/100</span>${r.ctxAdj?`<span class="scoreadj">base ${r.baseScore} · ${r.ctxAdj>0?'+':'−'}${Math.abs(r.ctxAdj)}</span>`:''}</span></div>
-    <div style="font-size:12px;color:var(--mut);margin-top:-4px">${r.session?`🕒 ${r.session}`:''}${r.pinned?'<span class="badge-pin">📌 Fijo</span>':''}${r.isNew?'<span class="badge-new">NUEVA</span>':''}</div>
-    <div class="row">${statusBadge(r.st)}${starBtnHTML(r,'data-act="star"')}</div>
+    <div class="row cmeta"><span class="cses">${statusBadge(r.st)}${r.session?`<span class="sesn">🕒 ${r.session}</span>`:''}${r.pinned?'<span class="badge-pin">📌 Fijo</span>':''}${r.isNew?'<span class="badge-new">NUEVA</span>':''}</span>${starBtnHTML(r,'data-act="star"')}</div>
     ${lateNote(r,r.st)}
-    ${cardCtxRow(r)}
+    <div class="ctxline">${cardCtxRow(r).replace('>₿ BTC ','>₿ ')}
     <div class="tags row1">
-      <span class="tag ${r.hasFVG?'on':''}">FVG</span>
-      <span class="tag ${r.hasTL?'on':''}">Tendencia</span>
+      <span class="tag ${r.hasFVG?'on':''}" title="FVG">FVG</span>
+      <span class="tag ${r.hasTL?'on':''}" title="Tendencia">Tend.</span>
       <span class="tag ${r.hasLvl?'on':''}" title="Nivel horizontal">Nivel</span>
-      <span class="tag ${r.pullback?'on':''}" data-pb style="cursor:pointer;position:relative">${r.dir==='short'?'Rebote':'Retroceso'} ⓘ</span>
-      <span class="tag ${r.confluent?'on':''}">Confluencia</span>
-    </div>
+      <span class="tag ${r.pullback?'on':''}" data-pb style="cursor:pointer;position:relative" title="${r.dir==='short'?'Rebote':'Retroceso'}">${r.dir==='short'?'Reb.':'Retr.'} ⓘ</span>
+      <span class="tag ${r.confluent?'on':''}" title="Confluencia">Conf.</span>
+    </div></div>
     ${verdictRow(r)}
     <div class="kv">
       <b>Entrada</b><span>${fmt(r.entryLow,d)} – ${fmt(r.entryHigh,d)}</span>
@@ -1900,12 +1943,10 @@ function cardHTML(r){
       <b>T1 / T4 / T8</b><span style="color:#86efac">${fmt(r.targets[0].p,d)} / ${fmt(rr4.p,d)} / ${fmt(r.targets[7].p,d)}</span>
       <b>${r.dir==='short'?'Rebote':'Retroceso'}</b><span>${pbRow(r)}</span>
       ${cardProjRow(r)}
-      <b>Apalanc.</b><span>${r.levTxt}</span>
-      <b>Vol 24h</b><span>${fmtVol(r.vol)} USDT</span>
+      <b>Apalanc. · Vol</b><span>${r.levTxt} · ${fmtVol(r.vol)} USDT</span>
     </div>
     ${cardOptBox(r)}
-    <div class="row acts"><button class="ghost" data-act="detail">Ver análisis</button><button class="ghost" data-act="copy">Copiar señal</button></div>
-    <button class="primary" data-act="img">⬇ Descargar imagen</button>
+    <div class="row acts"><button class="ghost" data-act="detail">Ver análisis</button><button class="ghost" data-act="copy">Copiar señal</button><button class="primary" data-act="img">⬇ Descargar</button></div>
   </div>`;
 }
 
@@ -2664,7 +2705,9 @@ function verdictOf(r){
   if(n===0) return ['go','✅ TÓMALA', r.dir==='long' && M && M.k==='alts' ? 'dinero normal · puedes buscar T5+' : 'dinero normal · parcial en T1'];
   return ['mid','⚠️ SOLO PEQUEÑA', '½ dinero · salir en T1–T2 · '+why[0]];
 }
-function verdictRow(r){ const v=verdictOf(r); return v?`<div class="verd ${v[0]}"><b>${v[1]}</b><span>· ${v[2]}</span></div>`:''; }
+function verdictRow(r){ const v=verdictOf(r); if(!v) return '';
+  const t=v[2].replace('salir en T1–T2','T1–T2').replace('dinero normal · parcial en T1','normal · parcial T1').replace('dinero normal · puedes buscar T5+','normal · busca T5+').replace('modo a favor de alts','modo alts');
+  return `<div class="verd ${v[0]}" title="${v[1]} · ${v[2]}" onclick="this.classList.toggle('full')"><b>${v[1]}</b><span>· ${t}</span></div>`; }
 async function modoRefresh(){
   try{ if(!fgData) await fgRefresh(false); await fgLoadDec(false); }catch(e){}
   const M=modoOf(), k=M?M.k:'';
