@@ -68,6 +68,7 @@
   .vista{display:flex;gap:6px;margin-bottom:10px} .vista button{flex:1} .vista button.on{border-color:var(--pur);color:#b9a2ff}
   .gtag{font-size:11px;color:#bfdbfe;background:#0c2a4a;border-radius:99px;padding:1px 7px}
   #jxToast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#14532d;color:#dcfce7;border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px;display:none;z-index:9}
+.jx-modo .tst{margin-top:4px;font-size:11px;color:#94a3b8}
 </style>
 </head>
 <body>
@@ -273,13 +274,14 @@ const a4h=C=>{const o=[];for(let i=C.length%4;i<C.length;i+=4)o.push(C[Math.min(
 function ctxDe(d){ return {h1:tendencia(d.C), h4:tendencia(a4h(d.C)), btc:BTCV}; }
 async function btcCtx(){ try{const d=await velas('BTCUSDT'); const h1=tendencia(d.C), h4=tendencia(a4h(d.C)); BTCV=h1&&h1===h4?h1:'flat';}catch(e){BTCV=null} }
 function modoV3(){ try{ if(window.parent&&window.parent!==window&&typeof window.parent.modoOf==='function') return window.parent.modoOf(); }catch(e){} return null; }
-const MODO_TXT={alts:['🚀','A FAVOR DE ALTS','LONG 🟢 normal · busca T5+ &nbsp; SHORT 🟡 ½ dinero · T1–T2','alts'],neu:['⚖️','NEUTRAL','LONG ⚪ y SHORT ⚪ según la tarjeta','neu'],def:['🛡','DEFENSIVO','LONG 🟡 ½ dinero · T1–T2 &nbsp; SHORT 🟢 normal','']};
+const MODO_TXT={alts:['🚀','A FAVOR DE ALTS','LONG 🟢 normal · busca T5+ &nbsp; SHORT 🟡 ½ dinero · T1–T2','alts'],neu:['⚖️','NEUTRAL','LONG ⚪ y SHORT ⚪ según la tarjeta','neu'],def:['🛡','DEFENSIVO','LONG ⛔ no tomar &nbsp; SHORT 🟢 normal · escalonado','']};
 function renderModo(){ const el=$('jxModo'); if(!el) return; const M=modoV3(); if(!M){el.innerHTML='';return}
-  const m=MODO_TXT[M.k]; el.innerHTML=`<div class="jx-modo ${m[3]}"><div class="t">${m[0]} Modo ${m[1]} <span>· ${M.why.join(' · ')}</span></div><div style="margin-top:3px"><b>${m[2]}</b></div></div>`; }
+  const m=MODO_TXT[M.k]; el.innerHTML=`<div class="jx-modo ${m[3]}"><div class="t">${m[0]} Modo ${m[1]} <span>· ${M.why.join(' · ')}</span></div><div style="margin-top:3px"><b>${m[2]}</b></div><div class="tst">📊 Test 60 días · 100 pares: SHORT <b style="color:#86efac">+0.75 R</b> por operación · LONG <b style="color:#fca5a5">−0.46 R</b> · LONG solo con BTC subiendo y sin modo defensivo</div></div>`; }
 const alinea=(t,dir)=>!t||t==='flat'?0:(t==='up'?1:-1)*(dir==='short'?-1:1);
 function veredicto(r){ const c=r.ctx; if(!c) return null; const M=modoV3();
   const sh=r.dir==='short', ag=[['4H',c.h4],['1H',c.h1]].concat(r.sym==='BTCUSDT'?[]:[['BTC',c.btc]]).filter(([,t])=>alinea(t,r.dir)<0).map(([l])=>l);
   const modeAg=M&&r.sym!=='BTCUSDT'&&((M.k==='def'&&!sh)||(M.k==='alts'&&sh)), n=ag.length+(modeAg?1:0), why=ag.map(l=>l==='BTC'?'BTC en contra':'contra '+l).concat(modeAg?[M.k==='def'?'modo defensivo':'modo a favor de alts']:[]);
+  if(!sh && r.sym!=='BTCUSDT' && ((M&&M.k==='def')||c.btc==='down')) return ['no','⛔ NO LA TOMES',((M&&M.k==='def')?'modo defensivo':'BTC bajando')+' · en el test el LONG perdió (−0.46 R)'];
   if((ag.includes('BTC')&&ag.includes('4H'))||n>=3) return ['no','⛔ NO LA TOMES',why.join(' · ')];
   if(n===0) return ['go','✅ TÓMALA', !sh&&M&&M.k==='alts'?'dinero normal · puedes buscar T5':'dinero normal · parcial en T1'];
   return ['mid','⚠️ SOLO PEQUEÑA','½ dinero · salir en T1–T2 · '+why[0]]; }
@@ -376,7 +378,8 @@ function render(){
   const cnt=a=>`${a.length}${a.length?` · 🟢${a.filter(r=>r.dir!=='short').length} 🔴${a.filter(r=>r.dir==='short').length}`:''}`;
   $('tSig').textContent=`Señales (${cnt(sig)})`; $('tWatch').textContent=`Vigilar (${cnt(wat)})`;
   $('tSig').classList.toggle('on',tab==='senal'); $('tWatch').classList.toggle('on',tab==='vigilar');
-  let lista=(tab==='senal'?sig:wat).slice().sort((a,b)=>b.score-a.score);
+  const vOrd=r=>{const v=veredicto(r); return v?{go:0,mid:1,no:2}[v[0]]:1;};
+  let lista=(tab==='senal'?sig:wat).slice().sort((a,b)=>vOrd(a)-vOrd(b)||b.score-a.score);
   lista=forz.concat(lista);
   const box=$('res');
   if(!lista.length){box.innerHTML='<div class="empty">'+(resultados.length||$('go').disabled?'Nada en esta pestaña todavía.':'Pulsa "Escanear todo". Tarda 1–2 minutos.')+'</div>';return}
