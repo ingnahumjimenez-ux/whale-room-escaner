@@ -1,0 +1,216 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test Jaxon 2</title>
+<style>body{margin:0;background:#0b1220;color:#e5e7eb;font:14px/1.45 Inter,system-ui,sans-serif}.w{max-width:560px;margin:0 auto;padding:14px}
+h2{font-size:19px;margin:4px 0}.m{color:#94a3b8;font-size:12.5px}button{padding:12px;border-radius:12px;border:0;font-weight:800;font-size:15px}
+#go{flex:1;background:#16a34a;color:#fff}#cp{background:#111a2e;color:#e5e7eb;border:1px solid #334155;display:none}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}td{padding:5px 3px;border-bottom:1px solid #1e293b;text-align:right}td:first-child{text-align:left}tr.h td{color:#94a3b8;font-weight:700}
+h3{font-size:14.5px;margin:16px 0 4px}.g{color:#86efac}.r{color:#fca5a5}.box{background:#111a2e;border:2px solid #22c55e;border-radius:12px;padding:10px 12px;margin-top:10px}</style></head><body><div class="w">
+<h2>🧪 Test Jaxon 2 · más datos y variantes</h2>
+<div class="m">100 pares de futuros (volumen 24h entre 2 y 60 millones) · 1H · ~60 días. Compara las reglas actuales con 3 variantes nuevas (entrada ≤1.5 %, ≤2.5 % y ≤2.5 % contando también "Vigilar"), y el SHORT de pump. Cada una con dos manejos: normal, y moviendo el stop a la entrada al tocar TP1.</div>
+<div style="display:flex;gap:8px;margin:12px 0"><button id="go">▶ Iniciar test</button><button id="cp">📋 Copiar</button></div>
+<div style="height:8px;background:#1e293b;border-radius:99px;overflow:hidden"><div id="bar" style="height:100%;width:0;background:#22c55e"></div></div>
+<div id="st" class="m" style="margin-top:6px">Tarda unos 6–10 minutos. Mantén la pantalla encendida.</div><div id="out"></div></div>
+<script>
+// ====================== NÚCLEO (sin DOM) ======================
+function ema(a,p){const k=2/(p+1);let e=a[0];const o=[e];for(let i=1;i<a.length;i++){e=a[i]*k+e*(1-k);o.push(e)}return o}
+function rsi(C,p=14){const o=new Array(C.length).fill(50);let g=0,l=0;
+  for(let i=1;i<=p&&i<C.length;i++){const d=C[i]-C[i-1];if(d>0)g+=d;else l-=d}
+  g/=p;l/=p;if(C.length>p)o[p]=l===0?100:100-100/(1+g/l);
+  for(let i=p+1;i<C.length;i++){const d=C[i]-C[i-1];g=(g*(p-1)+Math.max(d,0))/p;l=(l*(p-1)+Math.max(-d,0))/p;o[i]=l===0?100:100-100/(1+g/l)}return o}
+function atr(H,L,C,p=14){let s=0;const n=C.length;const tr=i=>Math.max(H[i]-L[i],Math.abs(H[i]-C[i-1]),Math.abs(L[i]-C[i-1]));
+  let a=0;for(let i=1;i<=p;i++)a+=tr(i);a/=p;for(let i=p+1;i<n;i++)a=(a*(p-1)+tr(i))/p;return a}
+const avg=a=>a.reduce((s,x)=>s+x,0)/a.length;
+
+function analizar(d,cfg){
+  const {H,L,C,V}=d, P=d.price, n=C.length;
+  const r={checks:[],trade:null,pasa:0,score:0,estado:'no'};
+  if(n<170) {r.checks.push({t:'Historial insuficiente',p:false});return r}
+  const W=48;
+  const lowW=L.slice(n-W), S=Math.min(...lowW);
+  // 2. toques al soporte (visitas separadas por >3 velas)
+  let toques=0,ult=-99; for(let x=n-W;x<n;x++){ if(L[x]<=S*1.012){ if(x-ult>3)toques++; ult=x; } }
+  const c2=toques>=2;
+  // 3. precio pegado al soporte
+  const sobre=P/S-1; const c3=sobre>=-0.003 && sobre<=cfg.maxAbove;
+  // 4. piso que aguanta
+  const prevLow=Math.min(...L.slice(n-120,n-W)); const c4=S>=prevLow*0.97;
+  // 5. giro de momentum
+  const R=rsi(C), E9=ema(C,9); const rNow=R[n-1], rMin=Math.min(...R.slice(n-8,n));
+  const c5=rMin<45 && rNow>rMin+3 && C[n-1]>E9[n-1];
+  // 6. volumen entrando
+  const vNow=avg(V.slice(n-3)), vBase=avg(V.slice(n-27,n-3)); const vr=vBase>0?vNow/vBase:0; const c6=vr>=1.2;
+  // stop estructural y escalera
+  const A=atr(H,L,C); const stop=S-0.5*A; const dist=(P-stop)/P;
+  const tps=[];for(let k=1;k<=cfg.nTp;k++)tps.push(P*(1+cfg.step*k));
+  // 7. espacio hasta resistencia de 7 días
+  const res=Math.max(...H.slice(Math.max(0,n-168),n)); const espacio=res/P-1; const c7=res>=tps[tps.length-1];
+  // 8. stop dentro del máximo y R/B en TP3
+  const rr=tps.map(t=>(t/P-1)/dist); const i3=Math.min(2,tps.length-1);
+  const c8=dist>0 && dist<=cfg.maxStop && rr[i3]>=cfg.minRR;
+  const pct=x=>(x*100).toFixed(2)+'%';
+  r.checks=[
+    {t:`Soporte con ≥2 toques (${toques})`,p:c2},
+    {t:`Precio cerca del soporte (${pct(sobre)} sobre el mínimo)`,p:c3},
+    {t:`Piso que aguanta (mín. 48h ${S.toPrecision(5)} vs previo ${prevLow.toPrecision(5)})`,p:c4},
+    {t:`Giro de momentum (RSI ${rMin.toFixed(0)}→${rNow.toFixed(0)}, cierre ${C[n-1]>E9[n-1]?'>':'≤'} EMA9)`,p:c5},
+    {t:`Volumen entrando (${vr.toFixed(2)}× promedio)`,p:c6},
+    {t:`Espacio hasta resistencia 7d (${pct(espacio)})`,p:c7},
+    {t:`Stop estructural ${pct(dist)} y R/B TP3 ${(rr[i3]||0).toFixed(2)}`,p:c8},
+  ];
+  r.pasa=r.checks.filter(c=>c.p).length;
+  const nucleo=c2&&c3&&c4&&c7&&c8;
+  if(nucleo && c5 && c6) r.estado='senal'; else if(nucleo && (c5||c6)) r.estado='vigilar';
+  // puntaje 0-100
+  const cl=(x)=>Math.max(0,Math.min(1,x));
+  r.score=Math.round(100*(cl(toques/4)*.15 + cl(1-Math.max(sobre,0)/cfg.maxAbove)*.15 + cl(vr-1)*.20 +
+          cl((rNow-rMin)/15)*.15 + cl(espacio/(2*cfg.step*cfg.nTp))*.15 + cl((rr[i3]||0)/3)*.20));
+  // gestión de riesgo
+  const riesgo=cfg.capital*cfg.riesgo, nocional=riesgo/(dist+2*cfg.fee);
+  const seguro=Math.max(1,Math.min(20,Math.floor(1/(dist+cfg.mmr+0.01)))); // tope prudente 20×
+  const liq50=P*(1-1/50+cfg.mmr);
+  r.trade={P,S,stop,dist,tps,rr,res,atrPct:A/P,riesgo,nocional,seguro,margen:nocional/seguro,liq50,liq50Antes:liq50>=stop};
+  return r;
+}
+
+// ====== SHORT: los mismos criterios de Jaxon, al revés (resistencia, techo, giro bajista) ======
+function analizarShort(d,cfg){
+  const {H,L,C,V}=d, P=d.price, n=C.length;
+  const r={checks:[],trade:null,pasa:0,score:0,estado:'no',dir:'short'};
+  if(n<170) {r.checks.push({t:'Historial insuficiente',p:false});return r}
+  const W=48;
+  const highW=H.slice(n-W), S=Math.max(...highW);
+  let toques=0,ult=-99; for(let x=n-W;x<n;x++){ if(H[x]>=S/1.012){ if(x-ult>3)toques++; ult=x; } }
+  const c2=toques>=2;
+  const bajo=1-P/S; const c3=bajo>=-0.003 && bajo<=cfg.maxAbove;
+  const prevHigh=Math.max(...H.slice(n-120,n-W)); const c4=S<=prevHigh/0.97;
+  const R=rsi(C), E9=ema(C,9); const rNow=R[n-1], rMax=Math.max(...R.slice(n-8,n));
+  const c5=rMax>55 && rNow<rMax-3 && C[n-1]<E9[n-1];
+  const vNow=avg(V.slice(n-3)), vBase=avg(V.slice(n-27,n-3)); const vr=vBase>0?vNow/vBase:0; const c6=vr>=1.2;
+  const A=atr(H,L,C); const stop=S+0.5*A; const dist=(stop-P)/P;
+  const tps=[];for(let k=1;k<=cfg.nTp;k++)tps.push(P*(1-cfg.step*k));
+  const res=Math.min(...L.slice(Math.max(0,n-168),n)); const espacio=1-res/P; const c7=res<=tps[tps.length-1];
+  const rr=tps.map(t=>(1-t/P)/dist); const i3=Math.min(2,tps.length-1);
+  const c8=dist>0 && dist<=cfg.maxStop && rr[i3]>=cfg.minRR;
+  const pct=x=>(x*100).toFixed(2)+'%';
+  r.checks=[
+    {t:`Resistencia con ≥2 toques (${toques})`,p:c2},
+    {t:`Precio cerca de la resistencia (${pct(bajo)} bajo el máximo)`,p:c3},
+    {t:`Techo que aguanta (máx. 48h ${S.toPrecision(5)} vs previo ${prevHigh.toPrecision(5)})`,p:c4},
+    {t:`Giro bajista (RSI ${rMax.toFixed(0)}→${rNow.toFixed(0)}, cierre ${C[n-1]<E9[n-1]?'<':'≥'} EMA9)`,p:c5},
+    {t:`Volumen entrando (${vr.toFixed(2)}× promedio)`,p:c6},
+    {t:`Espacio hasta soporte 7d (${pct(espacio)})`,p:c7},
+    {t:`Stop estructural ${pct(dist)} y R/B TP3 ${(rr[i3]||0).toFixed(2)}`,p:c8},
+  ];
+  r.pasa=r.checks.filter(c=>c.p).length;
+  const nucleo=c2&&c3&&c4&&c7&&c8;
+  if(nucleo && c5 && c6) r.estado='senal'; else if(nucleo && (c5||c6)) r.estado='vigilar';
+  const cl=(x)=>Math.max(0,Math.min(1,x));
+  r.score=Math.round(100*(cl(toques/4)*.15 + cl(1-Math.max(bajo,0)/cfg.maxAbove)*.15 + cl(vr-1)*.20 +
+          cl((rMax-rNow)/15)*.15 + cl(espacio/(2*cfg.step*cfg.nTp))*.15 + cl((rr[i3]||0)/3)*.20));
+  const riesgo=cfg.capital*cfg.riesgo, nocional=riesgo/(dist+2*cfg.fee);
+  const seguro=Math.max(1,Math.min(20,Math.floor(1/(dist+cfg.mmr+0.01))));
+  const liq50=P*(1+1/50-cfg.mmr);
+  r.trade={P,S,stop,dist,tps,rr,res,atrPct:A/P,riesgo,nocional,seguro,margen:nocional/seguro,liq50,liq50Antes:liq50<=stop};
+  return r;
+}
+function analizarAmbas(d,cfg){ const a=analizar(d,cfg); a.dir='long'; return [a, analizarShort(d,cfg)]; }
+if(false) module.exports={analizar,analizarShort,rsi,ema,atr};
+</script>
+<script>
+const API='https://fapi.binance.com', $=id=>document.getElementById(id), sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function api(p){ for(let i=0;i<3;i++){ try{ const r=await fetch(API+p); if(r.ok) return r.json(); }catch(e){} await sleep(600); } throw new Error('Binance no responde'); }
+const CFG={capital:1000,riesgo:0.01,step:0.0235,nTp:5,maxAbove:0.03,maxStop:0.06,minRR:1.5,fee:0.0005,mmr:0.005};
+const NEW={...CFG,maxAbove:0.015,maxStop:0.05,minStop:0.015,mult:1.75}, NEW25={...NEW,maxAbove:0.025};
+const WIN=48, GAP=12, STEP=2;
+// --- reglas nuevas: misma detección de Jaxon, distinta entrada/stop/escalera ---
+function ajusta(r,dir,cfg,d){ // re-calcula trade con escalera 1.75×stop; devuelve null si no cumple
+  if(!r||!(r.estado==='senal'||(cfg.vig&&r.estado==='vigilar'))) return null; const t=r.trade, P=t.P, sh=dir==='short';
+  let dist=t.dist; if(dist<cfg.minStop) dist=cfg.minStop; if(dist>cfg.maxStop) return null;
+  const sobre=sh? 1-P/t.S : P/t.S-1; if(sobre>cfg.maxAbove) return null;
+  const step=cfg.mult*dist, tps=[1,2,3,4,5].map(k=>sh?P*(1-step*k):P*(1+step*k));
+  const res=t.res; if(sh? res>tps[2] : res<tps[2]) return null;  // espacio hasta TP3 (antes TP5)
+  return {P,stop:sh?P*(1+dist):P*(1-dist),dist,tps,tipo:'normal'};
+}
+function pumpShort(d,cfg){ // vender el pump: +25 % en ≤12 velas, techo en las últimas 6, vela de rechazo
+  const {H,L,C,O}=d, n=C.length, P=d.price; if(n<60) return null;
+  const hi=Math.max(...H.slice(n-6)), lo=Math.min(...L.slice(n-14,n-2));
+  if(hi/lo-1<0.25) return null;
+  const sobre=1-P/hi; if(sobre<0||sobre>cfg.maxAbove) return null;
+  let rech=false; for(let i=n-3;i<n;i++){ const rg=H[i]-L[i]; if(rg>0 && (H[i]-Math.max(O[i],C[i]))/rg>=0.45) rech=true; }
+  if(!rech || !(C[n-1]<O[n-1])) return null;
+  const A=atr(H,L,C); let dist=(hi+0.5*A-P)/P; if(dist<cfg.minStop) dist=cfg.minStop; if(dist>cfg.maxStop) return null;
+  const step=cfg.mult*dist; return {P,stop:P*(1+dist),dist,tps:[1,2,3,4,5].map(k=>P*(1-step*k)),tipo:'pump'};
+}
+function resultado(tr,dir,K,i){ // K: arrays completos; i = índice de la vela de señal
+  const sh=dir==='short', end=Math.min(K.C.length-1,i+WIN), fee=0.001/tr.dist; let hit=0, stop=false, h5=null;
+  for(let j=i+1;j<=end;j++){ const hiJ=K.H[j], loJ=K.L[j];
+    if(sh? hiJ>=tr.stop : loJ<=tr.stop){ stop=true; break; }
+    while(hit<5 && (sh? loJ<=tr.tps[hit] : hiJ>=tr.tps[hit])){ hit++; if(hit===5) h5=j-i; }
+    if(hit===5) break; }
+  // manejo B: al tocar TP1 el stop pasa a la entrada
+  let hitB=0, beOut=false, slB=false;
+  for(let j=i+1;j<=end;j++){ const hiJ=K.H[j], loJ=K.L[j], sl=hitB>=1? tr.P : tr.stop;
+    if(sh? hiJ>=sl : loJ<=sl){ if(hitB>=1) beOut=true; else slB=true; break; }
+    while(hitB<5 && (sh? loJ<=tr.tps[hitB] : hiJ>=tr.tps[hitB])) hitB++;
+    if(hitB===5) break; }
+  const R=k=>Math.abs(tr.tps[k]-tr.P)/(tr.P*tr.dist);
+  const last=K.C[end], Rlast=(sh?tr.P-last:last-tr.P)/(tr.P*tr.dist);
+  const rT1= hit>=1? R(0)-fee : stop? -1-fee : Rlast-fee;
+  let rEsc=0; for(let k=0;k<5;k++) rEsc+= 0.2*(k<hit? R(k) : stop? -1 : Rlast); rEsc-=fee;
+  let rBE=0; for(let k=0;k<5;k++) rBE+= 0.2*(k<hitB? R(k) : slB? -1 : beOut? 0 : Rlast); rBE-=fee;
+  return {hit,stop,rT1,rEsc,rBE,h5};
+}
+async function run(){
+  $('go').disabled=true; $('out').innerHTML=''; const st=$('st');
+  st.textContent='Leyendo la lista de pares…';
+  let uni; try{ const [info,tick]=await Promise.all([api('/fapi/v1/exchangeInfo'),api('/fapi/v1/ticker/24hr')]);
+    const ok=new Set(info.symbols.filter(s=>s.status==='TRADING'&&s.quoteAsset==='USDT'&&s.contractType==='PERPETUAL').map(s=>s.symbol));
+    uni=tick.filter(t=>ok.has(t.symbol)&&+t.quoteVolume>=2e6&&+t.quoteVolume<=60e6).sort((a,b)=>b.quoteVolume-a.quoteVolume).slice(0,100).map(t=>t.symbol);
+  }catch(e){ st.textContent='❌ '+e.message; $('go').disabled=false; return; }
+  const S=[]; let done=0;
+  for(const sym of uni){
+    st.textContent=`(${done+1}/${uni.length}) ${sym}…`;
+    try{
+      const k=await api(`/fapi/v1/klines?symbol=${sym}&interval=1h&limit=1500`); const c=k.slice(0,-1);
+      const K={O:c.map(x=>+x[1]),H:c.map(x=>+x[2]),L:c.map(x=>+x[3]),C:c.map(x=>+x[4]),V:c.map(x=>+x[7])};
+      const last={};
+      for(let i=250;i<K.C.length-1-WIN;i+=STEP){
+        const s=i-249, d={O:K.O.slice(s,i+1),H:K.H.slice(s,i+1),L:K.L.slice(s,i+1),C:K.C.slice(s,i+1),V:K.V.slice(s,i+1),price:K.C[i]};
+        const rl=analizar(d,CFG), rs=analizarShort(d,CFG);
+        const cands=[];
+        for(const [r,dir] of [[rl,'long'],[rs,'short']]){
+          if(r.estado==='senal') cands.push(['actual',dir,{P:r.trade.P,stop:r.trade.stop,dist:r.trade.dist,tps:r.trade.tps,tipo:'normal'}]);
+          const n2=ajusta(r,dir,NEW,d); if(n2) cands.push(['n15',dir,n2]);
+          const n3=ajusta(r,dir,NEW25,d); if(n3) cands.push(['n25',dir,n3]);
+          const n4=ajusta(r,dir,{...NEW25,vig:true},d); if(n4) cands.push(['n25v',dir,n4]);
+        }
+        const p=pumpShort(d,NEW25); if(p) cands.push(['pump','short',p]);
+        for(const [v,dir,tr] of cands){ const key=v+dir+tr.tipo; if(last[key]!=null && i-last[key]<GAP) continue; last[key]=i;
+          S.push({v,dir,tipo:tr.tipo,dist:tr.dist,...resultado(tr,dir,K,i)}); }
+        if(i%40===0) await sleep(0);
+      }
+    }catch(e){}
+    done++; $('bar').style.width=(done/uni.length*100)+'%';
+  }
+  show(S,uni.length);
+}
+function agg(a){ if(!a.length) return null; const n=a.length, P=k=>a.filter(x=>x.hit>=k).length/n, h=a.map(x=>x.h5).filter(x=>x!=null).sort((x,y)=>x-y);
+  return {n, t1:P(1), t3:P(3), t5:P(5), sl:a.filter(x=>x.stop).length/n, rT1:a.reduce((s,x)=>s+x.rT1,0)/n, rEsc:a.reduce((s,x)=>s+x.rEsc,0)/n, rBE:a.reduce((s,x)=>s+x.rBE,0)/n, dist:a.reduce((s,x)=>s+x.dist,0)/n, h5:h.length?h[Math.floor(h.length/2)]:null}; }
+function show(S,np){
+  const pc=x=>x==null?'—':Math.round(x*100)+'%', rr=x=>x==null?'—':(x>=0?'+':'')+x.toFixed(2)+' R', cl=x=>x>=0?'g':'r';
+  const V=[['actual','Actual'],['n15','Nueva ≤1.5 %'],['n25','Nueva ≤2.5 %'],['n25v','Nueva ≤2.5 % + Vigilar'],['pump','SHORT de pump']];
+  const rows=[]; for(const [k,l] of V){ rows.push([l,agg(S.filter(x=>x.v===k))]); if(k!=='pump'){ rows.push([l+' · LONG',agg(S.filter(x=>x.v===k&&x.dir==='long'))]); rows.push([l+' · SHORT',agg(S.filter(x=>x.v===k&&x.dir==='short'))]); } }
+  const best=V.map(([k,l])=>{const a=agg(S.filter(x=>x.v===k)); if(!a||a.n<30) return null; const m=Math.max(a.rT1,a.rEsc,a.rBE); return {l,a,m,how:m===a.rBE?'escalonado + stop a la entrada en TP1':m===a.rEsc?'escalonado':'todo en TP1'};}).filter(Boolean).sort((x,y)=>y.m-x.m)[0];
+  let txt=`TEST JAXON 2 · 1H · ${np} pares · ~60 días · ${new Date().toLocaleString('es-SV')}\n(llega = antes del stop, en 48 h · R con comisión · BE = stop a la entrada al tocar TP1)\n`;
+  let h='';
+  if(best){ h+=`<div class="box">🏆 Mejor con ≥30 señales: <b>${best.l}</b> · ${best.how} · <b class="${cl(best.m)}">${rr(best.m)}</b> por operación (${best.a.n} señales)</div>`; txt+=`MEJOR (≥30 señales): ${best.l} · ${best.how} · ${rr(best.m)} (${best.a.n} señales)\n`; }
+  else { h+=`<div class="box">Ninguna variante llegó a 30 señales.</div>`; txt+='Ninguna variante llegó a 30 señales\n'; }
+  h+=`<h3>Resultados</h3><table><tr class="h"><td>Variante</td><td>Señ.</td><td>TP1</td><td>TP3</td><td>Stop</td><td>Todo TP1</td><td>Escal.</td><td>Escal.+BE</td></tr>`+
+    rows.map(([l,x])=>x?`<tr><td><b>${l}</b>${x.h5!=null?`<div class="m">TP5 en ${x.h5} h</div>`:''}</td><td>${x.n}${x.n<30?' ⚠️':''}</td><td>${pc(x.t1)}</td><td>${pc(x.t3)}</td><td>${pc(x.sl)}</td><td class="${cl(x.rT1)}">${rr(x.rT1)}</td><td class="${cl(x.rEsc)}">${rr(x.rEsc)}</td><td class="${cl(x.rBE)}"><b>${rr(x.rBE)}</b></td></tr>`:`<tr><td>${l}</td><td colspan="7" class="m">sin señales</td></tr>`).join('')+`</table>`;
+  txt+=rows.map(([l,x])=>x?`${l}: ${x.n} señ · TP1 ${pc(x.t1)} · TP3 ${pc(x.t3)} · TP5 ${pc(x.t5)} · stop ${pc(x.sl)} · todoTP1 ${rr(x.rT1)} · escal ${rr(x.rEsc)} · escal+BE ${rr(x.rBE)} · stop medio ${(x.dist*100).toFixed(1)}%`:`${l}: sin señales`).join('\n');
+  h+=`<div class="m" style="margin-top:10px">Entrada al cierre de la vela de señal. Si una vela toca stop y objetivo a la vez, cuenta el stop. "Escal." = cierra 20 % en cada TP; lo que no llegó se cierra en el stop o a las 48 h. "BE" = al tocar TP1 el stop sube a la entrada. Comisión 0.1 % incluida. ⚠️ = menos de 30 casos, poco fiable. Resultados pasados no garantizan resultados futuros.</div>`;
+  $('out').innerHTML=h; $('st').textContent='✅ Test terminado. Toca 📋 Copiar y pégamelo.'; $('go').disabled=false; $('go').textContent='↻ Repetir';
+  const cp=$('cp'); cp.style.display='block'; cp.onclick=()=>navigator.clipboard.writeText(txt).then(()=>cp.textContent='✅ Copiado');
+}
+$('go').onclick=run;
+</script></body></html>
