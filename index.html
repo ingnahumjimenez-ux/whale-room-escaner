@@ -546,6 +546,21 @@ body.fabs-open #plusFab,body.fabs-open #fgFab,body.fabs-open #k1Fab,body.fabs-op
 
 .card .cbody .optbox .best{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card .cbody .optbox .best div{white-space:normal}
+
+
+/* ===== Botones de análisis en una sola línea ===== */
+.actgrid{grid-template-columns:1.15fr 1fr 1fr 1fr;gap:6px;position:relative}
+.actgrid>button,.actgrid .symwrap input{height:32px;font-size:12px;border-radius:9px;padding:0 4px}
+.actgrid .symwrap{position:static}
+.actgrid .symwrap input{padding:0 8px;text-align:center}
+.actgrid .symsug{left:0;right:0;width:auto;max-width:none;top:38px}
+
+/* ===== Pestaña Ajustes ===== */
+.tabs{grid-template-columns:repeat(5,1fr)}
+.ajhead{display:flex;flex-direction:column;gap:2px;margin:0 0 10px;font-size:15px}.ajhead span{font-size:12px;color:var(--mut)}
+.ajsec{margin:16px 0 8px;font-size:13.5px;font-weight:700;color:var(--txt)}
+.ajsum{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 8px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);font-size:11.5px;color:var(--mut);cursor:pointer}
+.ajsum span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ajsum b{color:#93c5fd;font-size:11.5px;flex:none}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b1a33">
@@ -565,6 +580,7 @@ body.fabs-open #plusFab,body.fabs-open #fgFab,body.fabs-open #k1Fab,body.fabs-op
     <button class="tab" id="tabHist"><span class="ti">⭐</span>Historial<span id="histCount" class="tcount">0</span></button>
     <button class="tab" id="tabCal"><span class="ti">📅</span>Calendario<span id="calHoy" class="tdot"></span></button>
     <button class="tab" id="tabRes"><span class="ti">💼</span>Portafolio</button>
+    <button class="tab" id="tabAj"><span class="ti">⚙️</span>Ajustes</button>
   </div>
   <div id="viewScan">
   <div class="controls">
@@ -629,10 +645,10 @@ body.fabs-open #plusFab,body.fabs-open #fgFab,body.fabs-open #k1Fab,body.fabs-op
   </div>
   <div class="actions">
     <div class="actgrid">
-      <button id="scanBtn" class="primary">▶ Analizar todas</button>
+      <button id="scanBtn" class="primary" title="Analizar todas">▶ Analizar</button>
       <button id="stopBtn" class="danger" disabled>■ Detener</button>
       <div class="symwrap"><input id="oneSym" placeholder="Escribir" autocomplete="off" autocapitalize="characters" spellcheck="false"><div id="symSug" class="symsug"></div></div>
-      <button id="oneBtn" class="ghost">🔍 Analizar símbolo</button>
+      <button id="oneBtn" class="ghost" title="Analizar símbolo">🔍 Símbolo</button>
       <div class="progress"><div id="bar"></div></div>
     </div>
     <div id="status">Listo.</div>
@@ -705,6 +721,7 @@ body.fabs-open #plusFab,body.fabs-open #fgFab,body.fabs-open #k1Fab,body.fabs-op
   <div id="emptyMsg" class="empty">Elige la temporalidad y presiona <b>Analizar todas las criptomonedas</b>.</div>
 
   </div><!-- /viewScan -->
+  <div id="viewAj" style="display:none"><div class="ajhead"><b>⚙️ Ajustes del escáner</b><span>Los cambios se usan en el próximo análisis.</span></div></div>
 
   <div id="viewHist" style="display:none">
     <div class="controls" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
@@ -2849,8 +2866,10 @@ setTimeout(async ()=>{
   if(!state.running){ setStatus('Escaneo automático al abrir (LONG y SHORT)…'); await scanAll({forceBoth:true}); }
 }, 800);
 function showTab(which){
+  $('viewAj').style.display=which==='aj'?'':'none'; $('tabAj').classList.toggle('on',which==='aj');
   $('viewScan').style.display=which==='scan'?'':'none'; $('viewHist').style.display=which==='hist'?'':'none'; $('viewCal').style.display=which==='cal'?'':'none'; $('viewRes').style.display=which==='res'?'':'none';
   $('tabScan').classList.toggle('on',which==='scan'); $('tabHist').classList.toggle('on',which==='hist'); $('tabCal').classList.toggle('on',which==='cal'); $('tabRes').classList.toggle('on',which==='res');
+  if(which==='aj'){ window.scrollTo(0,0); return; }
   if(which==='hist') renderHist(); else if(which==='cal') renderEconCal(); else if(which==='res') renderResumen(); else renderResults();
 }
 /* ===================== PESTAÑA PORTAFOLIO ===================== */
@@ -2903,6 +2922,18 @@ $('resDl').onclick=e=>{ if(resCanvas) showAndDownload(resCanvas, resName, e.targ
 $('resUpd').onclick=async e=>{ e.target.disabled=true; e.target.textContent='Actualizando…'; try{ await updateTracking(); }catch(err){} e.target.disabled=false; e.target.textContent='🔄 Actualizar'; renderResumen(); };
 $('tabCal').onclick=()=>showTab('cal');
 $('tabScan').onclick=()=>showTab('scan');
+/* ===== Pestaña Ajustes: mueve la configuración y las sesiones fuera del Escáner ===== */
+(function(){
+  const v=$('viewAj'), c=document.querySelector('#viewScan > .controls'), se=$('sessPanel');
+  const tb=document.querySelector('#viewScan > .toolbar'), lg=document.querySelector('#viewScan > .legend');
+  const h=t=>{ const d=document.createElement('div'); d.className='ajsec'; d.textContent=t; return d; };
+  if(c) v.appendChild(c);
+  if(tb){ v.appendChild(h('📋 Resultados: filtrar, ordenar y exportar')); v.appendChild(tb); }
+  if(se) v.appendChild(se);
+  if(lg){ v.appendChild(h('🎨 Leyenda de la gráfica')); v.appendChild(lg); }
+  $('tabAj').onclick=()=>showTab('aj');
+
+})();
 $('chartClose').onclick=()=>$('chartModal').classList.remove('open');
 $('chartModal').onclick=e=>{ if(e.target.id==='chartModal') $('chartModal').classList.remove('open'); };
 $('tabHist').onclick=()=>showTab('hist');
@@ -4477,10 +4508,16 @@ document.addEventListener('click',e=>{
 (function(){
   const L={plusFab:'Plus 15m',fgFab:'Miedo y Codicia',k1Fab:'1000 velas 15m',bolFab:'Bolsa',jxFab:'Jaxon'};
   Object.entries(L).forEach(([id,t])=>{ const b=document.getElementById(id); if(!b) return; b.dataset.lbl=t;
-    b.addEventListener('click',()=>document.body.classList.remove('fabs-open')); });
+    b.addEventListener('click',()=>{ document.body.classList.remove('fabs-open'); setTimeout(()=>icono(),0); }); });
   const m=document.getElementById('menuFab'), ic=m.querySelector('.ic');
-  const set=o=>{ document.body.classList.toggle('fabs-open',o); ic.textContent=o?'✕':'☰'; };
-  m.onclick=()=>set(!document.body.classList.contains('fabs-open'));
+  const PANELS=[['plusPanel','plusX'],['fgPanel','fgX'],['k1Panel','k1X'],['bolPanel','bolX'],['jxPanel','jxX']];
+  const abierto=()=>PANELS.filter(([p])=>{const e=document.getElementById(p); return e&&e.classList.contains('open');});
+  const icono=()=>{ ic.textContent=document.body.classList.contains('fabs-open')?'✕':abierto().length?'←':'☰'; m.title=abierto().length?'Volver a v3':'Escáneres y herramientas'; };
+  const set=o=>{ document.body.classList.toggle('fabs-open',o); icono(); };
+  m.onclick=()=>{ const ab=abierto();
+    if(ab.length){ ab.forEach(([p,x])=>{ const b=document.getElementById(x); if(b) b.click(); else document.getElementById(p).classList.remove('open'); }); set(false); return; }
+    set(!document.body.classList.contains('fabs-open')); };
+  PANELS.forEach(([p])=>{ const e=document.getElementById(p); if(e) new MutationObserver(icono).observe(e,{attributes:true,attributeFilter:['class']}); });
   document.getElementById('menuShade').onclick=()=>set(false);
   const cnt=()=>{ let n=0; ['bolCnt','k1Cnt'].forEach(id=>{ const e=document.getElementById(id); if(e && getComputedStyle(e).display!=='none') n+=parseInt(e.textContent)||0; });
     const c=document.getElementById('menuCnt'); c.textContent=n; c.style.display=n?'block':'none'; };
