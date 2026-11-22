@@ -36,7 +36,7 @@
   .meta{padding:10px 14px 14px}
   .top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
   .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;font-family:ui-monospace,Menlo,Consolas,monospace}
-  .dtag{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;margin-right:6px;font-family:ui-monospace,Menlo,Consolas,monospace}.dtag.l{background:#14532d;color:#bbf7d0}.dtag.s{background:#7f1d1d;color:#fecaca}
+  .dtag{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;margin-right:6px;font-family:ui-monospace,Menlo,Consolas,monospace}.dtag.l{background:#14532d;color:#bbf7d0}.dtag.s{background:#7f1d1d;color:#fecaca}.dtag.p{background:#4a1d3a;color:#fbcfe8}
   .b-ok{background:var(--okbg);color:var(--ok)} .b-warn{background:var(--warnbg);color:var(--warn)} .b-no{background:var(--badbg);color:var(--bad)}
   .score{font-size:12px;color:var(--mut);font-family:ui-monospace,Menlo,Consolas,monospace}
   .alert{border-radius:8px;padding:7px 9px;margin-top:8px;font-size:12px}
@@ -88,7 +88,7 @@
       <div><b>7. Espacio:</b> resistencia de 7 días por encima del TP final</div>
       <div><b>8. Stop estructural</b> (soporte − ½ ATR) dentro del máximo y R/B en TP3 ≥ mínimo</div>
     </div>
-    <p class="sub" style="margin:10px 0 0">Los objetivos usan la misma escalera de JaXon: 5 escalones iguales (2.35% por defecto). Las <b>señales</b> cumplen los 8 criterios.</p>
+    <p class="sub" style="margin:10px 0 0">Los objetivos usan la escalera de JaXon sacada de 20 señales reales: 5 escalones iguales de <b>1.75 × la distancia al stop</b> (TP5 ≈ 8.75 R); la entrada debe estar a ≤1.5 % del piso o techo y el stop entre 1.5 y 5 %. Además busca <b>SHORT de pump</b>: subida ≥25 % en ≤12 velas con vela de rechazo. Las <b>señales</b> cumplen los 8 criterios.</p>
     <p class="sub" style="margin:8px 0 0"><span class="dtag s">SHORT</span>Cada par se revisa también al revés, en el mismo escaneo: <b>resistencia</b> con ≥2 toques, precio pegado al techo, techo que aguanta, <b>giro bajista</b> (RSI baja desde &gt;55 y cierre &lt; EMA9), volumen entrando, espacio hasta el soporte de 7 días y stop sobre la resistencia (+½ ATR). Los objetivos bajan con la misma escalera.</p>
     <p class="sub" style="margin:8px 0 0"> En <b>vigilar</b> quedan las que solo fallan el giro o el volumen, porque todavía pueden activarse.</p>
   </div>
@@ -100,10 +100,12 @@
       <div><label>Riesgo por trade (%)</label><input id="riesgo" type="number" step="0.1" value="1"></div>
       <div><label>Volumen 24h mín. ($M)</label><input id="volMin" type="number" step="0.5" value="2"></div>
       <div><label>Volumen 24h máx. ($M)</label><input id="volMax" type="number" step="1" value="40"></div>
-      <div><label>Escalón de TP (%)</label><input id="step" type="number" step="0.05" value="2.35"></div>
+      <div><label>Objetivos (TP)</label><select id="escal"><option value="jx" selected>Como Jaxon: escalón = 1.75 × stop</option><option value="fijo">Escalón fijo (%)</option></select></div>
+      <div><label>Escalón fijo de TP (%)</label><input id="step" type="number" step="0.05" value="2.35"></div>
+      <div><label>SHORT de pump</label><select id="pump"><option value="1" selected>✓ Activado (+25 % en ≤12 velas + rechazo)</option><option value="0">Apagado</option></select></div>
       <div><label>Número de TP</label><input id="nTp" type="number" value="5"></div>
-      <div><label>Distancia máx. al soporte (%)</label><input id="maxAbove" type="number" step="0.5" value="3"></div>
-      <div><label>Stop máx. (%)</label><input id="maxStop" type="number" step="0.5" value="6"></div>
+      <div><label>Distancia máx. al piso / techo (%)</label><input id="maxAbove" type="number" step="0.5" value="1.5"></div>
+      <div><label>Stop mín. – máx. (%)</label><div style="display:flex;gap:6px"><input id="minStop" type="number" step="0.5" value="1.5"><input id="maxStop" type="number" step="0.5" value="5"></div></div>
       <div><label>R/B mín. en TP3</label><input id="minRR" type="number" step="0.1" value="1.5"></div>
       <div><label>Comisión por lado (%)</label><input id="fee" type="number" step="0.01" value="0.05"></div>
       <div><label>Mantenimiento (%)</label><input id="mmr" type="number" step="0.1" value="0.5"></div>
@@ -162,10 +164,10 @@ function analizar(d,cfg){
   // 6. volumen entrando
   const vNow=avg(V.slice(n-3)), vBase=avg(V.slice(n-27,n-3)); const vr=vBase>0?vNow/vBase:0; const c6=vr>=1.2;
   // stop estructural y escalera
-  const A=atr(H,L,C); const stop=S-0.5*A; const dist=(P-stop)/P;
-  const tps=[];for(let k=1;k<=cfg.nTp;k++)tps.push(P*(1+cfg.step*k));
+  const A=atr(H,L,C); let stop=S-0.5*A; let dist=(P-stop)/P; if(cfg.mult&&dist>0&&dist<cfg.minStop){dist=cfg.minStop;stop=P*(1-dist);} const paso=cfg.mult?cfg.mult*dist:cfg.step;
+  const tps=[];for(let k=1;k<=cfg.nTp;k++)tps.push(P*(1+paso*k));
   // 7. espacio hasta resistencia de 7 días
-  const res=Math.max(...H.slice(Math.max(0,n-168),n)); const espacio=res/P-1; const c7=res>=tps[tps.length-1];
+  const res=Math.max(...H.slice(Math.max(0,n-168),n)); const espacio=res/P-1; const c7=res>=tps[cfg.mult?Math.min(2,tps.length-1):tps.length-1];
   // 8. stop dentro del máximo y R/B en TP3
   const rr=tps.map(t=>(t/P-1)/dist); const i3=Math.min(2,tps.length-1);
   const c8=dist>0 && dist<=cfg.maxStop && rr[i3]>=cfg.minRR;
@@ -176,7 +178,7 @@ function analizar(d,cfg){
     {t:`Piso que aguanta (mín. 48h ${S.toPrecision(5)} vs previo ${prevLow.toPrecision(5)})`,p:c4},
     {t:`Giro de momentum (RSI ${rMin.toFixed(0)}→${rNow.toFixed(0)}, cierre ${C[n-1]>E9[n-1]?'>':'≤'} EMA9)`,p:c5},
     {t:`Volumen entrando (${vr.toFixed(2)}× promedio)`,p:c6},
-    {t:`Espacio hasta resistencia 7d (${pct(espacio)})`,p:c7},
+    {t:`Espacio hasta resistencia 7d (${pct(espacio)})${cfg.mult?' · llega a TP3':''}`,p:c7},
     {t:`Stop estructural ${pct(dist)} y R/B TP3 ${(rr[i3]||0).toFixed(2)}`,p:c8},
   ];
   r.pasa=r.checks.filter(c=>c.p).length;
@@ -185,7 +187,7 @@ function analizar(d,cfg){
   // puntaje 0-100
   const cl=(x)=>Math.max(0,Math.min(1,x));
   r.score=Math.round(100*(cl(toques/4)*.15 + cl(1-Math.max(sobre,0)/cfg.maxAbove)*.15 + cl(vr-1)*.20 +
-          cl((rNow-rMin)/15)*.15 + cl(espacio/(2*cfg.step*cfg.nTp))*.15 + cl((rr[i3]||0)/3)*.20));
+          cl((rNow-rMin)/15)*.15 + cl(espacio/(2*paso*cfg.nTp))*.15 + cl((rr[i3]||0)/3)*.20));
   // gestión de riesgo
   const riesgo=cfg.capital*cfg.riesgo, nocional=riesgo/(dist+2*cfg.fee);
   const seguro=Math.max(1,Math.min(20,Math.floor(1/(dist+cfg.mmr+0.01)))); // tope prudente 20×
@@ -208,9 +210,9 @@ function analizarShort(d,cfg){
   const R=rsi(C), E9=ema(C,9); const rNow=R[n-1], rMax=Math.max(...R.slice(n-8,n));
   const c5=rMax>55 && rNow<rMax-3 && C[n-1]<E9[n-1];
   const vNow=avg(V.slice(n-3)), vBase=avg(V.slice(n-27,n-3)); const vr=vBase>0?vNow/vBase:0; const c6=vr>=1.2;
-  const A=atr(H,L,C); const stop=S+0.5*A; const dist=(stop-P)/P;
-  const tps=[];for(let k=1;k<=cfg.nTp;k++)tps.push(P*(1-cfg.step*k));
-  const res=Math.min(...L.slice(Math.max(0,n-168),n)); const espacio=1-res/P; const c7=res<=tps[tps.length-1];
+  const A=atr(H,L,C); let stop=S+0.5*A; let dist=(stop-P)/P; if(cfg.mult&&dist>0&&dist<cfg.minStop){dist=cfg.minStop;stop=P*(1+dist);} const paso=cfg.mult?cfg.mult*dist:cfg.step;
+  const tps=[];for(let k=1;k<=cfg.nTp;k++)tps.push(P*(1-paso*k));
+  const res=Math.min(...L.slice(Math.max(0,n-168),n)); const espacio=1-res/P; const c7=res<=tps[cfg.mult?Math.min(2,tps.length-1):tps.length-1];
   const rr=tps.map(t=>(1-t/P)/dist); const i3=Math.min(2,tps.length-1);
   const c8=dist>0 && dist<=cfg.maxStop && rr[i3]>=cfg.minRR;
   const pct=x=>(x*100).toFixed(2)+'%';
@@ -220,7 +222,7 @@ function analizarShort(d,cfg){
     {t:`Techo que aguanta (máx. 48h ${S.toPrecision(5)} vs previo ${prevHigh.toPrecision(5)})`,p:c4},
     {t:`Giro bajista (RSI ${rMax.toFixed(0)}→${rNow.toFixed(0)}, cierre ${C[n-1]<E9[n-1]?'<':'≥'} EMA9)`,p:c5},
     {t:`Volumen entrando (${vr.toFixed(2)}× promedio)`,p:c6},
-    {t:`Espacio hasta soporte 7d (${pct(espacio)})`,p:c7},
+    {t:`Espacio hasta soporte 7d (${pct(espacio)})${cfg.mult?' · llega a TP3':''}`,p:c7},
     {t:`Stop estructural ${pct(dist)} y R/B TP3 ${(rr[i3]||0).toFixed(2)}`,p:c8},
   ];
   r.pasa=r.checks.filter(c=>c.p).length;
@@ -228,15 +230,43 @@ function analizarShort(d,cfg){
   if(nucleo && c5 && c6) r.estado='senal'; else if(nucleo && (c5||c6)) r.estado='vigilar';
   const cl=(x)=>Math.max(0,Math.min(1,x));
   r.score=Math.round(100*(cl(toques/4)*.15 + cl(1-Math.max(bajo,0)/cfg.maxAbove)*.15 + cl(vr-1)*.20 +
-          cl((rMax-rNow)/15)*.15 + cl(espacio/(2*cfg.step*cfg.nTp))*.15 + cl((rr[i3]||0)/3)*.20));
+          cl((rMax-rNow)/15)*.15 + cl(espacio/(2*paso*cfg.nTp))*.15 + cl((rr[i3]||0)/3)*.20));
   const riesgo=cfg.capital*cfg.riesgo, nocional=riesgo/(dist+2*cfg.fee);
   const seguro=Math.max(1,Math.min(20,Math.floor(1/(dist+cfg.mmr+0.01))));
   const liq50=P*(1+1/50-cfg.mmr);
   r.trade={P,S,stop,dist,tps,rr,res,atrPct:A/P,riesgo,nocional,seguro,margen:nocional/seguro,liq50,liq50Antes:liq50<=stop};
   return r;
 }
-function analizarAmbas(d,cfg){ const a=analizar(d,cfg); a.dir='long'; return [a, analizarShort(d,cfg)]; }
-if(typeof module!=='undefined') module.exports={analizar,analizarShort,rsi,ema,atr};
+
+// ====== SHORT de pump: subida ≥25 % en ≤12 velas, techo reciente y vela de rechazo ======
+function analizarPump(d,cfg){
+  const {H,L,C,O,V}=d, P=d.price, n=C.length;
+  const r={checks:[],trade:null,pasa:0,score:0,estado:'no',dir:'short',tipo:'pump'};
+  if(n<60||!O) return r;
+  const hi=Math.max(...H.slice(n-6)), lo=Math.min(...L.slice(n-14,n-2)), sube=hi/lo-1;
+  const c1=sube>=0.25;
+  const bajo=1-P/hi, c2=bajo>=-0.003&&bajo<=cfg.maxAbove;
+  let mecha=0; for(let i=n-3;i<n;i++){ const rg=H[i]-L[i]; if(rg>0) mecha=Math.max(mecha,(H[i]-Math.max(O[i],C[i]))/rg); }
+  const c3=mecha>=0.45, c4=C[n-1]<O[n-1];
+  const vNow=avg(V.slice(n-6)), vBase=avg(V.slice(n-40,n-6)), vr=vBase>0?vNow/vBase:0, c5=vr>=1.5;
+  const A=atr(H,L,C); let dist=(hi+0.5*A-P)/P; if(dist<cfg.minStop) dist=cfg.minStop; const stop=P*(1+dist), c6=dist<=cfg.maxStop;
+  const paso=(cfg.mult||1.75)*dist, tps=[]; for(let k=1;k<=cfg.nTp;k++) tps.push(P*(1-paso*k));
+  const rr=tps.map(t=>(1-t/P)/dist), res=Math.min(...L.slice(Math.max(0,n-168),n));
+  const pct=x=>(x*100).toFixed(2)+'%';
+  r.checks=[{t:`Pump +${pct(sube)} en ≤12 velas (mín. 25 %)`,p:c1},{t:`Precio pegado al techo (${pct(bajo)} bajo el máximo)`,p:c2},
+    {t:`Vela de rechazo (mecha arriba ${Math.round(mecha*100)} %)`,p:c3},{t:`Última vela roja`,p:c4},{t:`Volumen del pump ${vr.toFixed(2)}× promedio`,p:c5},{t:`Stop ${pct(dist)} (1.5–5 %)`,p:c6}];
+  r.pasa=r.checks.filter(c=>c.p).length; r.pump=sube;
+  if(c1&&c2&&c3&&c4&&c6) r.estado=c5?'senal':'vigilar';
+  const cl=x=>Math.max(0,Math.min(1,x));
+  r.score=Math.round(100*(cl(sube/0.6)*.3+cl(1-Math.max(bajo,0)/cfg.maxAbove)*.2+cl(mecha)*.2+cl((vr-1)/2)*.2+(c4?.1:0)));
+  const riesgo=cfg.capital*cfg.riesgo, nocional=riesgo/(dist+2*cfg.fee), seguro=Math.max(1,Math.min(20,Math.floor(1/(dist+cfg.mmr+0.01)))), liq50=P*(1+1/50-cfg.mmr);
+  r.trade={P,S:hi,stop,dist,tps,rr,res,atrPct:A/P,riesgo,nocional,seguro,margen:nocional/seguro,liq50,liq50Antes:liq50<=stop};
+  return r;
+}
+function analizarAmbas(d,cfg){ const a=analizar(d,cfg); a.dir='long'; const b=analizarShort(d,cfg), out=[a,b];
+  if(cfg.pump){ const p=analizarPump(d,cfg); if(p.estado!=='no' && b.estado!=='senal') out.push(p); }
+  return out; }
+if(typeof module!=='undefined') module.exports={analizar,analizarShort,analizarPump,rsi,ema,atr};
 </script>
 
 <script>
@@ -247,7 +277,8 @@ let resultados=[], tab='senal', lista_=[];
 
 function cfg(){return{capital:+$('capital').value,riesgo:+$('riesgo').value/100,volMin:+$('volMin').value*1e6,volMax:+$('volMax').value*1e6,
   step:+$('step').value/100,nTp:Math.max(3,Math.min(8,+$('nTp').value||5)),maxAbove:+$('maxAbove').value/100,maxStop:+$('maxStop').value/100,
-  minRR:+$('minRR').value,fee:+$('fee').value/100,mmr:+$('mmr').value/100}}
+  minRR:+$('minRR').value,fee:+$('fee').value/100,mmr:+$('mmr').value/100,
+  mult:$('escal').value==='jx'?1.75:0, minStop:(+$('minStop').value||0)/100, pump:$('pump').value==='1'}}
 
 async function api(path,intentos=3){
   for(let i=0;i<intentos;i++){
@@ -411,7 +442,7 @@ function tarjeta(r,i){
   return `<div class="sig">
     <canvas id="cv${i}" width="1080" height="1150"></canvas>
     <div class="meta">
-      <div class="top"><span class="score">${dirTag(r.dir)}#${r.id} · ${r.sym} · puntaje ${r.score}/100</span>${b}</div>
+      <div class="top"><span class="score">${dirTag(r.dir)}${r.tipo==='pump'?`<span class="dtag p">PUMP +${Math.round(r.pump*100)} %</span>`:''}#${r.id} · ${r.sym} · puntaje ${r.score}/100</span>${b}</div>
       ${ctxHTML(r)}
       <div class="score" id="liq${i}"></div>
       <div class="score">vol 24h ${r.vol?'$'+(r.vol/1e6).toFixed(1)+'M':'—'} · OI ${r.oi?'$'+(r.oi/1e6).toFixed(2)+'M':'—'} · ATR 1h ${pct(t.atrPct)}</div>
