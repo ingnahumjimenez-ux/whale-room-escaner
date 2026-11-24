@@ -561,6 +561,25 @@ body.fabs-open #plusFab,body.fabs-open #fgFab,body.fabs-open #k1Fab,body.fabs-op
 .ajsec{margin:16px 0 8px;font-size:13.5px;font-weight:700;color:var(--txt)}
 .ajsum{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 8px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);font-size:11.5px;color:var(--mut);cursor:pointer}
 .ajsum span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ajsum b{color:#93c5fd;font-size:11.5px;flex:none}
+
+/* ===== Burbuja TradFi ===== */
+#tfFab{position:fixed;right:14px;bottom:410px;z-index:7;width:54px;height:54px;border-radius:50%;padding:0;cursor:pointer;background:rgba(255,255,255,.08);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:2px solid #f2b33d;color:#fde68a;font-weight:900;font-size:10.5px;line-height:1.05;box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 12px rgba(242,179,61,.35);opacity:0;pointer-events:none;transform:translateY(24px) scale(.8);transition:opacity .2s,transform .22s}
+#tfFab .ic{display:block;font-size:17px;margin-bottom:1px}
+body.fabs-open #tfFab{opacity:1;pointer-events:auto;transform:none}
+#tfPanel{position:fixed;inset:0;z-index:8;background:rgba(5,8,14,.72);backdrop-filter:blur(3px);display:none}#tfPanel.open{display:block}
+#tfPanel .sheet{position:absolute;left:0;right:0;bottom:0;top:5%;max-width:560px;margin:0 auto;background:#0b0e14;border-radius:20px 20px 0 0;border-top:2px solid #f2b33d;padding:12px 14px 90px;overflow:auto;color:#e5e7eb}
+#tfPanel .grab{width:44px;height:5px;border-radius:99px;background:#334155;margin:0 auto 10px}
+#tfPanel .ph{display:flex;align-items:center;gap:8px}#tfPanel .ph h2{margin:0;font-size:18px}
+#tfPanel .ph .x{margin-left:auto;background:#18202f;border:1px solid #253047;color:#e5e7eb;border-radius:10px;width:36px;height:36px;font-size:18px;padding:0}
+#tfPanel .pst{font-size:12px;color:#8a9bb0;margin:2px 0 8px}
+#tfPanel .cats{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}#tfPanel .cats button{font-size:12px;padding:5px 10px;border-radius:99px;border:1px solid #334155;background:transparent;color:#94a3b8;cursor:pointer}
+#tfPanel .cats button.on{background:#f2b33d;border-color:#f2b33d;color:#1c1300;font-weight:800}
+#tfPanel .sum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0}#tfPanel .sum div{background:#111a2e;border-radius:9px;padding:6px;text-align:center;font-size:11px;color:#94a3b8}#tfPanel .sum b{display:block;color:#e5e7eb;font-size:14px}
+#tfPanel .acts{display:flex;gap:6px;margin:6px 0}#tfPanel .acts button{height:34px;border-radius:9px;font-size:12.5px;padding:0 12px}
+#tfPanel .ses{font-size:11.5px;border-radius:9px;padding:6px 9px;margin:6px 0}#tfPanel .ses.op{background:#052e16;border:1px solid #166534;color:#86efac}#tfPanel .ses.cl{background:#2a2306;border:1px solid #a16207;color:#fcd34d}
+#tfPanel .tfn{display:inline-block;background:#3a2a0b;color:#fcd34d;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:6px;margin:0 0 4px}
+#tfPanel .tfl{font-size:11px;color:#94a3b8;margin-top:2px}
+#tfPanel .card{margin-top:10px}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b1a33">
@@ -823,6 +842,17 @@ body.fabs-open #plusFab,body.fabs-open #fgFab,body.fabs-open #k1Fab,body.fabs-op
   <div class="pst" id="k1St"></div>
   <div id="k1Body"></div>
 </div></div>
+<button id="tfFab" title="TradFi · Binance Futures"><span class="ic">🏛</span>TradFi</button>
+<div id="tfPanel"><div class="sheet"><div class="grab"></div>
+  <div class="ph"><h2>🏛 TradFi · Binance Futures</h2><button class="x" id="tfX">✕</button></div>
+  <div class="pst" id="tfSub">Metales, energía, índices y acciones · en vivo · motor v3</div>
+  <div class="cats" id="tfCats"><button data-c="all" class="on">Todos</button><button data-c="metal">🥇 Metales</button><button data-c="ener">🛢 Energía</button><button data-c="idx">📊 Índices/ETF</button><button data-c="stock">🏢 Acciones</button></div>
+  <div class="ses" id="tfSes"></div>
+  <div class="sum" id="tfSum"></div>
+  <div class="acts"><button class="primary" id="tfGo">▶ Analizar</button><button class="ghost" id="tfStop" disabled>■ Detener</button><button class="ghost" id="tfOnly">Solo las que cumplen filtros</button></div>
+  <div class="pst" id="tfSt">Toca ▶ Analizar.</div>
+  <div id="tfList"></div>
+</div></div>
 <button id="plusFab" title="Escáner Plus 15m">Plus<small>15m</small></button>
 <div id="plusPanel"><div class="sheet"><div class="grab"></div>
   <div class="ph"><h2>Escáner Plus</h2><span style="font-size:11.5px;padding:2px 9px;border-radius:99px;border:1px solid #7c3aed;color:#c4b5fd">15m</span><button class="x" id="plusX">✕</button></div>
@@ -882,6 +912,25 @@ async function getJSON(market, path, params={}){
   throw lastErr || new Error('Sin respuesta');
 }
 
+/* ===== TradFi (Binance Futures): metales, energía, índices/ETF, acciones ===== */
+const TF_METAL=new Set(['XAU','XAG','XPT','XPD','COPPER','HG','XCU']), TF_ENER=new Set(['CL','BZ','NATGAS','NG','WTI','BRENT','UKOIL','USOIL']),
+  TF_IDX=new Set(['SPX','SPY','QQQ','NDX','NAS100','US500','US30','DIA','IWM','DJI','GLD','SLV','EWJ','EWY','KWEB','FXI','TLT','VIX','ARKK','SOXX','SMH','XLE','XLF']),
+  TF_STOCK=new Set(['TSLA','NVDA','META','GOOGL','GOOG','AAPL','AMZN','MSFT','COIN','MSTR','HOOD','CRCL','CEG','BAC','IBKR','MDT','AMD','NFLX','PLTR','INTC','ORCL','AVGO','UBER','BABA','JPM','GS','V','MA','DIS','SBUX','NKE','PYPL','SHOP','SQ','RIVN','LCID','SNOW','CRM','ADBE','QCOM','MU','ARM','TSM','SMCI','GME','AMC','BRK','WMT','KO','PEP','MCD','XOM','CVX','PFE','LLY','UNH','JNJ','BA','F','GM','T']),
+  TF_NAMES={XAU:'Oro',XAG:'Plata',XPT:'Platino',XPD:'Paladio',COPPER:'Cobre',HG:'Cobre',XCU:'Cobre',CL:'Petróleo WTI',BZ:'Petróleo Brent',NATGAS:'Gas natural',NG:'Gas natural',
+    SPX:'S&P 500',SPY:'S&P 500 ETF',QQQ:'Nasdaq 100 ETF',NDX:'Nasdaq 100',TSLA:'Tesla',NVDA:'Nvidia',META:'Meta',GOOGL:'Alphabet',GOOG:'Alphabet',AAPL:'Apple',AMZN:'Amazon',MSFT:'Microsoft',
+    COIN:'Coinbase',MSTR:'MicroStrategy',HOOD:'Robinhood',CRCL:'Circle',CEG:'Constellation Energy',BAC:'Bank of America',IBKR:'Interactive Brokers',MDT:'Medtronic',AMD:'AMD',NFLX:'Netflix',PLTR:'Palantir',INTC:'Intel'};
+function tfIsTradFi(s){
+  const ct=String(s.contractType||''), ut=String(s.underlyingType||''), sub=[].concat(s.underlyingSubType||[]).join(' ');
+  if(/TRAD/i.test(ct) || /TRAD|STOCK|EQUIT|COMMOD|METAL|ENERG|ETF/i.test(sub) || /EQUIT|STOCK|COMMOD|TRAD/i.test(ut)) return true;
+  const b=s.baseAsset; return TF_METAL.has(b)||TF_ENER.has(b)||TF_IDX.has(b)||TF_STOCK.has(b);
+}
+function tfCat(b){ return TF_METAL.has(b)?'metal':TF_ENER.has(b)?'ener':TF_IDX.has(b)?'idx':'stock'; }
+async function getTradFiUniverse(){
+  const [info,tick]=await Promise.all([getJSON('futures',ENDPOINTS.futures.info),getJSON('futures',ENDPOINTS.futures.ticker)]);
+  const vol=new Map(tick.map(t=>[t.symbol,+t.quoteVolume]));
+  return info.symbols.filter(s=>s.status==='TRADING'&&s.quoteAsset==='USDT'&&tfIsTradFi(s))
+    .map(s=>({symbol:s.symbol,base:s.baseAsset,vol:vol.get(s.symbol)||0,cat:tfCat(s.baseAsset),name:TF_NAMES[s.baseAsset]||s.baseAsset})).sort((a,b)=>b.vol-a.vol);
+}
 async function getUniverse(market, minVol){
   const [info, tick] = await Promise.all([
     getJSON(market, ENDPOINTS[market].info),
@@ -891,7 +940,7 @@ async function getUniverse(market, minVol){
   const out=[];
   for(const s of info.symbols){
     if(s.status!=='TRADING' || s.quoteAsset!=='USDT') continue;
-    if(market==='futures' && s.contractType!=='PERPETUAL') continue;
+    if(market==='futures' && (s.contractType!=='PERPETUAL' || tfIsTradFi(s))) continue;   // TradFi va en su propia burbuja
     const b=s.baseAsset;
     if(STABLES.has(b) || /(UP|DOWN|BULL|BEAR)$/.test(b)) continue;
     const v = vol.get(s.symbol)||0;
@@ -4504,13 +4553,81 @@ document.addEventListener('click',e=>{
 });
 
 
+/* ===== Burbuja TradFi ===== */
+const TF={uni:[],res:[],cat:'all',only:false,run:false,abort:false};
+function tfSesInfo(){ const d=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})), wd=d.getDay(), m=d.getHours()*60+d.getMinutes();
+  const open=wd>=1&&wd<=5&&m>=570&&m<960; return open; }
+function tfRenderHead(){
+  const open=tfSesInfo();
+  $('tfSes').className='ses '+(open?'op':'cl');
+  $('tfSes').innerHTML=open?'🟢 Bolsa de NY abierta (8:30 a.m.–3:00 p.m. hora El Salvador): acciones e índices con movimiento real.'
+    :'🌙 Bolsa de NY cerrada: Binance sigue operando 24/7, pero en acciones e índices hay menos liquidez y el precio puede saltar al abrir. Metales y energía siguen con movimiento.';
+  const list=tfFiltered(), sig=list.filter(r=>r.meetsFilters).length;
+  $('tfSum').innerHTML=`<div><b>${TF.uni.length||'—'}</b>contratos TradFi</div><div><b style="color:#86efac">${sig}</b>cumplen filtros</div><div><b>${list.length}</b>analizados</div>`;
+  $('tfOnly').textContent=TF.only?'Ver todos':'Solo las que cumplen filtros';
+}
+function tfFiltered(){ return TF.res.filter(r=>(TF.cat==='all'||r.tfCat===TF.cat)&&(!TF.only||r.meetsFilters)); }
+function tfRender(){
+  tfRenderHead();
+  const box=$('tfList'); box.innerHTML='';
+  TF.res.forEach(r=>{ if(!r.st) r.st=signalStatus(r); });
+  const list=tfFiltered().slice().sort((a,b)=>(b.meetsFilters-a.meetsFilters)||(b.score-a.score));
+  if(!list.length){ box.innerHTML=`<div class="pst">${TF.res.length?'Ninguno en esta categoría'+(TF.only?' que cumpla los filtros.':'.'):''}</div>`; return; }
+  for(const r of list){
+    const el=document.createElement('div'); el.className='card'; el.innerHTML=cardHTML(r); el._r=r;
+    const tag=document.createElement('div'); tag.innerHTML=`<span class="tfn">${({metal:'🥇',ener:'🛢',idx:'📊',stock:'🏢'})[r.tfCat]} ${r.tfName}</span>${r.meetsFilters?'':' <span class="tfl">· no cumple tus filtros de v3 (puntaje/confluencias): solo para vigilar</span>'}`+
+      `<div class="tfl">⚡ Apalancamiento seguro según la tarjeta · máx. Binance: ${r.tfMaxLev?r.tfMaxLev+'x':'según contrato'}</div>`;
+    const body=el.querySelector('.cbody')||el; body.insertBefore(tag,body.firstChild);
+    box.appendChild(el);
+    const cv=el.querySelector('canvas'); if(cv){ drawChart(cv,r); cv.onclick=()=>openDetail(r); }
+    const q=a=>el.querySelector(a);
+    if(q('[data-act=detail]')) q('[data-act=detail]').onclick=()=>openDetail(r);
+    if(q('[data-act=copy]')) q('[data-act=copy]').onclick=e=>copy(signalText(r),e.target);
+    if(q('[data-act=img]')) q('[data-act=img]').onclick=e=>downloadImage(r,e.target);
+    try{ bindFollow(el, r, 'data-act="star"', '[data-act="star"]'); }catch(e){}
+  }
+}
+async function tfScan(){
+  if(TF.run) return; TF.run=true; TF.abort=false; TF.res=[]; $('tfGo').disabled=true; $('tfStop').disabled=false; tfRender();
+  const cfg=getCfg({force:true}); cfg.market='futures'; const strict=getCfg();
+  try{
+    $('tfSt').textContent='Buscando contratos TradFi en Binance Futures…';
+    TF.uni=await getTradFiUniverse();
+    if(!TF.uni.length){ $('tfSt').textContent='No se encontraron contratos TradFi en Binance Futures (puede que no estén disponibles desde tu país o que Binance haya cambiado la lista).'; return; }
+    let done=0;
+    for(const u of TF.uni){
+      if(TF.abort) break;
+      $('tfSt').textContent=`Analizando ${u.name} (${done+1}/${TF.uni.length})…`;
+      try{
+        let K=await getKlines('futures',u.symbol,cfg.tf,cfg.limit); if(cfg.closedOnly) K=K.slice(0,-1);
+        const rs=dirsOf(strict).map(dir=>analyzeDir(u.symbol,K,cfg,u.vol,dir)).filter(Boolean);
+        for(const r of rs){ r.id=++state.sigId; r.session=sessionLabelNow(); r.tfCat=u.cat; r.tfName=u.name;
+          r.tfMaxLev=({metal:50,ener:100,idx:20,stock:10})[u.cat];
+          r.meetsFilters=r.score>=strict.minScore&&r.cores>=strict.minCores; TF.res.push(r); }
+      }catch(e){}
+      done++; if(done%4===0) tfRender();
+    }
+    try{ await enrichContext(cfg, TF.res, false); TF.res.forEach(r=>{ r.meetsFilters=r.score>=strict.minScore&&r.cores>=strict.minCores; }); }catch(e){}
+    $('tfSt').textContent=`${TF.abort?'Detenido':'Terminado'}: ${TF.uni.length} contratos · ${TF.res.filter(r=>r.meetsFilters).length} cumplen tus filtros (${TF_LABEL[cfg.tf]}).`;
+  }catch(e){ $('tfSt').textContent='❌ No se pudo leer Binance Futures: '+(e.message||e); }
+  finally{ TF.run=false; $('tfGo').disabled=false; $('tfStop').disabled=true; tfRender(); }
+}
+(function(){
+  $('tfFab').onclick=()=>{ $('tfPanel').classList.add('open'); tfRender(); if(!TF.res.length&&!TF.run) tfScan(); };
+  $('tfX').onclick=()=>$('tfPanel').classList.remove('open');
+  $('tfPanel').addEventListener('click',e=>{ if(e.target.id==='tfPanel') $('tfPanel').classList.remove('open'); });
+  $('tfGo').onclick=tfScan; $('tfStop').onclick=()=>{ TF.abort=true; };
+  $('tfOnly').onclick=()=>{ TF.only=!TF.only; tfRender(); };
+  $('tfCats').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; TF.cat=b.dataset.c; [...$('tfCats').children].forEach(x=>x.classList.toggle('on',x===b)); tfRender(); };
+})();
+
 /* ===== Menú de burbujas ===== */
 (function(){
-  const L={plusFab:'Plus 15m',fgFab:'Miedo y Codicia',k1Fab:'1000 velas 15m',bolFab:'Bolsa',jxFab:'Jaxon'};
+  const L={plusFab:'Plus 15m',fgFab:'Miedo y Codicia',k1Fab:'1000 velas 15m',bolFab:'Bolsa',jxFab:'Jaxon',tfFab:'TradFi'};
   Object.entries(L).forEach(([id,t])=>{ const b=document.getElementById(id); if(!b) return; b.dataset.lbl=t;
     b.addEventListener('click',()=>{ document.body.classList.remove('fabs-open'); setTimeout(()=>icono(),0); }); });
   const m=document.getElementById('menuFab'), ic=m.querySelector('.ic');
-  const PANELS=[['plusPanel','plusX'],['fgPanel','fgX'],['k1Panel','k1X'],['bolPanel','bolX'],['jxPanel','jxX']];
+  const PANELS=[['plusPanel','plusX'],['fgPanel','fgX'],['k1Panel','k1X'],['bolPanel','bolX'],['jxPanel','jxX'],['tfPanel','tfX']];
   const abierto=()=>PANELS.filter(([p])=>{const e=document.getElementById(p); return e&&e.classList.contains('open');});
   const icono=()=>{ ic.textContent=document.body.classList.contains('fabs-open')?'✕':abierto().length?'←':'☰'; m.title=abierto().length?'Volver a v3':'Escáneres y herramientas'; };
   const set=o=>{ document.body.classList.toggle('fabs-open',o); icono(); };
