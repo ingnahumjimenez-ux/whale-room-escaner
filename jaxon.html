@@ -69,13 +69,50 @@
   .gtag{font-size:11px;color:#bfdbfe;background:#0c2a4a;border-radius:99px;padding:1px 7px}
   #jxToast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#14532d;color:#dcfce7;border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px;display:none;z-index:9}
 .jx-modo .tst{margin-top:4px;font-size:11px;color:#94a3b8}
+
+/* ===== Estética TradFi ===== */
+.wrap{max-width:560px;padding:10px 12px 60px}
+.jsub{color:#8a9bb0;font-size:12px;margin:0 0 6px}
+.cats{display:flex;gap:5px;margin:4px 0 8px}.cats button{flex:1;white-space:nowrap;font-size:12px;padding:6px 4px;border-radius:99px;border:1px solid #334155;background:transparent;color:#94a3b8;cursor:pointer}
+.cats button.ic{flex:0 0 42px}.cats button.on{background:#f472b6;border-color:#f472b6;color:#3b0a24;font-weight:800}
+.jsum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}.jsum div{background:#111a2e;border-radius:9px;padding:6px;text-align:center;font-size:10.5px;color:#94a3b8}.jsum b{display:block;color:#e5e7eb;font-size:15px}
+.acts3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.acts3 button{height:36px;padding:0;white-space:nowrap;border-radius:10px;font-size:12.5px;font-weight:700}
+.onerow{display:none;gap:6px;margin-top:6px}.onerow.open{display:flex}.onerow input{flex:1}.onerow button{padding:0 14px}
+.wrap>.prog{margin:8px 0 4px;min-width:0}.jst,.jst #status{font-size:11px;color:#8a9bb0;font-family:inherit}
+#cfgBox{display:none;margin-top:10px}#cfgBox.open{display:block}
+.res{grid-template-columns:1fr;margin-top:10px}
+.sig .meta{display:flex;flex-direction:column;gap:6px;padding:9px 11px 12px}
+.jtag{align-self:flex-start;background:#4a1d3a;color:#fbcfe8;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:6px}
+.jhd{display:flex;align-items:center;gap:6px}.jhd .sym{font-size:16px;font-weight:800}.jhd .q{color:#8a9bb0;font-size:12px}
+.jhd .sc{margin-left:auto;text-align:right}.jhd .sc b{background:#1e3a5f;color:#93c5fd;padding:2px 9px;border-radius:99px;font-size:12px}.jhd .sc small{display:block;color:#8a9bb0;font-size:9.5px;margin-top:2px}
+.jr2{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.jr2 .fbx{margin-left:auto;display:flex;gap:5px}
+.jr2 .fbx button{font-size:11.5px;padding:5px 9px;border-radius:8px}
+.jch{display:flex;flex-wrap:wrap;gap:3px;border-top:1px solid #1e293b;padding-top:6px}.jch span{font-size:9.5px;padding:2px 6px;border-radius:99px;font-weight:700;white-space:nowrap}
+.jch .g{background:#052e16;color:#86efac;border:1px solid #166534}.jch .n{color:#64748b;border:1px solid #243049}.jch .rd{background:#2a0b0b;color:#fca5a5;border:1px solid #7f1d1d}.jch .y{background:#2a2306;color:#fcd34d;border:1px solid #a16207}.jch .sep{color:#334155;border:0;padding:2px 0}
+.jvd{border-radius:9px;padding:5px 9px;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}.jvd.full{white-space:normal}
+.jvd.go{background:#052e16;border:1px solid #22c55e}.jvd.go b{color:#86efac}.jvd.mid{background:#2a2306;border:1px solid #f59e0b}.jvd.mid b{color:#fcd34d}.jvd.no{background:#2a0b0b;border:1px solid #ef4444}.jvd.no b{color:#fca5a5}
+.jkv{display:grid;grid-template-columns:82px minmax(0,1fr);gap:2px 8px;font-size:11.5px;border-top:1px solid #1e293b;padding-top:6px}.jkv b{color:#8a9bb0;font-weight:500}.jkv span{overflow-wrap:anywhere}
+.job{background:#0b1222;border:1px solid #1e293b;border-radius:10px;padding:6px}.job .h{font-size:10.5px;color:#8a9bb0;margin-bottom:3px}
+.jtp{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}.jtp div{border-radius:6px;text-align:center;padding:2px 0;font-size:9.5px;min-width:0}.jtp div b{display:block;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.jtp div small{display:block;font-size:9px;opacity:.85}
+.jbt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.jbt button,.jbt a{height:32px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:11.5px;font-weight:700;padding:0;white-space:nowrap;text-decoration:none}
+.jbt a{border:1px solid var(--line);color:var(--tx)}.jbt .dl{background:#16a34a;border-color:#16a34a;color:#fff}
+.jliq{font-size:11px;color:#8a9bb0}
+.sig details summary{font-size:11.5px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>📍 Escáner <span>Estilo Jaxon</span></h1>
-  <p class="sub">Busca en todos los futuros USDT de Binance el mismo arranque que tuvo GRAM. A diferencia del canal, usa un stop estructural y calcula el tamaño de posición según tu riesgo.</p>
-
+  <div class="jsub">LONG + SHORT a la vez · liquidaciones · motor Jaxon</div>
+  <div class="cats"><button id="tSig" class="on">Señales 0</button><button id="tWatch">Vigilar 0</button><button id="tSeg">⭐ Seguidas 0</button><button id="tCfg" class="ic" title="Configuración">⚙️</button></div>
+  <div id="jxModo"></div>
+  <div class="jsum" id="jxSum"></div>
+  <div class="acts3"><button class="primary" id="go">▶ Escanear</button><button id="stop" disabled>■ Detener</button><button id="unPar">🔍 Un par</button></div>
+  <div class="onerow" id="oneRow"><input id="one" placeholder="Par, ej. GRAMUSDT"><button id="goOne">Analizar</button></div>
+  <div class="prog"><i id="pbar"></i></div>
+  <div class="jst"><span id="status">Toca ▶ Escanear. Tarda 1–2 minutos.</span></div>
+  <div class="err" id="err"></div>
+  <div class="res" id="res"></div>
+  <div id="cfgBox">
   <div class="card">
     <h2>Qué busca (la huella de GRAM, gráfico 1h)</h2>
     <div class="crit">
@@ -109,27 +146,16 @@
       <div><label>R/B mín. en TP3</label><input id="minRR" type="number" step="0.1" value="1.5"></div>
       <div><label>Comisión por lado (%)</label><input id="fee" type="number" step="0.01" value="0.05"></div>
       <div><label>Mantenimiento (%)</label><input id="mmr" type="number" step="0.1" value="0.5"></div>
-      <div><label>Analizar un solo par</label><input id="one" placeholder="ej. GRAMUSDT"></div>
       <div><label>Mapa de liquidaciones</label><label style="display:flex;align-items:center;gap:8px;height:37px;color:var(--tx);font-size:13px"><input id="liqOn" type="checkbox" checked style="width:auto"> Mostrar</label></div>
       <div><label>Umbral de liquidez = <span id="umbVal">0.25</span></label><input id="umbral" type="range" min="0" max="0.9" step="0.05" value="0.25" style="padding:0;height:37px"></div>
     </div>
     <div class="bar">
-      <button class="primary" id="go">Escanear todo</button>
-      <button id="goOne">Analizar par</button>
       <button id="csv" disabled>Descargar CSV</button>
-      <div class="prog"><i id="pbar"></i></div>
-      <span id="status">Listo.</span>
     </div>
     <p class="sub" style="margin:8px 0 0">El mapa de liquidaciones es una <b>estimación</b>, igual que los "Model" de CoinGlass: a partir del volumen de cada vela supone posiciones abiertas con 10×, 25×, 50× y 100×, y borra cada nivel cuando el precio lo toca. Sirve para ubicar zonas imán; los montos no son los reales del exchange.</p>
-    <div class="err" id="err"></div>
   </div>
 
-  <div class="card">
-    <div id="jxModo"></div>
-    <div class="tabs"><button id="tSig" class="on">Señales (0)</button><button id="tWatch">Vigilar (0)</button><button id="tSeg">Seguidas (0)</button></div>
-    <div class="res" id="res"><div class="empty">Pulsa "Escanear todo". Tarda 1–2 minutos.</div></div>
   </div>
-
   <div id="jxToast"></div>
   <p class="foot">Datos públicos de Binance Futures. Herramienta de búsqueda y cálculo, no es asesoría financiera. Revisa cada gráfico antes de operar.</p>
 </div>
@@ -360,7 +386,7 @@ function errorMsg(e){
 }
 
 async function escanear(){
-  $('err').style.display='none'; $('go').disabled=$('goOne').disabled=true; resultados=[]; render();
+  $('err').style.display='none'; $('go').disabled=$('goOne').disabled=true; $('stop').disabled=false; window._parar=false; resultados=[]; render();
   const c=cfg();
   try{
     $('status').textContent='Descargando lista de contratos…';
@@ -368,7 +394,7 @@ async function escanear(){
     const [info,tick]=await Promise.all([api('/fapi/v1/exchangeInfo'),api('/fapi/v1/ticker/24hr')]);
     const ok=new Set(info.symbols.filter(s=>s.contractType==='PERPETUAL'&&s.quoteAsset==='USDT'&&s.status==='TRADING').map(s=>s.symbol));
     const pares=tick.filter(t=>ok.has(t.symbol)&&+t.quoteVolume>=c.volMin&&+t.quoteVolume<=c.volMax).map(t=>({sym:t.symbol,vol:+t.quoteVolume}));
-    let hechos=0;
+    let hechos=0; window._nPares=pares.length;
     const tarea=async p=>{
       try{const d=await velas(p.sym); let add=false;
         for(const r of analizarAmbas(d,c)) if(r.estado!=='no'){ r.sym=p.sym;r.vol=p.vol;r.d=d; r.ctx=ctxDe(d); resultados.push(r); add=true; }
@@ -376,7 +402,7 @@ async function escanear(){
       }catch(e){ if(e.message==='BLOQUEO451')throw e }
       hechos++; $('pbar').style.width=(100*hechos/pares.length)+'%'; $('status').textContent=`${hechos}/${pares.length} pares analizados`;
     };
-    let i=0; const workers=Array(6).fill(0).map(async()=>{while(i<pares.length){const p=pares[i++];await tarea(p)}});
+    let i=0; const workers=Array(6).fill(0).map(async()=>{while(i<pares.length&&!window._parar){const p=pares[i++];await tarea(p)}});
     await Promise.all(workers);
     // open interest de los candidatos
     const oiC={}; for(const r of resultados){ try{ if(!(r.sym in oiC)){const oi=await api(`/fapi/v1/openInterest?symbol=${r.sym}`); oiC[r.sym]=+oi.openInterest;} r.oi=oiC[r.sym]*r.trade.P;}catch(e){} }
@@ -384,7 +410,8 @@ async function escanear(){
     const nS=(e,dr)=>resultados.filter(r=>r.estado===e&&r.dir===dr).length;
     $('status').textContent=`Listo: ${pares.length} pares · ${nS('senal','long')+nS('senal','short')} señales (🟢 ${nS('senal','long')} LONG · 🔴 ${nS('senal','short')} SHORT) · ${resultados.filter(r=>r.estado==='vigilar').length} para vigilar · ${new Date().toLocaleTimeString()}`;
   }catch(e){errorMsg(e);$('status').textContent='Error.'}
-  $('go').disabled=$('goOne').disabled=false; $('csv').disabled=!resultados.length;
+  $('go').disabled=$('goOne').disabled=false; $('stop').disabled=true; $('csv').disabled=!resultados.length;
+  if(window._parar) $('status').textContent='Detenido: '+$('status').textContent.replace(/^Listo: /,'');
 }
 
 async function uno(){
@@ -403,17 +430,19 @@ async function uno(){
 }
 
 function render(){
-  renderModo(); $('tSeg').textContent=`Seguidas (${seguidas.length})`; $('tSeg').classList.toggle('on',tab==='seg');
-  if(tab==='seg'){ $('tSig').classList.remove('on'); $('tWatch').classList.remove('on'); renderSeg(); return; }
+  renderModo();
   const sig=resultados.filter(r=>r.estado==='senal'), wat=resultados.filter(r=>r.estado==='vigilar'), forz=resultados.filter(r=>r.forzado&&r.estado==='no');
-  const cnt=a=>`${a.length}${a.length?` · 🟢${a.filter(r=>r.dir!=='short').length} 🔴${a.filter(r=>r.dir==='short').length}`:''}`;
-  $('tSig').textContent=`Señales (${cnt(sig)})`; $('tWatch').textContent=`Vigilar (${cnt(wat)})`;
-  $('tSig').classList.toggle('on',tab==='senal'); $('tWatch').classList.toggle('on',tab==='vigilar');
+  $('tSig').textContent=`Señales ${sig.length}`; $('tWatch').textContent=`Vigilar ${wat.length}`; $('tSeg').textContent=`⭐ Seguidas ${seguidas.length}`;
+  [['tSig','senal'],['tWatch','vigilar'],['tSeg','seg'],['tCfg','cfg']].forEach(([id,t])=>$(id).classList.toggle('on',tab===t));
+  $('jxSum').innerHTML=`<div><b>${window._nPares||'—'}</b>pares</div><div><b style="color:#86efac">${sig.length}</b>señales${sig.length?` · 🟢${sig.filter(r=>r.dir!=='short').length} 🔴${sig.filter(r=>r.dir==='short').length}`:''}</div><div><b>${wat.length}</b>vigilar</div>`;
+  $('cfgBox').classList.toggle('open',tab==='cfg'); $('res').style.display=tab==='cfg'?'none':'';
+  if(tab==='cfg') return;
+  if(tab==='seg'){ renderSeg(); return; }
   const vOrd=r=>{const v=veredicto(r); return v?{go:0,mid:1,no:2}[v[0]]:1;};
   let lista=(tab==='senal'?sig:wat).slice().sort((a,b)=>vOrd(a)-vOrd(b)||b.score-a.score);
   lista=forz.concat(lista);
   const box=$('res');
-  if(!lista.length){box.innerHTML='<div class="empty">'+(resultados.length||$('go').disabled?'Nada en esta pestaña todavía.':'Pulsa "Escanear todo". Tarda 1–2 minutos.')+'</div>';return}
+  if(!lista.length){box.innerHTML='<div class="empty">'+(resultados.length||$('go').disabled?'Nada en esta pestaña todavía.':'Toca ▶ Escanear. Tarda 1–2 minutos.')+'</div>';return}
   lista_=lista; box.innerHTML=lista.map((r,i)=>tarjeta(r,i)).join('');
   lista.forEach((r,i)=>{dibujar($('cv'+i),r); const el=$('liq'+i), bs=bolsas(r);
     if(el&&bs){const u=bs.up[0],dn=bs.dn[0]; el.innerHTML=`Liquidez estimada · arriba: ${u?`<b style="color:#f7c948">${fp(u.p)}</b> (${Math.round(u.pct*100)}%, +${pct(u.p/r.d.price-1,1)})`:'—'} · abajo: ${dn?`<b style="color:#7fe3f5">${fp(dn.p)}</b> (${Math.round(dn.pct*100)}%, −${pct(1-dn.p/r.d.price,1)})`:'—'}`; const sh=r.dir==='short'; if(sh?(u&&u.p<r.trade.stop):(dn&&dn.p>r.trade.stop)) el.innerHTML+=' · <span style="color:var(--warn)">bolsa grande entre la entrada y el stop: el precio puede ir a buscarla</span>';}});
@@ -438,23 +467,38 @@ const dirTag=d=>d==='short'?'<span class="dtag s">SHORT</span>':'<span class="dt
 function tarjeta(r,i){
   const t=r.trade, sh=r.dir==='short', mv=tp=>sh?1-tp/t.P:tp/t.P-1; sigId(r);
   const b=r.estado==='senal'?'<span class="badge b-ok">SEÑAL</span>':r.estado==='vigilar'?'<span class="badge b-warn">VIGILAR</span>':'<span class="badge b-no">NO CUMPLE</span>';
+  const sit=r.tipo==='pump'?`🚀 Vender el pump +${Math.round(r.pump*100)} %`:sh?'🏔 Techo con rechazo':'🪨 Piso tras caída';
+  const c=r.ctx||{}, cc=tv=>{const a=alinea(tv,r.dir); return a>0?'g':a<0?'rd':'y';}, ce=tv=>{const a=alinea(tv,r.dir); return a>0?'🟢':a<0?'🔴':'🟡';};
+  const ctxc=[['4H',c.h4],['1H',c.h1],['₿',c.btc]].filter(([,tv])=>tv).map(([l,tv])=>`<span class="${cc(tv)}">${l} ${ce(tv)}</span>`).join('');
+  const crit=r.checks.map(x=>{const sc=x.t.replace(/ \(.*$/,'').replace(/ y R\/B TP3.*$/,'').replace('Stop estructural','Stop').replace(/ ·.*$/,'').replace('Resistencia con ≥2 toques','Resist.').replace('Soporte con ≥2 toques','Soporte').replace(/Precio (cerca|pegado).*/,'Pegado').replace(/(Piso|Techo) que aguanta/,'$1').replace(/Giro (alcista|bajista)/,'Giro').replace('Volumen entrando','Vol.').replace(/Espacio hasta.*/,'Espacio').replace(/Volumen del pump.*/,'Vol.').replace(/Vela de rechazo.*/,'Rechazo').replace('Última vela roja','Roja').replace(/^Pump.*/,'Pump');
+    return `<span class="${x.p?'g':'n'}" title="${x.t}">${x.p?'':'✗ '}${sc}</span>`;}).join('');
+  const v=veredicto(r);
+  const col=k=>[['#052e16','#86efac'],['#1a2e05','#bef264'],['#2a2306','#fcd34d'],['#2a2306','#fcd34d'],['#2a0b0b','#fca5a5']][Math.min(k,4)];
+  const tps=t.tps.map((tp,k)=>`<div style="background:${col(k)[0]};color:${col(k)[1]}">TP${k+1}<b>${fmt(tp)}</b><small>${sh?'−':'+'}${pct(mv(tp),1)}</small></div>`).join('');
   const filas=t.tps.map((tp,k)=>`<tr><td>T${k+1}</td><td>${fmt(tp)}</td><td class="pos">${sh?'−':'+'}${pct(mv(tp))}</td><td>${t.rr[k].toFixed(2)}</td><td class="pos">${usd(t.nocional*(mv(tp)-0.001))}</td></tr>`).join('');
+  const sobre=sh?1-t.P/t.S:t.P/t.S-1;
   return `<div class="sig">
     <canvas id="cv${i}" width="1080" height="1150"></canvas>
     <div class="meta">
-      <div class="top"><span class="score">${dirTag(r.dir)}${r.tipo==='pump'?`<span class="dtag p">PUMP +${Math.round(r.pump*100)} %</span>`:''}#${r.id} · ${r.sym} · puntaje ${r.score}/100</span>${b}</div>
-      ${ctxHTML(r)}
-      <div class="score" id="liq${i}"></div>
-      <div class="score">vol 24h ${r.vol?'$'+(r.vol/1e6).toFixed(1)+'M':'—'} · OI ${r.oi?'$'+(r.oi/1e6).toFixed(2)+'M':'—'} · ATR 1h ${pct(t.atrPct)}</div>
-      <div class="alert a-ok">Tamaño <b>${usd(t.nocional)}</b> · apalancamiento máx. seguro <b>${t.seguro}×</b> · margen ${usd(t.margen)} · pérdida en SL ${usd(t.riesgo)}</div>
-      ${t.liq50Antes?`<div class="alert a-bad">Con 50× (como JaXon) te liquidan en ~${fmt(t.liq50)}, antes del stop.</div>`:''}
-      <details><summary>Objetivos y criterios</summary>
+      <span class="jtag">${sit}</span>
+      <div class="jhd">${dirTag(r.dir)}<span class="sym">${r.sym.replace(/USDT$/,'')}</span><span class="q">/USDT · 1H</span><span class="sc"><b>${r.score}/100</b><small>#${r.id} · ${r.pasa}/${r.checks.length} criterios</small></span></div>
+      <div class="jr2">${b}<span class="q" style="font-size:11px;color:#8a9bb0">vol ${r.vol?'$'+(r.vol/1e6).toFixed(1)+'M':'—'} · OI ${r.oi?'$'+(r.oi/1e6).toFixed(1)+'M':'—'}</span><span class="fbx"><button class="fp ${segDe(r)?'on':''}" data-fp="${i}">⭐ Personal</button><button class="fg ${segDe(r)&&segDe(r).g?'on':''}" data-fg="${i}">👥 Grupo</button></span></div>
+      <div class="jch">${ctxc}${ctxc?'<span class="sep">|</span>':''}${crit}</div>
+      ${v?`<div class="jvd ${v[0]}" onclick="this.classList.toggle('full')"><b>${v[1]}</b> · ${v[2]}</div>`:''}
+      <div class="jkv"><b>Entrada</b><span>${fmt(t.P)} <span style="color:#8a9bb0">(${pct(Math.max(0,sobre),1)} ${sh?'bajo el techo':'sobre el piso'})</span></span>
+        <b>Stop</b><span style="color:#fca5a5">${fmt(t.stop)} (${sh?'+':'−'}${pct(t.dist,1)})</span>
+        <b>Tamaño</b><span>${usd(t.nocional)} · seguro <b style="color:#e5e7eb">${t.seguro}×</b> · margen ${usd(t.margen)} · pérdida SL ${usd(t.riesgo)}</span>
+        <b>ATR 1h</b><span>${pct(t.atrPct)}</span></div>
+      <div class="jliq" id="liq${i}"></div>
+      ${t.liq50Antes?`<div class="alert a-bad" style="margin:0">Con 50× (como JaXon) te liquidan en ~${fmt(t.liq50)}, antes del stop.</div>`:''}
+      <div class="job"><div class="h">🎯 Objetivos ${cfg().mult?'(1.75 × stop)':''} · TP5 = ${t.rr[t.rr.length-1].toFixed(1)} R</div><div class="jtp">${tps}</div></div>
+      <details><summary>Tabla de objetivos y criterios</summary>
         <table><tr><th>Nivel</th><th>Precio</th><th>Mov.</th><th>R/B</th><th>Cierre 100%</th></tr>${filas}
         <tr><td>SL</td><td>${fmt(t.stop)}</td><td class="neg">${sh?'+':'−'}${pct(t.dist)}</td><td>—</td><td class="neg">−${usd(t.riesgo)}</td></tr></table>
-        <div class="checks">${r.checks.map(c=>`<span class="${c.p?'p':'f'}">${c.t}</span>`).join('')}</div>
+        <div class="checks">${r.checks.map(x=>`<span class="${x.p?'p':'f'}">${x.t}</span>`).join('')}</div>
       </details>
-      <div class="acts"><button class="fp ${segDe(r)?'on':''}" data-fp="${i}">⭐ Personal</button><button class="fg ${segDe(r)&&segDe(r).g?'on':''}" data-fg="${i}">👥 Grupo</button><button data-png="${i}">Descargar PNG</button><button data-txt="${i}">Copiar señal</button></div>
-      <div class="links"><a href="https://www.tradingview.com/chart/?symbol=BINANCE:${r.sym}.P" target="_blank" rel="noopener">TradingView</a><a href="https://www.binance.com/es/futures/${r.sym}" target="_blank" rel="noopener">Binance</a><a href="https://www.bitget.com/futures/usdt/${r.sym}" target="_blank" rel="noopener">Bitget</a></div>
+      <div class="jbt"><a href="https://www.tradingview.com/chart/?symbol=BINANCE:${r.sym}.P" target="_blank" rel="noopener">📈 TradingView</a><button data-txt="${i}">Copiar señal</button><button class="dl" data-png="${i}">⬇ Descargar</button></div>
+      <div class="links"><a href="https://www.binance.com/es/futures/${r.sym}" target="_blank" rel="noopener">Binance</a><a href="https://www.bitget.com/futures/usdt/${r.sym}" target="_blank" rel="noopener">Bitget</a></div>
     </div></div>`;
 }
 
@@ -606,7 +650,9 @@ $('umbral').oninput=()=>{$('umbVal').textContent=(+$('umbral').value).toFixed(2)
 $('liqOn').onchange=render;
 $('go').onclick=escanear; $('goOne').onclick=uno; $('csv').onclick=csv;
 $('one').addEventListener('keydown',e=>{if(e.key==='Enter')uno()});
-$('tSig').onclick=()=>{tab='senal';render()}; $('tWatch').onclick=()=>{tab='vigilar';render()}; $('tSeg').onclick=()=>{tab='seg';render()};
+$('tSig').onclick=()=>{tab='senal';render()}; $('tWatch').onclick=()=>{tab='vigilar';render()}; $('tSeg').onclick=()=>{tab='seg';render()}; $('tCfg').onclick=()=>{tab='cfg';render()};
+$('stop').onclick=()=>{window._parar=true; $('stop').disabled=true;};
+$('unPar').onclick=()=>{ const o=$('oneRow'); o.classList.toggle('open'); if(o.classList.contains('open')) $('one').focus(); };
 render();
 window.addEventListener('focus',renderModo); setInterval(renderModo,60000);
 </script>
