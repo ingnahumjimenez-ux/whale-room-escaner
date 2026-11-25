@@ -4727,7 +4727,8 @@ function rgDetect(sym,K,vol){
   else if(st==='down'){ entryLow=bot-0.3*atr; entryHigh=bot; stop=bot+Math.max(0.6*atr,0.15*w); tp1=bot-0.5*w; tp2=bot-w; }
   const r={symbol:sym, base:sym.replace(/USDT$/,''), K, n, atr, vol, R, c, pos, st, dir, brk, rej, volOk, avgV, d:decimalsFor(c), entryLow, entryHigh, stop, tp1, tp2};
   if(dir){ const sh=dir==='short', en=st==='up'||st==='down' ? (sh?Math.max(c,entryLow):Math.min(c,entryHigh)) : c;
-    r.entry=en; r.risk=Math.abs(en-stop); r.stopPct=r.risk/en*100;
+    if(Math.abs(en-r.stop)<0.6*atr){ r.stop= sh? en+0.6*atr : en-0.6*atr; }   // stop mínimo: 0.6 ATR desde la entrada
+    r.entry=en; r.risk=Math.abs(en-r.stop); r.stopPct=r.risk/en*100;
     r.rr1=(sh?en-tp1:tp1-en)/r.risk; r.rr2=(sh?en-tp2:tp2-en)/r.risk;
     r.pct1=(sh?1-tp1/en:tp1/en-1)*100; r.pct2=(sh?1-tp2/en:tp2/en-1)*100;
     r.maxLev=Math.max(1,Math.min(10,Math.floor(50/r.stopPct))); r.minLev=Math.max(1,Math.round(r.maxLev*0.4));
