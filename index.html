@@ -595,6 +595,7 @@ body.fabs-open #rgFab{opacity:1;pointer-events:auto;transform:none}
 #rgPanel .rgvd{border-radius:9px;padding:5px 9px;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}#rgPanel .rgvd.full{white-space:normal}
 #rgPanel .rgvd.go{background:#052e16;border:1px solid #22c55e}#rgPanel .rgvd.go b{color:#86efac}#rgPanel .rgvd.mid{background:#2a2306;border:1px solid #f59e0b}#rgPanel .rgvd.mid b{color:#fcd34d}#rgPanel .rgvd.no{background:#2a0b0b;border:1px solid #ef4444}#rgPanel .rgvd.no b{color:#fca5a5}#rgPanel .rgvd.wt{background:#111a2e;border:1px solid #334155}#rgPanel .rgvd.wt b{color:#cbd5e1}
 #rgPanel .rgkv{display:grid;grid-template-columns:78px minmax(0,1fr);gap:2px 8px;font-size:11.5px;border-top:1px solid #1e293b;padding-top:6px;font-variant-numeric:tabular-nums}#rgPanel .rgkv b{color:#8a9bb0;font-weight:500}#rgPanel .rgkv span{overflow-wrap:anywhere}
+#rgPanel .rgpx{color:#fff;font-weight:800;padding:1px 8px;border-radius:6px;font-size:12.5px}
 #rgPanel .rgsec{font-size:11px;color:#94a3b8;margin:12px 2px 2px}
 
 /* ===== Burbuja TradFi ===== */
@@ -895,7 +896,7 @@ body.fabs-open #tfFab{opacity:1;pointer-events:auto;transform:none}
 <div id="rgPanel"><div class="sheet"><div class="grab"></div>
   <div class="ph"><h2>▭ Rangos · 1H</h2><button class="x" id="rgX">✕</button></div>
   <div class="pst">Monedas atrapadas entre techo y piso · Binance Futures · motor v3</div>
-  <div class="pst" style="background:#123b38;border:1px solid #14b8a6;color:#99f6e4;border-radius:9px;padding:6px 9px">🧪 Probado: gana siguiendo la tendencia (solo a favor de 4H · stop 1.5 ATR · salir en TP2). En los últimos 60 días, casi solo SHORT. Usa riesgo chico.</div>
+  <div class="pst" style="background:#123b38;border:1px solid #14b8a6;color:#99f6e4;border-radius:9px;padding:6px 9px">🧪 Probado: gana siguiendo la tendencia (solo a favor de 4H · stop 1.5 ATR · salir en TP). En los últimos 60 días, casi solo SHORT. Usa riesgo chico.</div>
   <div class="cats" id="rgCats"><button data-f="all" class="on">Todas</button><button data-f="piso">Piso</button><button data-f="techo">Techo</button><button data-f="brk">Ruptura</button></div>
   <div class="sum" id="rgSum"></div>
   <div class="b3"><button class="primary" id="rgGo">▶ Escanear</button><button class="ghost" id="rgStop" disabled>■ Detener</button><button class="ghost" id="rgUnBtn">🔍 Un par</button></div>
@@ -4752,14 +4753,14 @@ function rgScore(r){
   else s-=15;
   r.score=Math.max(0,Math.min(100,Math.round(s)));
 }
-function rgVerd(r){ // reglas del test 2: solo a favor de 4H (BTC no en contra) · objetivo TP2 · stop 1.5 ATR
+function rgVerd(r){ // reglas del test 2: solo a favor de 4H (BTC no en contra) · objetivo TP · stop 1.5 ATR
   const c=r.ctx||{}, a4=alignOf(c.h4,r.dir), ab=r.symbol==='BTCUSDT'?0:alignOf(c.btc,r.dir), F=v=>fmt(v,r.d);
   if(r.st==='medio') return ['wt','⏳ ESPERA',`está en medio del rango · LONG cerca de ${F(r.R.bot)} o SHORT cerca de ${F(r.R.top)}`];
   if(a4<0||ab<0) return ['no','⛔ NO',`va contra ${a4<0&&ab<0?'4H y BTC':a4<0?'4H':'BTC'} · en el test estas entradas perdieron`];
   if(a4===0) return ['wt','⏳ ESPERA','4H lateral · esperar a que 4H marque dirección'];
   if(r.rr1<1) return ['no','⛔ NO','poco recorrido frente al stop'];
-  if(r.st==='up'||r.st==='down') return ['go','✅ TÓMALA',`entrar en el retesteo de ${F(r.st==='up'?r.R.top:r.R.bot)} · salir en TP2 (ancho del rango)`];
-  return ['go','✅ TÓMALA',`a favor de 4H · salir en TP2 (${r.st==='piso'?'techo':'piso'} del rango)`];
+  if(r.st==='up'||r.st==='down') return ['go','✅ TÓMALA',`entrar en el retesteo de ${F(r.st==='up'?r.R.top:r.R.bot)} · salir en TP (ancho del rango)`];
+  return ['go','✅ TÓMALA',`a favor de 4H · salir en TP (${r.st==='piso'?'techo':'piso'} del rango)`];
 }
 const RG_ST={piso:'Rebote en el piso del rango',techo:'Rechazo en el techo del rango',up:'Ruptura del rango al alza',down:'Ruptura del rango a la baja',medio:'En medio del rango'};
 const RG_SHORT={piso:'piso',techo:'techo',up:'ruptura ↑',down:'ruptura ↓',medio:'medio'};
@@ -4776,7 +4777,7 @@ function rgDraw(cv,r){
     g.save(); g.strokeStyle='rgba(251,191,36,.7)'; g.lineWidth=1.5; g.beginPath(); g.moveTo(x0,Y(P.poc)); g.lineTo(x1,Y(P.poc)); g.stroke(); g.restore(); }
   const line=(p,col,dash,wd)=>{ g.save(); g.strokeStyle=col; g.lineWidth=wd||2; g.setLineDash(dash||[]); g.beginPath(); g.moveTo(x0,Y(p)); g.lineTo(x1,Y(p)); g.stroke(); g.restore(); };
   line(R.top,'#ef4444',null,3); line(R.bot,'#22c55e',null,3); line(R.mid,'#94a3b8',[10,8],2);
-  if(r.dir){ line(r.stop,'#f87171',[6,6],2); line(r.tp1,'#86efac',[3,6],2); line(r.tp2,'#86efac',[3,6],2); }
+  if(r.dir){ line(r.stop,'#ef4444',[14,9],4.5); line(r.tp2,'#22c55e',[14,9],4.5); }
   for(let i=from;i<=n;i++){ const k=K[i], up=k.c>=k.o, col=up?'#22c55e':'#ef4444'; g.strokeStyle=col; g.fillStyle=col; g.lineWidth=Math.max(1,cw*0.12);
     g.beginPath(); g.moveTo(X(i),Y(k.h)); g.lineTo(X(i),Y(k.l)); g.stroke();
     const y1=Y(Math.max(k.o,k.c)), y2=Y(Math.min(k.o,k.c)); g.fillRect(X(i)-cw*0.32,y1,cw*0.64,Math.max(1.5,y2-y1)); }
@@ -4787,15 +4788,16 @@ function rgDraw(cv,r){
   const lab=(p,txt,bg,fg)=>{ const y=Y(p); g.fillStyle=bg; g.fillRect(W-pad.r+4,y-14,pad.r-8,28); g.fillStyle=fg; g.fillText(txt,W-pad.r+10,y); };
   const F=v=>fmt(v,r.d);
   lab(R.top,F(R.top),'#3b0d0d','#fca5a5'); lab(R.bot,F(R.bot),'#052e16','#86efac'); lab(R.mid,F(R.mid),'#1e293b','#cbd5e1');
-  if(r.dir){ lab(r.stop,'SL '+F(r.stop),'#2a0b0b','#f87171'); lab(r.tp2,'TP2 '+F(r.tp2),'#052e16','#bbf7d0'); }
+  if(r.dir){ g.font='800 22px ui-monospace,Menlo,monospace'; lab(r.stop,'SL '+F(r.stop),'#dc2626','#ffffff'); lab(r.tp2,'TP '+F(r.tp2),'#16a34a','#ffffff'); g.font='600 22px ui-monospace,Menlo,monospace'; }
   lab(r.c,F(r.c),'#e5e7eb','#0b1020');
-  g.fillStyle='#a78bfa'; g.font='700 22px ui-monospace,Menlo,monospace'; g.textBaseline='alphabetic';
-  g.fillText(`${r.symbol} · 1H · RANGO ${R.N} velas · ancho ${R.wPct.toFixed(1)}%`,pad.l,28);
+  g.textBaseline='alphabetic'; g.fillStyle='#fde047'; g.font='800 28px ui-monospace,Menlo,monospace'; g.fillText(r.symbol,pad.l,30);
+  const sw=g.measureText(r.symbol).width; g.fillStyle='#a78bfa'; g.font='700 22px ui-monospace,Menlo,monospace';
+  g.fillText(` · 1H · RANGO ${R.N} velas · ancho ${R.wPct.toFixed(1)}%`,pad.l+sw,30);
 }
 function rgText(r){ const F=v=>fmt(v,r.d), R=r.R;
   const L=[`▭ RANGO · ${r.base}/USDT · 1H`, r.dir?`${r.dir.toUpperCase()} · ${RG_ST[r.st]}`:RG_ST[r.st], `Rango: ${F(R.bot)} – ${F(R.top)} (${R.wPct.toFixed(1)} %, ${R.N} velas)`];
-  if(r.dir){ L.push(`Entrada: ${F(r.entryLow)} – ${F(r.entryHigh)}`, `Stop: ${F(r.stop)}`, `Objetivo TP2: ${F(r.tp2)} (TP1 ${F(r.tp1)} solo referencia)`, `Apalancamiento: ${r.levTxt}`,
-      `Salida: solo en el stop o en TP2 · máx. 48 h`); }
+  if(r.dir){ L.push(`Entrada: ${F(r.entryLow)} – ${F(r.entryHigh)}`, `Stop: ${F(r.stop)}`, `Objetivo TP: ${F(r.tp2)}`, `Apalancamiento: ${r.levTxt}`,
+      `Salida: solo en el stop o en TP · máx. 48 h`); }
   else L.push(`LONG cerca de ${F(R.bot)} · SHORT cerca de ${F(R.top)}`);
   return L.join('\n'); }
 function rgImage(r){ const st=localStamp(), v=rgVerd(r);
@@ -4803,7 +4805,12 @@ function rgImage(r){ const st=localStamp(), v=rgVerd(r);
   const lines=rgText(r).split('\n'), cv=document.createElement('canvas'); cv.width=1080; cv.height=620+70+lines.length*44+70;
   const g=cv.getContext('2d'); g.fillStyle='#0b0e14'; g.fillRect(0,0,cv.width,cv.height); g.drawImage(ch,0,0);
   let y=620+56; g.font='800 34px system-ui,sans-serif'; g.fillStyle=v[0]==='go'?'#86efac':v[0]==='no'?'#fca5a5':v[0]==='wt'?'#cbd5e1':'#fcd34d'; g.fillText(v[1]+' · '+r.score+'/100',36,y);
-  g.font='500 30px system-ui,sans-serif'; g.fillStyle='#e5e7eb'; lines.forEach(t=>{ y+=44; g.fillText(t,36,y); });
+  lines.forEach((t,k)=>{ y+=44;
+    if(k===0){ g.font='800 32px system-ui,sans-serif'; const a='▭ RANGO · '; g.fillStyle='#e5e7eb'; g.fillText(a,36,y); g.fillStyle='#fde047'; g.fillText(t.slice(a.length),36+g.measureText(a).width,y); return; }
+    g.font='500 30px system-ui,sans-serif';
+    const box=/^Stop:/.test(t)?'#dc2626':/^Objetivo TP:/.test(t)?'#16a34a':null;
+    if(box){ g.font='800 30px system-ui,sans-serif'; const wdt=g.measureText(t).width; g.fillStyle=box; g.beginPath(); g.roundRect?g.roundRect(28,y-32,wdt+20,42,8):g.rect(28,y-32,wdt+20,42); g.fill(); g.fillStyle='#ffffff'; g.fillText(t,38,y); return; }
+    g.fillStyle='#e5e7eb'; g.fillText(t,36,y); });
   g.font='500 24px system-ui,sans-serif'; g.fillStyle='#8a9bb0'; g.fillText(`${st.text} · Escáner v3 · Rangos`,36,cv.height-30);
   return {cv, name:`rango_${r.symbol}_${(r.dir||'vigilar').toUpperCase()}_1h_${st.file}.png`}; }
 function rgCard(r,i){
@@ -4818,16 +4825,15 @@ function rgCard(r,i){
   let kv=`<b>Rango</b><span>${F(R.bot)} – ${F(R.top)} · ancho ${R.wPct.toFixed(1)} % · ${R.N} velas</span><b>Precio</b><span>${F(r.c)} · ${Math.round(Math.max(0,Math.min(1,r.pos))*100)} % de la caja</span>`;
   if(r.dir){ const ed=r.st==='piso'?'techo':r.st==='techo'?'piso':'medida';
     kv+=`<b>Entrada</b><span>${F(r.entryLow)} – ${F(r.entryHigh)}</span>
-      <b>Stop</b><span style="color:#fca5a5">${F(r.stop)} (${sh?'+':'−'}${r.stopPct.toFixed(1)} %)</span>
-      <b>🎯 TP2</b><span style="color:#86efac;font-weight:700">${F(r.tp2)} (${sh?'−':'+'}${r.pct2.toFixed(1)} %) · R:R ${r.rr2.toFixed(1)} · ${ed==='medida'?'ancho del rango':ed}</span>
-      <b>TP1 ${r.st==='piso'||r.st==='techo'?'medio':'½ rango'}</b><span style="color:#8a9bb0">${F(r.tp1)} (${sh?'−':'+'}${r.pct1.toFixed(1)} %) · solo referencia</span>
+      <b>Stop</b><span><span class="rgpx" style="background:#dc2626">${F(r.stop)}</span> <span style="color:#fca5a5">${sh?'+':'−'}${r.stopPct.toFixed(1)} %</span></span>
+      <b>🎯 TP</b><span><span class="rgpx" style="background:#16a34a">${F(r.tp2)}</span> <span style="color:#86efac">${sh?'−':'+'}${r.pct2.toFixed(1)} % · R:R ${r.rr2.toFixed(1)} · ${ed==='medida'?'ancho del rango':ed}</span></span>
       <b>Apalanc. · Vol</b><span>${r.levTxt} · ${fmtVol(r.vol)} USDT</span>
-      <b>Salida</b><span style="color:#8a9bb0">solo en el stop o en TP2 · máx. 48 h (como en el test)</span>`; }
+      <b>Salida</b><span style="color:#8a9bb0">solo en el stop o en TP · máx. 48 h (como en el test)</span>`; }
   else kv+=`<b>Plan</b><span>LONG cerca de ${F(R.bot)} · SHORT cerca de ${F(R.top)}</span><b>Vol</b><span>${fmtVol(r.vol)} USDT</span>`;
   if(r.vp) kv+=`<b>Perfil</b><span style="color:#8a9bb0">POC ${F(r.vp.poc)} · zona de valor ${F(r.vp.val)}–${F(r.vp.vah)} · ⓘ solo información</span>`;
   return `<div class="rgc" id="rgc${i}"><canvas width="1080" height="620"></canvas><div class="rgm">
     <span class="rgtag">▭ ${RG_ST[r.st]}</span>
-    <div class="rghd">${pill}<b class="sy">${r.base}</b><span class="q">/USDT · 1H</span><span class="scb">${r.score}/100</span></div>
+    <div class="rghd">${pill}<b class="sy" style="font-size:19px;color:#fde047;letter-spacing:.3px">${r.base}</b><span class="q">/USDT · 1H</span><span class="scb">${r.score}/100</span></div>
     <div class="rgch">${chips}</div>
     <div class="rgvd ${v[0]}" onclick="this.classList.toggle('full')"><b>${v[1]}</b> · ${v[2]}</div>
     <div class="rgkv">${kv}</div>
