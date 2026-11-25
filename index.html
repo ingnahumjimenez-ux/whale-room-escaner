@@ -4736,6 +4736,14 @@ function rgDetect(sym,K,vol){
     r.levTxt=r.minLev===r.maxLev?`${r.maxLev}x`:`${r.minLev}-${r.maxLev}x`; }
   return r;
 }
+function rgVP(K,r){ // perfil de volumen del rango · solo información (test 3: no mejora el resultado)
+  const R=r.R, w=R.w, lo=R.bot-0.1*w, hi=R.top+0.1*w, nb=24, step=(hi-lo)/nb, B=new Array(nb).fill(0);
+  for(let i=R.s;i<=r.n-1;i++){ const k=K[i], a=Math.max(lo,k.l), b=Math.min(hi,k.h); if(b<=a) continue; const rg=k.h-k.l||1e-12;
+    for(let j=Math.floor((a-lo)/step);j<=Math.min(nb-1,Math.floor((b-lo)/step));j++){ const x0=lo+j*step, ov=Math.min(b,x0+step)-Math.max(a,x0); if(ov>0) B[j]+=k.v*ov/rg; } }
+  let pi=0; B.forEach((v,j)=>{ if(v>B[pi]) pi=j; }); const tot=B.reduce((x,y)=>x+y,0);
+  let a=pi,b=pi,acc=B[pi]; while(acc<0.7*tot&&(a>0||b<nb-1)){ const up=b<nb-1?B[b+1]:-1, dn=a>0?B[a-1]:-1; if(up>=dn){ b++; acc+=B[b]; } else { a--; acc+=B[a]; } }
+  return {B,lo,step,pi,poc:lo+(pi+0.5)*step,val:lo+a*step,vah:lo+(b+1)*step};
+}
 function rgScore(r){
   let s=50; const R=r.R;
   s+=5*(Math.min(R.tT.n,4)-2)+5*(Math.min(R.tB.n,4)-2); if(R.N>=48) s+=5;
@@ -4763,6 +4771,9 @@ function rgDraw(cv,r){
   const cw=(W-pad.l-pad.r)/V.length, X=i=>pad.l+(i-from+0.5)*cw, Y=p=>pad.t+(hi-p)/(hi-lo)*(H-pad.t-pad.b);
   g.fillStyle='#140d24'; g.fillRect(0,0,W,H);
   g.fillStyle='rgba(20,184,166,.09)'; const x0=X(R.s)-cw/2, x1=W-pad.r; g.fillRect(x0,Y(R.top),x1-x0,Y(R.bot)-Y(R.top));
+  if(r.vp){ const P=r.vp, mx=Math.max(...P.B)||1, bw=(x1-x0)*0.35;
+    P.B.forEach((v,j)=>{ const yA=Y(P.lo+(j+1)*P.step), yB=Y(P.lo+j*P.step), L=v/mx*bw; g.fillStyle=j===P.pi?'rgba(251,191,36,.35)':'rgba(56,189,248,.22)'; g.fillRect(x1-L,yA+1,L,Math.max(1,yB-yA-2)); });
+    g.save(); g.strokeStyle='rgba(251,191,36,.7)'; g.lineWidth=1.5; g.beginPath(); g.moveTo(x0,Y(P.poc)); g.lineTo(x1,Y(P.poc)); g.stroke(); g.restore(); }
   const line=(p,col,dash,wd)=>{ g.save(); g.strokeStyle=col; g.lineWidth=wd||2; g.setLineDash(dash||[]); g.beginPath(); g.moveTo(x0,Y(p)); g.lineTo(x1,Y(p)); g.stroke(); g.restore(); };
   line(R.top,'#ef4444',null,3); line(R.bot,'#22c55e',null,3); line(R.mid,'#94a3b8',[10,8],2);
   if(r.dir){ line(r.stop,'#f87171',[6,6],2); line(r.tp1,'#86efac',[3,6],2); line(r.tp2,'#86efac',[3,6],2); }
@@ -4813,6 +4824,7 @@ function rgCard(r,i){
       <b>Apalanc. · Vol</b><span>${r.levTxt} · ${fmtVol(r.vol)} USDT</span>
       <b>Salida</b><span style="color:#8a9bb0">solo en el stop o en TP2 · máx. 48 h (como en el test)</span>`; }
   else kv+=`<b>Plan</b><span>LONG cerca de ${F(R.bot)} · SHORT cerca de ${F(R.top)}</span><b>Vol</b><span>${fmtVol(r.vol)} USDT</span>`;
+  if(r.vp) kv+=`<b>Perfil</b><span style="color:#8a9bb0">POC ${F(r.vp.poc)} · zona de valor ${F(r.vp.val)}–${F(r.vp.vah)} · ⓘ solo información</span>`;
   return `<div class="rgc" id="rgc${i}"><canvas width="1080" height="620"></canvas><div class="rgm">
     <span class="rgtag">▭ ${RG_ST[r.st]}</span>
     <div class="rghd">${pill}<b class="sy">${r.base}</b><span class="q">/USDT · 1H</span><span class="scb">${r.score}/100</span></div>
@@ -4823,8 +4835,10 @@ function rgCard(r,i){
   </div></div>`;
 }
 const RG_ORD={go:0,mid:1,wt:2,no:3};
+function rgGrp(r){ return r.v[0]==='go'? ((r.st==='up'||r.st==='down')?0:1) : 2; }   // test 3: rupturas +0.51 R · piso/techo +0.21 R
 function rgList(){ return RG.res.filter(r=>RG.f==='all'||(RG.f==='brk'?(r.st==='up'||r.st==='down'):r.st===RG.f))
-  .sort((a,b)=>(RG_ORD[a.v[0]]-RG_ORD[b.v[0]])||(b.score-a.score)); }
+  .sort((a,b)=>(rgGrp(a)-rgGrp(b))||(RG_ORD[a.v[0]]-RG_ORD[b.v[0]])||(b.score-a.score)); }
+const RG_GH=[['🚀 Rupturas ✅','en el test: +0.51 R por operación'],['▭ Piso y techo ✅','en el test: +0.21 R'],['⏳ Esperar · ⛔ No','']];
 function rgRender(){
   const cnt=f=>RG.res.filter(r=>f==='all'||(f==='brk'?(r.st==='up'||r.st==='down'):r.st===f)).length;
   [...$('rgCats').children].forEach(b=>{ b.textContent=({all:'Todas',piso:'Piso',techo:'Techo',brk:'Ruptura'})[b.dataset.f]+' '+cnt(b.dataset.f); b.classList.toggle('on',b.dataset.f===RG.f); });
@@ -4832,7 +4846,9 @@ function rgRender(){
   const L=rgList(), box=$('rgList');
   if(!L.length){ box.innerHTML=`<div class="pst">${RG.res.length?'Ninguna en este filtro.':RG.run?'Buscando rangos…':'Toca ▶ Escanear.'}</div>`; return; }
   let h='<div class="rgsec">Lista rápida · la rayita marca dónde está el precio dentro de la caja</div>';
-  h+=L.map((r,i)=>`<div class="rgrow" data-rggo="${i}"><span class="pill ${r.dir==='short'?'rgS':r.dir?'rgL':'rgN'}">${r.dir?r.dir.toUpperCase():'—'}</span><b>${r.base}</b><span class="st">${RG_SHORT[r.st]}</span><span class="rgbar"><i style="left:${Math.round(Math.max(0,Math.min(1,r.pos))*100)}%;${r.brk?'background:#fcd34d':''}"></i></span><span class="st">${r.R.wPct.toFixed(1)}%</span><span class="rgsc">${r.score}</span></div>`).join('');
+  let gp=-1;
+  h+=L.map((r,i)=>{ const g=rgGrp(r); let hd=''; if(g!==gp){ gp=g; const n=L.filter(x=>rgGrp(x)===g).length; hd=`<div class="rgsec" style="display:flex;justify-content:space-between;color:${g<2?'#5eead4':'#94a3b8'}"><span>${RG_GH[g][0]} · ${n}</span><span>${RG_GH[g][1]}</span></div>`; }
+    return hd+`<div class="rgrow" data-rggo="${i}"${g===2?' style="opacity:.75"':''}><span class="pill ${r.dir==='short'?'rgS':r.dir?'rgL':'rgN'}">${r.dir?r.dir.toUpperCase():'—'}</span><b>${r.base}</b><span class="st">${RG_SHORT[r.st]}</span><span class="rgbar"><i style="left:${Math.round(Math.max(0,Math.min(1,r.pos))*100)}%;${r.brk?'background:#fcd34d':''}"></i></span><span class="st">${r.R.wPct.toFixed(1)}%</span><span class="rgsc">${r.score}</span></div>`; }).join('');
   h+=L.map((r,i)=>rgCard(r,i)).join('');
   box.innerHTML=h;
   L.forEach((r,i)=>{ const el=$('rgc'+i); rgDraw(el.querySelector('canvas'),r); });
@@ -4844,7 +4860,7 @@ async function rgBtc(){ const [b1,b4]=await Promise.all([trendFor('futures','BTC
 async function rgOne(sym,vol){
   let K=await getKlines('futures',sym,RG_TF,RG_LIMIT); const r=rgDetect(sym,K,vol); if(!r) return null;
   const [h1,h4]=await Promise.all([trendFor('futures',sym,'1h'),trendFor('futures',sym,'4h')]);
-  r.ctx={h1,h4,btc:RG.btc}; rgScore(r); r.v=rgVerd(r); return r;
+  r.ctx={h1,h4,btc:RG.btc}; rgScore(r); r.v=rgVerd(r); try{ r.vp=rgVP(K,r); }catch(e){} return r;
 }
 async function rgScan(){
   if(RG.run) return; RG.run=true; RG.abort=false; RG.res=[]; $('rgGo').disabled=true; $('rgStop').disabled=false; rgRender();
