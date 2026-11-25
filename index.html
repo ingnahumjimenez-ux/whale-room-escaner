@@ -892,12 +892,12 @@ body.fabs-open #tfFab{opacity:1;pointer-events:auto;transform:none}
   <div class="pst" id="tfSt">Toca ▶ Analizar.</div>
   <div id="tfList"></div>
 </div></div>
-<button id="rgFab" title="Rangos · 1H"><span class="ic">▭</span>Rangos</button>
+<button id="rgFab" title="Rangos, canales y triángulos · 1H"><span class="ic">▭</span>Rangos</button>
 <div id="rgPanel"><div class="sheet"><div class="grab"></div>
   <div class="ph"><h2>▭ Rangos · 1H</h2><button class="x" id="rgX">✕</button></div>
-  <div class="pst">Monedas atrapadas entre techo y piso · Binance Futures · motor v3</div>
+  <div class="pst">Rangos, canales inclinados y triángulos · Binance Futures · motor v3</div>
   <div class="pst" style="background:#123b38;border:1px solid #14b8a6;color:#99f6e4;border-radius:9px;padding:6px 9px">🧪 Probado: gana siguiendo la tendencia (solo a favor de 4H · stop 1.5 ATR · salir en TP). En los últimos 60 días, casi solo SHORT. Usa riesgo chico.</div>
-  <div class="cats" id="rgCats"><button data-f="all" class="on">Todas</button><button data-f="piso">Piso</button><button data-f="techo">Techo</button><button data-f="brk">Ruptura</button></div>
+  <div class="cats" id="rgCats"><button data-f="all" class="on">Todos</button><button data-f="rango">▭ Rango</button><button data-f="canal">▱ Canal</button><button data-f="tri">◁ Triáng.</button></div>
   <div class="sum" id="rgSum"></div>
   <div class="b3"><button class="primary" id="rgGo">▶ Escanear</button><button class="ghost" id="rgStop" disabled>■ Detener</button><button class="ghost" id="rgUnBtn">🔍 Un par</button></div>
   <div class="onerow" id="rgOneRow"><input id="rgSym" placeholder="Par, ej. SOLUSDT" autocomplete="off"><button class="primary" id="rgOneGo">Analizar</button></div>
@@ -4745,6 +4745,54 @@ function rgVP(K,r){ // perfil de volumen del rango · solo información (test 3:
   let a=pi,b=pi,acc=B[pi]; while(acc<0.7*tot&&(a>0||b<nb-1)){ const up=b<nb-1?B[b+1]:-1, dn=a>0?B[a-1]:-1; if(up>=dn){ b++; acc+=B[b]; } else { a--; acc+=B[a]; } }
   return {B,lo,step,pi,poc:lo+(pi+0.5)*step,val:lo+a*step,vah:lo+(b+1)*step};
 }
+/* ---- Canales inclinados y triángulos (test 4: canal ↓ SHORT +0.27 R · triángulo ↓ +0.33 R · cuñas descartadas) ---- */
+function rgLs(P){ const n=P.length, mx=P.reduce((a,p)=>a+p[0],0)/n, my=P.reduce((a,p)=>a+p[1],0)/n; let nu=0,de=0; P.forEach(([x,y])=>{ nu+=(x-mx)*(y-my); de+=(x-mx)*(x-mx); }); const b=de?nu/de:0; return {a:my-b*mx,b}; }
+function rgPatDetect(K,atr){
+  const n=K.length-1, e=n-3;
+  for(let N=72;N>=30;N-=6){
+    const s=e-N+1; if(s<20) continue; const W=K.slice(s,e+1), k=3, PH=[], PL=[];
+    for(let i=k;i<W.length-k;i++){ let hi=true,lo=true; for(let j=i-k;j<=i+k;j++){ if(W[j].h>W[i].h) hi=false; if(W[j].l<W[i].l) lo=false; } if(hi) PH.push([i,W[i].h]); if(lo) PL.push([i,W[i].l]); }
+    if(PH.length<2||PL.length<2) continue;
+    const u=rgLs(PH), l=rgLs(PL), U=x=>u.a+u.b*x, L=x=>l.a+l.b*x;
+    const Ws=U(0)-L(0), We=U(N-1)-L(N-1); if(Ws<=0||We<=0) continue;
+    const wA=(Ws+We)/2, mid=(U(N-1)+L(N-1))/2, wPct=wA/mid*100; if(wPct<2||wPct>18||wA<2.5*atr) continue;
+    const ins=W.filter((q,i)=>q.c>=L(i)-0.1*wA&&q.c<=U(i)+0.1*wA).length/N; if(ins<0.88) continue;
+    const iU=PH.filter(([i,h])=>Math.abs(h-U(i))<=0.15*wA).map(p=>p[0]), iL=PL.filter(([i,v])=>Math.abs(v-L(i))<=0.15*wA).map(p=>p[0]); if(iU.length<2||iL.length<2) continue;
+    const ratio=We/Ws; if(ratio>1.4) continue;
+    const m=(u.b+l.b)/2, drift=Math.abs(m)*N/wA; let type;
+    if(ratio>=0.7){ if(drift<0.6) continue; type=m<0?'canal_down':'canal_up'; }
+    else { const su=u.b*N/wA, sl=l.b*N/wA; type=(su>0.3&&sl>0.3)?'cuna_asc':(su<-0.3&&sl<-0.3)?'cuna_desc':'tri'; }
+    return {s,N,U,L,Ws,We,wA,wPct,type,iU,iL};
+  }
+  return null;
+}
+function rgPatRes(sym,K,vol,atr){
+  const P=rgPatDetect(K,atr); if(!P||P.type.startsWith('cuna')) return null;   // las cuñas no pasaron el test 4
+  const n=K.length-1, c=K[n].c, x=n-P.s, Ux=P.U(x), Lx=P.L(x), wN=Ux-Lx; if(wN<=0) return null;
+  const canal=P.type!=='tri', down=P.type==='canal_down';
+  const R={s:P.s,e:P.s+P.N-1,N:P.N,top:Ux,bot:Lx,mid:(Ux+Lx)/2,w:wN,wPct:wN/((Ux+Lx)/2)*100,tT:{n:P.iU.length,idx:P.iU},tB:{n:P.iL.length,idx:P.iL}};
+  const r={symbol:sym, base:sym.replace(/USDT$/,''), K, n, atr, vol, R, P, c, pos:(c-Lx)/wN, d:decimalsFor(c), rej:false, volOk:false, brk:null,
+    kind:canal?'canal':'tri', ic:canal?'▱':'◁', lbl:canal?(down?'Canal bajista':'Canal alcista'):'Triángulo', st:null, dir:null};
+  const sL=(e,ref)=>Math.min(ref-1.5*atr,e-1.5*atr), sS=(e,ref)=>Math.max(ref+1.5*atr,e+1.5*atr);
+  let entry, stop, tp;
+  if(canal){
+    if(r.pos>=0.7&&r.pos<=1.05){ r.st='c_techo'; r.dir='short'; entry=c; stop=sS(c,Ux); tp=Lx; r.entryLow=Ux-0.15*wN; r.entryHigh=Ux; r.tpLbl='línea de abajo'; }
+    else if(r.pos<=0.3&&r.pos>=-0.05){ r.st='c_piso'; r.dir='long'; entry=c; stop=sL(c,Lx); tp=Ux; r.entryLow=Lx; r.entryHigh=Lx+0.15*wN; r.tpLbl='línea de arriba'; }
+    else if(r.pos>0.3&&r.pos<0.7) r.st='c_mid'; else return null;
+  } else {
+    let brk=null; for(let i=n-2;i<=n-1;i++){ const xi=i-P.s; if(K[i].c>P.U(xi)+0.1*P.wA&&c>Ux) brk='up'; if(K[i].c<P.L(xi)-0.1*P.wA&&c<Lx) brk='down'; }
+    const avgV=K.slice(P.s,P.s+P.N).reduce((a,k)=>a+k.v,0)/P.N;
+    if(brk==='up'){ r.st='tri_up'; r.dir='long'; entry=Math.min(c,Ux+0.3*atr); stop=sL(entry,Ux-0.15*P.wA); tp=Ux+P.Ws; r.entryLow=Ux; r.entryHigh=Ux+0.3*atr; }
+    else if(brk==='down'){ r.st='tri_down'; r.dir='short'; entry=Math.max(c,Lx-0.3*atr); stop=sS(entry,Lx+0.15*P.wA); tp=Lx-P.Ws; r.entryLow=Lx-0.3*atr; r.entryHigh=Lx; }
+    else if(r.pos>=-0.05&&r.pos<=1.05) r.st='tri_in'; else return null;
+    if(brk){ r.brk=brk; r.volOk=K[n-1].v>=1.3*avgV; r.tpLbl='altura del triángulo'; }
+  }
+  if(r.dir){ const sh=r.dir==='short';
+    r.entry=entry; r.stop=stop; r.tp1=tp; r.tp2=tp; r.risk=Math.abs(entry-stop); r.stopPct=r.risk/entry*100;
+    r.rr2=(sh?entry-tp:tp-entry)/r.risk; r.rr1=r.rr2; r.pct2=(sh?1-tp/entry:tp/entry-1)*100; r.pct1=r.pct2;
+    r.maxLev=Math.max(1,Math.min(10,Math.floor(50/r.stopPct))); r.minLev=Math.max(1,Math.round(r.maxLev*0.4)); r.levTxt=r.minLev===r.maxLev?`${r.maxLev}x`:`${r.minLev}-${r.maxLev}x`; }
+  return r;
+}
 function rgScore(r){
   let s=50; const R=r.R;
   s+=5*(Math.min(R.tT.n,4)-2)+5*(Math.min(R.tB.n,4)-2); if(R.N>=48) s+=5;
@@ -4756,14 +4804,19 @@ function rgScore(r){
 function rgVerd(r){ // reglas del test 2: solo a favor de 4H (BTC no en contra) · objetivo TP · stop 1.5 ATR
   const c=r.ctx||{}, a4=alignOf(c.h4,r.dir), ab=r.symbol==='BTCUSDT'?0:alignOf(c.btc,r.dir), F=v=>fmt(v,r.d);
   if(r.st==='medio') return ['wt','⏳ ESPERA',`está en medio del rango · LONG cerca de ${F(r.R.bot)} o SHORT cerca de ${F(r.R.top)}`];
+  if(r.st==='c_mid') return ['wt','⏳ ESPERA',`en medio del canal · ${r.P.type==='canal_down'?`SHORT cerca de ${F(r.R.top)}`:`LONG cerca de ${F(r.R.bot)}`}`];
+  if(r.st==='tri_in') return ['wt','⏳ ESPERA',`esperar ruptura del triángulo · arriba de ${F(r.R.top)} o abajo de ${F(r.R.bot)}`];
   if(a4<0||ab<0) return ['no','⛔ NO',`va contra ${a4<0&&ab<0?'4H y BTC':a4<0?'4H':'BTC'} · en el test estas entradas perdieron`];
   if(a4===0) return ['wt','⏳ ESPERA','4H lateral · esperar a que 4H marque dirección'];
   if(r.rr1<1) return ['no','⛔ NO','poco recorrido frente al stop'];
+  if(r.kind==='canal'||r.kind==='tri'){
+    if(r.dir==='long') return ['mid','⚠️ LONG SIN PRUEBA','riesgo mínimo · en el test casi no hubo LONG de este patrón'];
+    return ['go','✅ TÓMALA', r.kind==='canal'?'a favor del canal y de 4H · salir en TP (línea de abajo)':`entrar en el retesteo de ${F(r.R.bot)} · TP = altura del triángulo`]; }
   if(r.st==='up'||r.st==='down') return ['go','✅ TÓMALA',`entrar en el retesteo de ${F(r.st==='up'?r.R.top:r.R.bot)} · salir en TP (ancho del rango)`];
   return ['go','✅ TÓMALA',`a favor de 4H · salir en TP (${r.st==='piso'?'techo':'piso'} del rango)`];
 }
-const RG_ST={piso:'Rebote en el piso del rango',techo:'Rechazo en el techo del rango',up:'Ruptura del rango al alza',down:'Ruptura del rango a la baja',medio:'En medio del rango'};
-const RG_SHORT={piso:'piso',techo:'techo',up:'ruptura ↑',down:'ruptura ↓',medio:'medio'};
+const RG_ST={c_techo:'Rechazo en el techo del canal',c_piso:'Rebote en el piso del canal',c_mid:'En medio del canal',tri_up:'Ruptura del triángulo al alza',tri_down:'Ruptura del triángulo a la baja',tri_in:'Dentro del triángulo',piso:'Rebote en el piso del rango',techo:'Rechazo en el techo del rango',up:'Ruptura del rango al alza',down:'Ruptura del rango a la baja',medio:'En medio del rango'};
+const RG_SHORT={c_techo:'techo',c_piso:'piso',c_mid:'medio',tri_up:'ruptura ↑',tri_down:'ruptura ↓',tri_in:'dentro',piso:'piso',techo:'techo',up:'ruptura ↑',down:'ruptura ↓',medio:'medio'};
 function rgDraw(cv,r){
   const g=cv.getContext('2d'), W=cv.width, H=cv.height, R=r.R, K=r.K, n=r.n;
   const from=Math.max(0,Math.min(R.s-15,n-110)), V=K.slice(from,n+1), pad={l:14,r:130,t:40,b:34};
@@ -4771,34 +4824,39 @@ function rgDraw(cv,r){
   let hi=Math.max(...V.map(k=>k.h),...lv), lo=Math.min(...V.map(k=>k.l),...lv); const m=(hi-lo)*0.06; hi+=m; lo-=m;
   const cw=(W-pad.l-pad.r)/V.length, X=i=>pad.l+(i-from+0.5)*cw, Y=p=>pad.t+(hi-p)/(hi-lo)*(H-pad.t-pad.b);
   g.fillStyle='#140d24'; g.fillRect(0,0,W,H);
-  g.fillStyle='rgba(20,184,166,.09)'; const x0=X(R.s)-cw/2, x1=W-pad.r; g.fillRect(x0,Y(R.top),x1-x0,Y(R.bot)-Y(R.top));
+  const x0=X(R.s)-cw/2, x1=W-pad.r, PT=r.P;
+  if(PT){ const xe=n+1-R.s, uA=PT.U(-0.5), uB=PT.U(xe), lA=PT.L(-0.5), lB=PT.L(xe);
+    g.fillStyle='rgba(20,184,166,.09)'; g.beginPath(); g.moveTo(x0,Y(uA)); g.lineTo(x1,Y(uB)); g.lineTo(x1,Y(lB)); g.lineTo(x0,Y(lA)); g.closePath(); g.fill();
+    const sl=(a,b,col)=>{ g.save(); g.strokeStyle=col; g.lineWidth=3; g.beginPath(); g.moveTo(x0,Y(a)); g.lineTo(x1,Y(b)); g.stroke(); g.restore(); };
+    sl(uA,uB,'#ef4444'); sl(lA,lB,'#22c55e'); }
+  else { g.fillStyle='rgba(20,184,166,.09)'; g.fillRect(x0,Y(R.top),x1-x0,Y(R.bot)-Y(R.top)); }
   if(r.vp){ const P=r.vp, mx=Math.max(...P.B)||1, bw=(x1-x0)*0.35;
     P.B.forEach((v,j)=>{ const yA=Y(P.lo+(j+1)*P.step), yB=Y(P.lo+j*P.step), L=v/mx*bw; g.fillStyle=j===P.pi?'rgba(251,191,36,.35)':'rgba(56,189,248,.22)'; g.fillRect(x1-L,yA+1,L,Math.max(1,yB-yA-2)); });
     g.save(); g.strokeStyle='rgba(251,191,36,.7)'; g.lineWidth=1.5; g.beginPath(); g.moveTo(x0,Y(P.poc)); g.lineTo(x1,Y(P.poc)); g.stroke(); g.restore(); }
   const line=(p,col,dash,wd)=>{ g.save(); g.strokeStyle=col; g.lineWidth=wd||2; g.setLineDash(dash||[]); g.beginPath(); g.moveTo(x0,Y(p)); g.lineTo(x1,Y(p)); g.stroke(); g.restore(); };
-  line(R.top,'#ef4444',null,3); line(R.bot,'#22c55e',null,3); line(R.mid,'#94a3b8',[10,8],2);
+  if(!PT){ line(R.top,'#ef4444',null,3); line(R.bot,'#22c55e',null,3); line(R.mid,'#94a3b8',[10,8],2); }
   if(r.dir){ line(r.stop,'#ef4444',[14,9],4.5); line(r.tp2,'#22c55e',[14,9],4.5); }
   for(let i=from;i<=n;i++){ const k=K[i], up=k.c>=k.o, col=up?'#22c55e':'#ef4444'; g.strokeStyle=col; g.fillStyle=col; g.lineWidth=Math.max(1,cw*0.12);
     g.beginPath(); g.moveTo(X(i),Y(k.h)); g.lineTo(X(i),Y(k.l)); g.stroke();
     const y1=Y(Math.max(k.o,k.c)), y2=Y(Math.min(k.o,k.c)); g.fillRect(X(i)-cw*0.32,y1,cw*0.64,Math.max(1.5,y2-y1)); }
   g.lineWidth=3; const ring=(i,p,col)=>{ g.strokeStyle=col; g.beginPath(); g.arc(X(i),Y(p),Math.max(9,cw*0.7),0,7); g.stroke(); };
-  R.tT.idx.forEach(j=>ring(R.s+j,R.top,'#fca5a5')); R.tB.idx.forEach(j=>ring(R.s+j,R.bot,'#86efac'));
+  R.tT.idx.forEach(j=>ring(R.s+j,PT?PT.U(j):R.top,'#fca5a5')); R.tB.idx.forEach(j=>ring(R.s+j,PT?PT.L(j):R.bot,'#86efac'));
   if(r.dir){ g.save(); g.strokeStyle=r.dir==='long'?'#22c55e':'#ef4444'; g.lineWidth=3; g.setLineDash([4,6]); g.beginPath(); g.moveTo(X(n)+cw,Y(r.c)); g.lineTo(X(n)+cw,Y(r.tp2)); g.stroke(); g.restore(); }
   g.font='600 22px ui-monospace,Menlo,monospace'; g.textBaseline='middle';
   const lab=(p,txt,bg,fg)=>{ const y=Y(p); g.fillStyle=bg; g.fillRect(W-pad.r+4,y-14,pad.r-8,28); g.fillStyle=fg; g.fillText(txt,W-pad.r+10,y); };
   const F=v=>fmt(v,r.d);
-  lab(R.top,F(R.top),'#3b0d0d','#fca5a5'); lab(R.bot,F(R.bot),'#052e16','#86efac'); lab(R.mid,F(R.mid),'#1e293b','#cbd5e1');
+  lab(R.top,F(R.top),'#3b0d0d','#fca5a5'); lab(R.bot,F(R.bot),'#052e16','#86efac'); if(!PT) lab(R.mid,F(R.mid),'#1e293b','#cbd5e1');
   if(r.dir){ g.font='800 22px ui-monospace,Menlo,monospace'; lab(r.stop,'SL '+F(r.stop),'#dc2626','#ffffff'); lab(r.tp2,'TP '+F(r.tp2),'#16a34a','#ffffff'); g.font='600 22px ui-monospace,Menlo,monospace'; }
   lab(r.c,F(r.c),'#e5e7eb','#0b1020');
   g.textBaseline='alphabetic'; g.fillStyle='#fde047'; g.font='800 28px ui-monospace,Menlo,monospace'; g.fillText(r.symbol,pad.l,30);
   const sw=g.measureText(r.symbol).width; g.fillStyle='#a78bfa'; g.font='700 22px ui-monospace,Menlo,monospace';
-  g.fillText(` · 1H · RANGO ${R.N} velas · ancho ${R.wPct.toFixed(1)}%`,pad.l+sw,30);
+  g.fillText(` · 1H · ${(r.lbl||'Rango').toUpperCase()} ${R.N} velas · ancho ${R.wPct.toFixed(1)}%`,pad.l+sw,30);
 }
 function rgText(r){ const F=v=>fmt(v,r.d), R=r.R;
-  const L=[`▭ RANGO · ${r.base}/USDT · 1H`, r.dir?`${r.dir.toUpperCase()} · ${RG_ST[r.st]}`:RG_ST[r.st], `Rango: ${F(R.bot)} – ${F(R.top)} (${R.wPct.toFixed(1)} %, ${R.N} velas)`];
+  const L=[`${r.ic||'▭'} ${(r.lbl||'Rango').toUpperCase()} · ${r.base}/USDT · 1H`, r.dir?`${r.dir.toUpperCase()} · ${RG_ST[r.st]}`:RG_ST[r.st], `${r.lbl||'Rango'}: ${F(R.bot)} – ${F(R.top)}${r.P?' (líneas ahora)':''} (${R.wPct.toFixed(1)} %, ${R.N} velas)`];
   if(r.dir){ L.push(`Entrada: ${F(r.entryLow)} – ${F(r.entryHigh)}`, `Stop: ${F(r.stop)}`, `Objetivo TP: ${F(r.tp2)}`, `Apalancamiento: ${r.levTxt}`,
       `Salida: solo en el stop o en TP · máx. 48 h`); }
-  else L.push(`LONG cerca de ${F(R.bot)} · SHORT cerca de ${F(R.top)}`);
+  else L.push(r.kind==='tri'?`Esperar ruptura: arriba de ${F(R.top)} o abajo de ${F(R.bot)}`:`LONG cerca de ${F(R.bot)} · SHORT cerca de ${F(R.top)}`);
   return L.join('\n'); }
 function rgImage(r){ const st=localStamp(), v=rgVerd(r);
   const ch=document.createElement('canvas'); ch.width=1080; ch.height=620; rgDraw(ch,r);
@@ -4806,7 +4864,7 @@ function rgImage(r){ const st=localStamp(), v=rgVerd(r);
   const g=cv.getContext('2d'); g.fillStyle='#0b0e14'; g.fillRect(0,0,cv.width,cv.height); g.drawImage(ch,0,0);
   let y=620+56; g.font='800 34px system-ui,sans-serif'; g.fillStyle=v[0]==='go'?'#86efac':v[0]==='no'?'#fca5a5':v[0]==='wt'?'#cbd5e1':'#fcd34d'; g.fillText(v[1]+' · '+r.score+'/100',36,y);
   lines.forEach((t,k)=>{ y+=44;
-    if(k===0){ g.font='800 32px system-ui,sans-serif'; const a='▭ RANGO · '; g.fillStyle='#e5e7eb'; g.fillText(a,36,y); g.fillStyle='#fde047'; g.fillText(t.slice(a.length),36+g.measureText(a).width,y); return; }
+    if(k===0){ g.font='800 32px system-ui,sans-serif'; const a=t.slice(0,t.indexOf(r.base)); g.fillStyle='#e5e7eb'; g.fillText(a,36,y); g.fillStyle='#fde047'; g.fillText(t.slice(a.length),36+g.measureText(a).width,y); return; }
     g.font='500 30px system-ui,sans-serif';
     const box=/^Stop:/.test(t)?'#dc2626':/^Objetivo TP:/.test(t)?'#16a34a':null;
     if(box){ g.font='800 30px system-ui,sans-serif'; const wdt=g.measureText(t).width; g.fillStyle=box; g.beginPath(); g.roundRect?g.roundRect(28,y-32,wdt+20,42,8):g.rect(28,y-32,wdt+20,42); g.fill(); g.fillStyle='#ffffff'; g.fillText(t,38,y); return; }
@@ -4818,21 +4876,21 @@ function rgCard(r,i){
   const pill=r.dir?`<span class="pill ${sh?'rgS':'rgL'}">${sh?'SHORT':'LONG'}</span>`:'<span class="pill rgN">VIGILAR</span>';
   const cc=tr=>{ const a=r.dir?alignOf(tr,r.dir):0; return a>0?'g':a<0?'r':'y'; }, ce=tr=>{ const a=r.dir?alignOf(tr,r.dir):0; return a>0?'🟢':a<0?'🔴':'🟡'; };
   const ctx=[['4H',c.h4],['1H',c.h1],['₿',r.symbol!=='BTCUSDT'?c.btc:null]].filter(x=>x[1]).map(([l,t])=>`<span class="${cc(t)}">${l} ${ce(t)}</span>`).join('');
-  const chk=[[`${R.tB.n} toques piso`,R.tB.n>=2],[`${R.tT.n} toques techo`,R.tT.n>=2]];
+  const chk=[[`${R.tB.n} toques ${r.P?'abajo':'piso'}`,R.tB.n>=2],[`${R.tT.n} toques ${r.P?'arriba':'techo'}`,R.tT.n>=2]];
   if(r.st==='piso'||r.st==='techo') chk.push(['Vela de rechazo',r.rej]);
   chk.push([r.brk?'Volumen de ruptura':'Volumen',r.volOk]);
   const chips=ctx+(ctx?'<span class="sep">|</span>':'')+chk.map(([t,p])=>`<span class="${p?'g':'n'}" title="solo información">${p?'':'✗ '}${t}</span>`).join('')+'<span class="n" style="border:0">ⓘ info</span>';
-  let kv=`<b>Rango</b><span>${F(R.bot)} – ${F(R.top)} · ancho ${R.wPct.toFixed(1)} % · ${R.N} velas</span><b>Precio</b><span>${F(r.c)} · ${Math.round(Math.max(0,Math.min(1,r.pos))*100)} % de la caja</span>`;
-  if(r.dir){ const ed=r.st==='piso'?'techo':r.st==='techo'?'piso':'medida';
+  let kv=`<b>${r.kind==='tri'?'Triángulo':r.kind==='canal'?'Canal':'Rango'}</b><span>${F(R.bot)} – ${F(R.top)}${r.P?' (líneas ahora)':''} · ancho ${R.wPct.toFixed(1)} % · ${R.N} velas</span><b>Precio</b><span>${F(r.c)} · ${Math.round(Math.max(0,Math.min(1,r.pos))*100)} % de la caja</span>`;
+  if(r.dir){ const ed=r.tpLbl||(r.st==='piso'?'techo':r.st==='techo'?'piso':'medida');
     kv+=`<b>Entrada</b><span>${F(r.entryLow)} – ${F(r.entryHigh)}</span>
       <b>Stop</b><span><span class="rgpx" style="background:#dc2626">${F(r.stop)}</span> <span style="color:#fca5a5">${sh?'+':'−'}${r.stopPct.toFixed(1)} %</span></span>
       <b>🎯 TP</b><span><span class="rgpx" style="background:#16a34a">${F(r.tp2)}</span> <span style="color:#86efac">${sh?'−':'+'}${r.pct2.toFixed(1)} % · R:R ${r.rr2.toFixed(1)} · ${ed==='medida'?'ancho del rango':ed}</span></span>
       <b>Apalanc. · Vol</b><span>${r.levTxt} · ${fmtVol(r.vol)} USDT</span>
       <b>Salida</b><span style="color:#8a9bb0">solo en el stop o en TP · máx. 48 h (como en el test)</span>`; }
-  else kv+=`<b>Plan</b><span>LONG cerca de ${F(R.bot)} · SHORT cerca de ${F(R.top)}</span><b>Vol</b><span>${fmtVol(r.vol)} USDT</span>`;
+  else kv+=`<b>Plan</b><span>${r.kind==='tri'?`esperar ruptura: arriba de ${F(R.top)} o abajo de ${F(R.bot)}`:`LONG cerca de ${F(R.bot)} · SHORT cerca de ${F(R.top)}`}</span><b>Vol</b><span>${fmtVol(r.vol)} USDT</span>`;
   if(r.vp) kv+=`<b>Perfil</b><span style="color:#8a9bb0">POC ${F(r.vp.poc)} · zona de valor ${F(r.vp.val)}–${F(r.vp.vah)} · ⓘ solo información</span>`;
   return `<div class="rgc" id="rgc${i}"><canvas width="1080" height="620"></canvas><div class="rgm">
-    <span class="rgtag">▭ ${RG_ST[r.st]}</span>
+    <span class="rgtag">${r.ic||'▭'} ${RG_ST[r.st]}</span>
     <div class="rghd">${pill}<b class="sy" style="font-size:19px;color:#fde047;letter-spacing:.3px">${r.base}</b><span class="q">/USDT · 1H</span><span class="scb">${r.score}/100</span></div>
     <div class="rgch">${chips}</div>
     <div class="rgvd ${v[0]}" onclick="this.classList.toggle('full')"><b>${v[1]}</b> · ${v[2]}</div>
@@ -4841,20 +4899,21 @@ function rgCard(r,i){
   </div></div>`;
 }
 const RG_ORD={go:0,mid:1,wt:2,no:3};
-function rgGrp(r){ return r.v[0]==='go'? ((r.st==='up'||r.st==='down')?0:1) : 2; }   // test 3: rupturas +0.51 R · piso/techo +0.21 R
-function rgList(){ return RG.res.filter(r=>RG.f==='all'||(RG.f==='brk'?(r.st==='up'||r.st==='down'):r.st===RG.f))
+function rgGrp(r){ return r.v[0]==='go'? ((r.st==='up'||r.st==='down'||r.kind==='tri')?0:1) : r.v[0]==='mid'?2:3; }   // tests 3 y 4
+function rgKind(r){ return r.kind||'rango'; }
+function rgList(){ return RG.res.filter(r=>RG.f==='all'||rgKind(r)===RG.f)
   .sort((a,b)=>(rgGrp(a)-rgGrp(b))||(RG_ORD[a.v[0]]-RG_ORD[b.v[0]])||(b.score-a.score)); }
-const RG_GH=[['🚀 Rupturas ✅','en el test: +0.51 R por operación'],['▭ Piso y techo ✅','en el test: +0.21 R'],['⏳ Esperar · ⛔ No','']];
+const RG_GH=[['🚀 Rupturas ✅','test: rango +0.51 R · triángulo ↓ +0.33 R'],['▭▱ Bordes ✅','test: canal ↓ +0.27 R · rango +0.21 R'],['⚠️ LONG sin prueba','riesgo mínimo'],['⏳ Esperar · ⛔ No','']];
 function rgRender(){
-  const cnt=f=>RG.res.filter(r=>f==='all'||(f==='brk'?(r.st==='up'||r.st==='down'):r.st===f)).length;
-  [...$('rgCats').children].forEach(b=>{ b.textContent=({all:'Todas',piso:'Piso',techo:'Techo',brk:'Ruptura'})[b.dataset.f]+' '+cnt(b.dataset.f); b.classList.toggle('on',b.dataset.f===RG.f); });
-  $('rgSum').innerHTML=`<div><b>${RG.nPares||'—'}</b>pares</div><div><b style="color:#5eead4">${RG.res.filter(r=>!r.brk).length}</b>en rango</div><div><b style="color:#fcd34d">${cnt('brk')}</b>rupturas</div>`;
+  const cnt=f=>RG.res.filter(r=>f==='all'||rgKind(r)===f).length;
+  [...$('rgCats').children].forEach(b=>{ b.textContent=({all:'Todos',rango:'▭ Rango',canal:'▱ Canal',tri:'◁ Triáng.'})[b.dataset.f]+' '+cnt(b.dataset.f); b.classList.toggle('on',b.dataset.f===RG.f); });
+  $('rgSum').innerHTML=`<div><b>${RG.nPares||'—'}</b>pares</div><div><b style="color:#5eead4">${RG.res.length}</b>con patrón</div><div><b style="color:#86efac">${RG.res.filter(r=>r.v[0]==='go').length}</b>✅ señales</div>`;
   const L=rgList(), box=$('rgList');
   if(!L.length){ box.innerHTML=`<div class="pst">${RG.res.length?'Ninguna en este filtro.':RG.run?'Buscando rangos…':'Toca ▶ Escanear.'}</div>`; return; }
   let h='<div class="rgsec">Lista rápida · la rayita marca dónde está el precio dentro de la caja</div>';
   let gp=-1;
-  h+=L.map((r,i)=>{ const g=rgGrp(r); let hd=''; if(g!==gp){ gp=g; const n=L.filter(x=>rgGrp(x)===g).length; hd=`<div class="rgsec" style="display:flex;justify-content:space-between;color:${g<2?'#5eead4':'#94a3b8'}"><span>${RG_GH[g][0]} · ${n}</span><span>${RG_GH[g][1]}</span></div>`; }
-    return hd+`<div class="rgrow" data-rggo="${i}"${g===2?' style="opacity:.75"':''}><span class="pill ${r.dir==='short'?'rgS':r.dir?'rgL':'rgN'}">${r.dir?r.dir.toUpperCase():'—'}</span><b>${r.base}</b><span class="st">${RG_SHORT[r.st]}</span><span class="rgbar"><i style="left:${Math.round(Math.max(0,Math.min(1,r.pos))*100)}%;${r.brk?'background:#fcd34d':''}"></i></span><span class="st">${r.R.wPct.toFixed(1)}%</span><span class="rgsc">${r.score}</span></div>`; }).join('');
+  h+=L.map((r,i)=>{ const g=rgGrp(r); let hd=''; if(g!==gp){ gp=g; const n=L.filter(x=>rgGrp(x)===g).length; hd=`<div class="rgsec" style="display:flex;justify-content:space-between;color:${g<2?'#5eead4':g===2?'#fcd34d':'#94a3b8'}"><span>${RG_GH[g][0]} · ${n}</span><span>${RG_GH[g][1]}</span></div>`; }
+    return hd+`<div class="rgrow" data-rggo="${i}"${g===3?' style="opacity:.75"':''}><span class="pill ${r.dir==='short'?'rgS':r.dir?'rgL':'rgN'}">${r.dir?r.dir.toUpperCase():'—'}</span><b>${r.base}</b><span class="st">${r.ic||'▭'} ${RG_SHORT[r.st]}</span><span class="rgbar"><i style="left:${Math.round(Math.max(0,Math.min(1,r.pos))*100)}%;${r.brk?'background:#fcd34d':''}"></i></span><span class="st">${r.R.wPct.toFixed(1)}%</span><span class="rgsc">${r.score}</span></div>`; }).join('');
   h+=L.map((r,i)=>rgCard(r,i)).join('');
   box.innerHTML=h;
   L.forEach((r,i)=>{ const el=$('rgc'+i); rgDraw(el.querySelector('canvas'),r); });
@@ -4864,9 +4923,13 @@ function rgRender(){
 }
 async function rgBtc(){ const [b1,b4]=await Promise.all([trendFor('futures','BTCUSDT','1h'),trendFor('futures','BTCUSDT','4h')]); RG.btc=b1&&b1===b4?b1:'flat'; }
 async function rgOne(sym,vol){
-  let K=await getKlines('futures',sym,RG_TF,RG_LIMIT); const r=rgDetect(sym,K,vol); if(!r) return null;
+  const K=await getKlines('futures',sym,RG_TF,RG_LIMIT), out=[];
+  const r=rgDetect(sym,K,vol); if(r){ r.kind='rango'; r.ic='▭'; r.lbl='Rango'; out.push(r); }
+  try{ const A=atrSeries(K,14), atr=A[K.length-2]||A[K.length-3]; const p=atr&&rgPatRes(sym,K,vol,atr); if(p) out.push(p); }catch(e){}
+  if(!out.length) return out;
   const [h1,h4]=await Promise.all([trendFor('futures',sym,'1h'),trendFor('futures',sym,'4h')]);
-  r.ctx={h1,h4,btc:RG.btc}; rgScore(r); r.v=rgVerd(r); try{ r.vp=rgVP(K,r); }catch(e){} return r;
+  out.forEach(x=>{ x.ctx={h1,h4,btc:RG.btc}; rgScore(x); x.v=rgVerd(x); if(x.kind==='rango'){ try{ x.vp=rgVP(K,x); }catch(e){} } });
+  return out;
 }
 async function rgScan(){
   if(RG.run) return; RG.run=true; RG.abort=false; RG.res=[]; $('rgGo').disabled=true; $('rgStop').disabled=false; rgRender();
@@ -4876,10 +4939,10 @@ async function rgScan(){
     try{ await rgBtc(); }catch(e){ RG.btc=null; }
     let i=0, done=0;
     const work=async()=>{ while(i<uni.length&&!RG.abort){ const u=uni[i++];
-      try{ const r=await rgOne(u.symbol,u.vol); if(r) RG.res.push(r); }catch(e){}
-      done++; $('rgSt').textContent=`Buscando rangos… ${done}/${uni.length} · ${RG.res.length} encontrados`; if(done%12===0) rgRender(); } };
+      try{ const rs=await rgOne(u.symbol,u.vol); RG.res.push(...rs); }catch(e){}
+      done++; $('rgSt').textContent=`Buscando patrones… ${done}/${uni.length} · ${RG.res.length} encontrados`; if(done%12===0) rgRender(); } };
     await Promise.all(Array.from({length:CONCURRENCY},work));
-    $('rgSt').textContent=`${RG.abort?'Detenido':'Listo'}: ${done} pares · ${RG.res.length} en rango o rompiendo · velas 1H · ${localStamp().text}`;
+    $('rgSt').textContent=`${RG.abort?'Detenido':'Listo'}: ${done} pares · ${RG.res.length} con rango, canal o triángulo · velas 1H · ${localStamp().text}`;
   }catch(e){ $('rgSt').textContent='❌ No se pudo leer Binance Futures: '+(e.message||e); }
   finally{ RG.run=false; $('rgGo').disabled=false; $('rgStop').disabled=true; rgRender(); }
 }
@@ -4887,9 +4950,9 @@ async function rgUno(){
   let s=($('rgSym').value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,''); if(!s) return; if(!/USDT$/.test(s)) s+='USDT';
   $('rgSt').textContent='Analizando '+s+'…';
   try{ if(RG.btc==null) await rgBtc().catch(()=>{});
-    const r=await rgOne(s,0); RG.res=RG.res.filter(x=>x.symbol!==s);
-    if(r){ RG.res.unshift(r); RG.f='all'; $('rgSt').textContent=`${s}: ${RG_ST[r.st].toLowerCase()} · ${r.v[1]}`; }
-    else $('rgSt').textContent=`${s}: no está en rango ahora (sin techo y piso claros en 1H).`;
+    const rs=await rgOne(s,0); RG.res=RG.res.filter(x=>x.symbol!==s);
+    if(rs.length){ RG.res.unshift(...rs); RG.f='all'; $('rgSt').textContent=`${s}: `+rs.map(r=>`${RG_ST[r.st].toLowerCase()} · ${r.v[1]}`).join(' | '); }
+    else $('rgSt').textContent=`${s}: sin rango, canal ni triángulo claros en 1H ahora.`;
   }catch(e){ $('rgSt').textContent=`❌ ${s}: ${e.message||e}`; }
   rgRender();
 }
