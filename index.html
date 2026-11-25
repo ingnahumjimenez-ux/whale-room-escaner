@@ -562,6 +562,41 @@ body.fabs-open #plusFab,body.fabs-open #fgFab,body.fabs-open #k1Fab,body.fabs-op
 .ajsum{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 8px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);font-size:11.5px;color:var(--mut);cursor:pointer}
 .ajsum span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ajsum b{color:#93c5fd;font-size:11.5px;flex:none}
 
+/* ===== Burbuja Rangos ===== */
+#rgFab{position:fixed;right:14px;bottom:474px;z-index:7;width:54px;height:54px;border-radius:50%;padding:0;cursor:pointer;background:rgba(255,255,255,.08);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:2px solid #14b8a6;color:#99f6e4;font-weight:900;font-size:10.5px;line-height:1.05;box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 12px rgba(20,184,166,.35);opacity:0;pointer-events:none;transform:translateY(24px) scale(.8);transition:opacity .2s,transform .22s}
+#rgFab .ic{display:block;font-size:17px;margin-bottom:1px}
+body.fabs-open #rgFab{opacity:1;pointer-events:auto;transform:none}
+#rgPanel{position:fixed;inset:0;z-index:8;background:rgba(5,8,14,.72);backdrop-filter:blur(3px);display:none}#rgPanel.open{display:block}
+#rgPanel .sheet{position:absolute;left:0;right:0;bottom:0;top:5%;max-width:560px;margin:0 auto;background:#0b0e14;border-radius:20px 20px 0 0;border-top:2px solid #14b8a6;padding:12px 14px 90px;overflow:auto;color:#e5e7eb}
+#rgPanel .grab{width:44px;height:5px;border-radius:99px;background:#334155;margin:0 auto 10px}
+#rgPanel .ph{display:flex;align-items:center;gap:8px}#rgPanel .ph h2{margin:0;font-size:18px}
+#rgPanel .ph .x{margin-left:auto;background:#18202f;border:1px solid #253047;color:#e5e7eb;border-radius:10px;width:36px;height:36px;font-size:18px;padding:0}
+#rgPanel .pst{font-size:11.5px;color:#8a9bb0;margin:2px 0 6px}
+#rgPanel .cats{display:flex;gap:5px;margin:6px 0}#rgPanel .cats button{flex:1;white-space:nowrap;font-size:12px;padding:6px 2px;border-radius:99px;border:1px solid #334155;background:transparent;color:#94a3b8;cursor:pointer}
+#rgPanel .cats button.on{background:#14b8a6;border-color:#14b8a6;color:#042f2e;font-weight:800}
+#rgPanel .sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:6px 0}#rgPanel .sum div{background:#111a2e;border-radius:9px;padding:6px;text-align:center;font-size:10.5px;color:#94a3b8}#rgPanel .sum b{display:block;color:#e5e7eb;font-size:15px}
+#rgPanel .b3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:6px 0}#rgPanel .b3 button,#rgPanel .b3 a{height:34px;padding:0;border-radius:9px;font-size:12.5px;font-weight:700;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-decoration:none}
+#rgPanel .b3 a{border:1px solid #334155;color:#e5e7eb}
+#rgPanel .onerow{display:none;gap:6px;margin:0 0 6px}#rgPanel .onerow.open{display:flex}#rgPanel .onerow input{flex:1;height:34px}#rgPanel .onerow button{height:34px;padding:0 14px}
+#rgPanel .rgrow{display:flex;align-items:center;gap:6px;background:#141b2e;border:1px solid #243049;border-radius:9px;padding:6px 8px;margin-top:5px;font-size:12px;cursor:pointer}
+#rgPanel .rgrow .st{color:#94a3b8;font-size:10.5px;white-space:nowrap}
+#rgPanel .rgbar{flex:0 0 64px;height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(34,197,94,.35),rgba(148,163,184,.25),rgba(239,68,68,.35));position:relative}
+#rgPanel .rgbar i{position:absolute;top:-3px;width:3px;height:14px;background:#e5e7eb;border-radius:2px;margin-left:-1px}
+#rgPanel .rgsc{margin-left:auto;color:#93c5fd;font-weight:800}
+#rgPanel .pill{font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:5px}.rgL{background:#052e16;color:#86efac}.rgS{background:#2a0b0b;color:#fca5a5}.rgN{background:#1e293b;color:#cbd5e1}
+#rgPanel .rgc{background:#111827;border:1px solid #243049;border-radius:14px;overflow:hidden;margin-top:12px}
+#rgPanel .rgc canvas{display:block;width:100%;height:auto}
+#rgPanel .rgm{padding:9px 11px 12px;display:flex;flex-direction:column;gap:6px}
+#rgPanel .rgtag{align-self:flex-start;background:#123b38;color:#99f6e4;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:6px}
+#rgPanel .rghd{display:flex;align-items:center;gap:6px}#rgPanel .rghd b.sy{font-size:16px}#rgPanel .rghd .q{color:#8a9bb0;font-size:12px}
+#rgPanel .rghd .scb{margin-left:auto;background:#1e3a5f;color:#93c5fd;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:800}
+#rgPanel .rgch{display:flex;flex-wrap:wrap;gap:3px;border-top:1px solid #1e293b;padding-top:6px}#rgPanel .rgch span{font-size:9.5px;padding:2px 6px;border-radius:99px;font-weight:700;white-space:nowrap}
+#rgPanel .rgch .g{background:#052e16;color:#86efac;border:1px solid #166534}#rgPanel .rgch .n{color:#64748b;border:1px solid #243049}#rgPanel .rgch .r{background:#2a0b0b;color:#fca5a5;border:1px solid #7f1d1d}#rgPanel .rgch .y{background:#2a2306;color:#fcd34d;border:1px solid #a16207}#rgPanel .rgch .sep{border:0;color:#334155;padding:2px 0}
+#rgPanel .rgvd{border-radius:9px;padding:5px 9px;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}#rgPanel .rgvd.full{white-space:normal}
+#rgPanel .rgvd.go{background:#052e16;border:1px solid #22c55e}#rgPanel .rgvd.go b{color:#86efac}#rgPanel .rgvd.mid{background:#2a2306;border:1px solid #f59e0b}#rgPanel .rgvd.mid b{color:#fcd34d}#rgPanel .rgvd.no{background:#2a0b0b;border:1px solid #ef4444}#rgPanel .rgvd.no b{color:#fca5a5}#rgPanel .rgvd.wt{background:#111a2e;border:1px solid #334155}#rgPanel .rgvd.wt b{color:#cbd5e1}
+#rgPanel .rgkv{display:grid;grid-template-columns:78px minmax(0,1fr);gap:2px 8px;font-size:11.5px;border-top:1px solid #1e293b;padding-top:6px;font-variant-numeric:tabular-nums}#rgPanel .rgkv b{color:#8a9bb0;font-weight:500}#rgPanel .rgkv span{overflow-wrap:anywhere}
+#rgPanel .rgsec{font-size:11px;color:#94a3b8;margin:12px 2px 2px}
+
 /* ===== Burbuja TradFi ===== */
 #tfFab{position:fixed;right:14px;bottom:410px;z-index:7;width:54px;height:54px;border-radius:50%;padding:0;cursor:pointer;background:rgba(255,255,255,.08);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:2px solid #f2b33d;color:#fde68a;font-weight:900;font-size:10.5px;line-height:1.05;box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 12px rgba(242,179,61,.35);opacity:0;pointer-events:none;transform:translateY(24px) scale(.8);transition:opacity .2s,transform .22s}
 #tfFab .ic{display:block;font-size:17px;margin-bottom:1px}
@@ -855,6 +890,17 @@ body.fabs-open #tfFab{opacity:1;pointer-events:auto;transform:none}
   <div class="acts"><button class="primary" id="tfGo">▶ Analizar</button><button class="ghost" id="tfStop" disabled>■ Detener</button><button class="ghost" id="tfOnly">Solo las que cumplen filtros</button></div>
   <div class="pst" id="tfSt">Toca ▶ Analizar.</div>
   <div id="tfList"></div>
+</div></div>
+<button id="rgFab" title="Rangos · 1H"><span class="ic">▭</span>Rangos</button>
+<div id="rgPanel"><div class="sheet"><div class="grab"></div>
+  <div class="ph"><h2>▭ Rangos · 1H</h2><button class="x" id="rgX">✕</button></div>
+  <div class="pst">Monedas atrapadas entre techo y piso · Binance Futures · motor v3</div>
+  <div class="cats" id="rgCats"><button data-f="all" class="on">Todas</button><button data-f="piso">Piso</button><button data-f="techo">Techo</button><button data-f="brk">Ruptura</button></div>
+  <div class="sum" id="rgSum"></div>
+  <div class="b3"><button class="primary" id="rgGo">▶ Escanear</button><button class="ghost" id="rgStop" disabled>■ Detener</button><button class="ghost" id="rgUnBtn">🔍 Un par</button></div>
+  <div class="onerow" id="rgOneRow"><input id="rgSym" placeholder="Par, ej. SOLUSDT" autocomplete="off"><button class="primary" id="rgOneGo">Analizar</button></div>
+  <div class="pst" id="rgSt">Toca ▶ Escanear. Tarda 1–2 minutos.</div>
+  <div id="rgList"></div>
 </div></div>
 <button id="plusFab" title="Escáner Plus 15m">Plus<small>15m</small></button>
 <div id="plusPanel"><div class="sheet"><div class="grab"></div>
@@ -4636,13 +4682,215 @@ async function tfScan(){
   $('tfCats').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; TF.cat=b.dataset.c; [...$('tfCats').children].forEach(x=>x.classList.toggle('on',x===b)); tfRender(); };
 })();
 
+/* ===== Burbuja Rangos · 1H · Binance Futures (usa velas, universo, contexto y tamaños del motor de v3) ===== */
+const RG={res:[],f:'all',run:false,abort:false,nPares:0,btc:null};
+const RG_TF='1h', RG_LIMIT=220;
+function rgQ(a,q){ const s=a.slice().sort((x,y)=>x-y); const i=(s.length-1)*q, lo=Math.floor(i), hi=Math.ceil(i); return s[lo]+(s[hi]-s[lo])*(i-lo); }
+function rgTouches(W,lvl,tol,up){ let n=0,last=-99,idx=[];
+  for(let i=0;i<W.length;i++){ const hit=up? W[i].h>=lvl-tol : W[i].l<=lvl+tol;
+    if(hit){ if(i-last>=4){ n++; idx.push(i); } last=i; } }
+  return {n,idx}; }
+function rgDetect(sym,K,vol){
+  const n=K.length-1; if(n<90) return null;
+  const A=atrSeries(K,14), atr=A[n-1]||A[n-2]; if(!atr) return null;
+  const e=n-3; let R=null;
+  for(let N=72;N>=24;N-=6){
+    const s=e-N+1; if(s<20) continue;
+    const W=K.slice(s,e+1), top=rgQ(W.map(k=>k.h),0.92), bot=rgQ(W.map(k=>k.l),0.08), w=top-bot, mid=(top+bot)/2, wPct=w/mid*100;
+    if(wPct<2.5||wPct>15||w<3*atr) continue;
+    const ins=W.filter(k=>k.c>=bot-0.1*w&&k.c<=top+0.1*w).length/W.length; if(ins<0.9) continue;
+    const xs=W.map((_,i)=>i), mx=(N-1)/2, my=W.reduce((a,k)=>a+k.c,0)/N;
+    let num=0,den=0; W.forEach((k,i)=>{ num+=(i-mx)*(k.c-my); den+=(i-mx)*(i-mx); });
+    if(Math.abs(num/den*N)/w>0.5) continue;
+    const tol=0.12*w, tT=rgTouches(W,top,tol,true), tB=rgTouches(W,bot,tol,false);
+    if(tT.n<2||tB.n<2) continue;
+    R={N,s,e,top,bot,mid,w,wPct,tT,tB}; break;
+  }
+  if(!R) return null;
+  const {top,bot,mid,w}=R, c=K[n].c, lc=K[n-1];
+  if(c>top+1.2*w||c<bot-1.2*w) return null;
+  const avgV=K.slice(R.s,R.e+1).reduce((a,k)=>a+k.v,0)/R.N;
+  let brk=null, bi=-1;
+  for(let i=n-2;i<=n-1;i++){ if(K[i].c>top+0.1*w&&c>top){ brk='up'; bi=i; } if(K[i].c<bot-0.1*w&&c<bot){ brk='down'; bi=i; } }
+  const pos=(c-bot)/w;
+  const st= brk==='up'?'up' : brk==='down'?'down' : pos<=0.3?'piso' : pos>=0.7?'techo' : 'medio';
+  const dir= st==='piso'||st==='up'?'long' : st==='techo'||st==='down'?'short' : null;
+  const body=Math.abs(lc.c-lc.o)||1e-12, lw=Math.min(lc.o,lc.c)-lc.l, uw=lc.h-Math.max(lc.o,lc.c), tol=0.15*w;
+  const rejL = lc.l<=bot+tol && ((lw>=1.5*body && lc.c>=(lc.h+lc.l)/2) || (lc.c>lc.o && lc.c>K[n-2].o && K[n-2].c<K[n-2].o));
+  const rejS = lc.h>=top-tol && ((uw>=1.5*body && lc.c<=(lc.h+lc.l)/2) || (lc.c<lc.o && lc.c<K[n-2].o && K[n-2].c>K[n-2].o));
+  const rej = st==='piso'?rejL : st==='techo'?rejS : false;
+  const vRef = brk? K[bi].v : lc.v, volOk = brk? vRef>=1.3*avgV : vRef>=avgV;
+  let entryLow, entryHigh, stop, tp1, tp2;
+  if(st==='piso'){ entryLow=bot; entryHigh=bot+0.25*w; stop=bot-Math.max(0.6*atr,0.08*w); tp1=mid; tp2=top-0.05*w; }
+  else if(st==='techo'){ entryLow=top-0.25*w; entryHigh=top; stop=top+Math.max(0.6*atr,0.08*w); tp1=mid; tp2=bot+0.05*w; }
+  else if(st==='up'){ entryLow=top; entryHigh=top+0.3*atr; stop=top-Math.max(0.6*atr,0.15*w); tp1=top+0.5*w; tp2=top+w; }
+  else if(st==='down'){ entryLow=bot-0.3*atr; entryHigh=bot; stop=bot+Math.max(0.6*atr,0.15*w); tp1=bot-0.5*w; tp2=bot-w; }
+  const r={symbol:sym, base:sym.replace(/USDT$/,''), K, n, atr, vol, R, c, pos, st, dir, brk, rej, volOk, avgV, d:decimalsFor(c), entryLow, entryHigh, stop, tp1, tp2};
+  if(dir){ const sh=dir==='short', en=st==='up'||st==='down' ? (sh?Math.max(c,entryLow):Math.min(c,entryHigh)) : c;
+    r.entry=en; r.risk=Math.abs(en-stop); r.stopPct=r.risk/en*100;
+    r.rr1=(sh?en-tp1:tp1-en)/r.risk; r.rr2=(sh?en-tp2:tp2-en)/r.risk;
+    r.pct1=(sh?1-tp1/en:tp1/en-1)*100; r.pct2=(sh?1-tp2/en:tp2/en-1)*100;
+    r.maxLev=Math.max(1,Math.min(10,Math.floor(50/r.stopPct))); r.minLev=Math.max(1,Math.round(r.maxLev*0.4));
+    r.levTxt=r.minLev===r.maxLev?`${r.maxLev}x`:`${r.minLev}-${r.maxLev}x`; }
+  return r;
+}
+function rgScore(r){
+  let s=50; const R=r.R;
+  s+=5*(Math.min(R.tT.n,4)-2)+5*(Math.min(R.tB.n,4)-2); if(R.N>=48) s+=5;
+  if(r.rej) s+=10; if(r.volOk) s+=5;
+  if(r.dir){ if(r.rr1>=1.5) s+=5; if(r.rr2>=3) s+=5; if(r.rr1<1) s-=15;
+    const c=r.ctx||{}, a4=alignOf(c.h4,r.dir), ab=alignOf(c.btc,r.dir); s+= a4>0?5:a4<0?-10:0; if(r.symbol!=='BTCUSDT') s+= ab>0?3:ab<0?-7:0; }
+  else s-=15;
+  r.score=Math.max(0,Math.min(100,Math.round(s)));
+}
+function rgVerd(r){
+  const c=r.ctx||{}, a4=alignOf(c.h4,r.dir), ab=r.symbol==='BTCUSDT'?0:alignOf(c.btc,r.dir), F=v=>fmt(v,r.d);
+  if(r.st==='medio') return ['wt','⏳ ESPERA',`está en medio del rango · LONG cerca de ${F(r.R.bot)} o SHORT cerca de ${F(r.R.top)}`];
+  if(r.rr1<1) return ['no','⛔ NO','poco recorrido hasta el objetivo frente al stop'];
+  if(r.st==='up'||r.st==='down'){ const lv=F(r.st==='up'?r.R.top:r.R.bot);
+    if(a4<0||ab<0) return ['mid','⚠️ RUPTURA DÉBIL',`contra ${a4<0?'4H':'BTC'} · esperar retesteo de ${lv} · ½ dinero`];
+    return [r.volOk?'go':'mid', r.volOk?'🚀 RUPTURA':'👀 RUPTURA SIN VOLUMEN', `entrar en el retesteo de ${lv} · objetivo = ancho del rango`]; }
+  const edge=r.st==='piso'?'techo':'piso';
+  if(a4<0||ab<0) return ['mid','⚠️ SOLO PEQUEÑA',`½ dinero · salir en el medio · contra ${a4<0?'4H':'BTC'}`];
+  if(!r.rej) return ['mid','👀 LISTA','falta vela de rechazo · esperar confirmación'];
+  if(r.rr1<1.3) return ['mid','👀 LISTA',`poco recorrido hasta el medio · mejor entrar más cerca del ${r.st}`];
+  return ['go','✅ TÓMALA',`entrada en el ${r.st} · salir en el medio y el ${edge}`];
+}
+const RG_ST={piso:'Rebote en el piso del rango',techo:'Rechazo en el techo del rango',up:'Ruptura del rango al alza',down:'Ruptura del rango a la baja',medio:'En medio del rango'};
+const RG_SHORT={piso:'piso',techo:'techo',up:'ruptura ↑',down:'ruptura ↓',medio:'medio'};
+function rgDraw(cv,r){
+  const g=cv.getContext('2d'), W=cv.width, H=cv.height, R=r.R, K=r.K, n=r.n;
+  const from=Math.max(0,Math.min(R.s-15,n-110)), V=K.slice(from,n+1), pad={l:14,r:130,t:40,b:34};
+  const lv=[R.top,R.bot]; if(r.dir){ lv.push(r.stop,r.tp2); }
+  let hi=Math.max(...V.map(k=>k.h),...lv), lo=Math.min(...V.map(k=>k.l),...lv); const m=(hi-lo)*0.06; hi+=m; lo-=m;
+  const cw=(W-pad.l-pad.r)/V.length, X=i=>pad.l+(i-from+0.5)*cw, Y=p=>pad.t+(hi-p)/(hi-lo)*(H-pad.t-pad.b);
+  g.fillStyle='#140d24'; g.fillRect(0,0,W,H);
+  g.fillStyle='rgba(20,184,166,.09)'; const x0=X(R.s)-cw/2, x1=W-pad.r; g.fillRect(x0,Y(R.top),x1-x0,Y(R.bot)-Y(R.top));
+  const line=(p,col,dash,wd)=>{ g.save(); g.strokeStyle=col; g.lineWidth=wd||2; g.setLineDash(dash||[]); g.beginPath(); g.moveTo(x0,Y(p)); g.lineTo(x1,Y(p)); g.stroke(); g.restore(); };
+  line(R.top,'#ef4444',null,3); line(R.bot,'#22c55e',null,3); line(R.mid,'#94a3b8',[10,8],2);
+  if(r.dir){ line(r.stop,'#f87171',[6,6],2); line(r.tp1,'#86efac',[3,6],2); line(r.tp2,'#86efac',[3,6],2); }
+  for(let i=from;i<=n;i++){ const k=K[i], up=k.c>=k.o, col=up?'#22c55e':'#ef4444'; g.strokeStyle=col; g.fillStyle=col; g.lineWidth=Math.max(1,cw*0.12);
+    g.beginPath(); g.moveTo(X(i),Y(k.h)); g.lineTo(X(i),Y(k.l)); g.stroke();
+    const y1=Y(Math.max(k.o,k.c)), y2=Y(Math.min(k.o,k.c)); g.fillRect(X(i)-cw*0.32,y1,cw*0.64,Math.max(1.5,y2-y1)); }
+  g.lineWidth=3; const ring=(i,p,col)=>{ g.strokeStyle=col; g.beginPath(); g.arc(X(i),Y(p),Math.max(9,cw*0.7),0,7); g.stroke(); };
+  R.tT.idx.forEach(j=>ring(R.s+j,R.top,'#fca5a5')); R.tB.idx.forEach(j=>ring(R.s+j,R.bot,'#86efac'));
+  if(r.dir){ g.save(); g.strokeStyle=r.dir==='long'?'#22c55e':'#ef4444'; g.lineWidth=3; g.setLineDash([4,6]); g.beginPath(); g.moveTo(X(n)+cw,Y(r.c)); g.lineTo(X(n)+cw,Y(r.tp2)); g.stroke(); g.restore(); }
+  g.font='600 22px ui-monospace,Menlo,monospace'; g.textBaseline='middle';
+  const lab=(p,txt,bg,fg)=>{ const y=Y(p); g.fillStyle=bg; g.fillRect(W-pad.r+4,y-14,pad.r-8,28); g.fillStyle=fg; g.fillText(txt,W-pad.r+10,y); };
+  const F=v=>fmt(v,r.d);
+  lab(R.top,F(R.top),'#3b0d0d','#fca5a5'); lab(R.bot,F(R.bot),'#052e16','#86efac'); lab(R.mid,F(R.mid),'#1e293b','#cbd5e1');
+  if(r.dir){ lab(r.stop,'SL '+F(r.stop),'#2a0b0b','#f87171'); lab(r.tp2,'TP2 '+F(r.tp2),'#052e16','#bbf7d0'); }
+  lab(r.c,F(r.c),'#e5e7eb','#0b1020');
+  g.fillStyle='#a78bfa'; g.font='700 22px ui-monospace,Menlo,monospace'; g.textBaseline='alphabetic';
+  g.fillText(`${r.symbol} · 1H · RANGO ${R.N} velas · ancho ${R.wPct.toFixed(1)}%`,pad.l,28);
+}
+function rgText(r){ const F=v=>fmt(v,r.d), R=r.R;
+  const L=[`▭ RANGO · ${r.base}/USDT · 1H`, r.dir?`${r.dir.toUpperCase()} · ${RG_ST[r.st]}`:RG_ST[r.st], `Rango: ${F(R.bot)} – ${F(R.top)} (${R.wPct.toFixed(1)} %, ${R.N} velas)`];
+  if(r.dir){ L.push(`Entrada: ${F(r.entryLow)} – ${F(r.entryHigh)}`, `Stop: ${F(r.stop)}`, `TP1: ${F(r.tp1)} · TP2: ${F(r.tp2)}`, `Apalancamiento: ${r.levTxt}`,
+      r.st==='piso'?`Si cierra bajo ${F(R.bot)} con volumen: salir`: r.st==='techo'?`Si cierra sobre ${F(R.top)} con volumen: salir`: `Si vuelve a cerrar dentro del rango: salir`); }
+  else L.push(`LONG cerca de ${F(R.bot)} · SHORT cerca de ${F(R.top)}`);
+  return L.join('\n'); }
+function rgImage(r){ const st=localStamp(), v=rgVerd(r);
+  const ch=document.createElement('canvas'); ch.width=1080; ch.height=620; rgDraw(ch,r);
+  const lines=rgText(r).split('\n'), cv=document.createElement('canvas'); cv.width=1080; cv.height=620+70+lines.length*44+70;
+  const g=cv.getContext('2d'); g.fillStyle='#0b0e14'; g.fillRect(0,0,cv.width,cv.height); g.drawImage(ch,0,0);
+  let y=620+56; g.font='800 34px system-ui,sans-serif'; g.fillStyle=v[0]==='go'?'#86efac':v[0]==='no'?'#fca5a5':v[0]==='wt'?'#cbd5e1':'#fcd34d'; g.fillText(v[1]+' · '+r.score+'/100',36,y);
+  g.font='500 30px system-ui,sans-serif'; g.fillStyle='#e5e7eb'; lines.forEach(t=>{ y+=44; g.fillText(t,36,y); });
+  g.font='500 24px system-ui,sans-serif'; g.fillStyle='#8a9bb0'; g.fillText(`${st.text} · Escáner v3 · Rangos`,36,cv.height-30);
+  return {cv, name:`rango_${r.symbol}_${(r.dir||'vigilar').toUpperCase()}_1h_${st.file}.png`}; }
+function rgCard(r,i){
+  const v=r.v, F=v2=>fmt(v2,r.d), R=r.R, c=r.ctx||{}, sh=r.dir==='short';
+  const pill=r.dir?`<span class="pill ${sh?'rgS':'rgL'}">${sh?'SHORT':'LONG'}</span>`:'<span class="pill rgN">VIGILAR</span>';
+  const cc=tr=>{ const a=r.dir?alignOf(tr,r.dir):0; return a>0?'g':a<0?'r':'y'; }, ce=tr=>{ const a=r.dir?alignOf(tr,r.dir):0; return a>0?'🟢':a<0?'🔴':'🟡'; };
+  const ctx=[['4H',c.h4],['1H',c.h1],['₿',r.symbol!=='BTCUSDT'?c.btc:null]].filter(x=>x[1]).map(([l,t])=>`<span class="${cc(t)}">${l} ${ce(t)}</span>`).join('');
+  const chk=[[`${R.tB.n} toques piso`,R.tB.n>=2],[`${R.tT.n} toques techo`,R.tT.n>=2]];
+  if(r.st==='piso'||r.st==='techo') chk.push(['Vela de rechazo',r.rej]);
+  chk.push([r.brk?'Volumen de ruptura':'Volumen',r.volOk]);
+  const chips=ctx+(ctx?'<span class="sep">|</span>':'')+chk.map(([t,p])=>`<span class="${p?'g':'n'}">${p?'':'✗ '}${t}</span>`).join('');
+  let kv=`<b>Rango</b><span>${F(R.bot)} – ${F(R.top)} · ancho ${R.wPct.toFixed(1)} % · ${R.N} velas</span><b>Precio</b><span>${F(r.c)} · ${Math.round(Math.max(0,Math.min(1,r.pos))*100)} % de la caja</span>`;
+  if(r.dir){ const ed=r.st==='piso'?'techo':r.st==='techo'?'piso':'medida';
+    kv+=`<b>Entrada</b><span>${F(r.entryLow)} – ${F(r.entryHigh)}</span>
+      <b>Stop</b><span style="color:#fca5a5">${F(r.stop)} (${sh?'+':'−'}${r.stopPct.toFixed(1)} %)</span>
+      <b>TP1 ${r.st==='piso'||r.st==='techo'?'medio':'½ rango'}</b><span style="color:#86efac">${F(r.tp1)} (${sh?'−':'+'}${r.pct1.toFixed(1)} %) · R:R ${r.rr1.toFixed(1)}</span>
+      <b>TP2 ${ed}</b><span style="color:#86efac">${F(r.tp2)} (${sh?'−':'+'}${r.pct2.toFixed(1)} %) · R:R ${r.rr2.toFixed(1)}</span>
+      <b>Apalanc. · Vol</b><span>${r.levTxt} · ${fmtVol(r.vol)} USDT</span>
+      <b>Si rompe</b><span style="color:#8a9bb0">${r.st==='piso'?`cierre bajo ${F(R.bot)} con volumen = salir`:r.st==='techo'?`cierre sobre ${F(R.top)} con volumen = salir`:'si vuelve a cerrar dentro del rango = salir'}</span>`; }
+  else kv+=`<b>Plan</b><span>LONG cerca de ${F(R.bot)} · SHORT cerca de ${F(R.top)}</span><b>Vol</b><span>${fmtVol(r.vol)} USDT</span>`;
+  return `<div class="rgc" id="rgc${i}"><canvas width="1080" height="620"></canvas><div class="rgm">
+    <span class="rgtag">▭ ${RG_ST[r.st]}</span>
+    <div class="rghd">${pill}<b class="sy">${r.base}</b><span class="q">/USDT · 1H</span><span class="scb">${r.score}/100</span></div>
+    <div class="rgch">${chips}</div>
+    <div class="rgvd ${v[0]}" onclick="this.classList.toggle('full')"><b>${v[1]}</b> · ${v[2]}</div>
+    <div class="rgkv">${kv}</div>
+    <div class="b3"><a href="https://www.tradingview.com/chart/?symbol=BINANCE:${r.symbol}.P" target="_blank" rel="noopener">📈 TradingView</a><button class="ghost" data-rgcp="${i}">Copiar señal</button><button class="primary" style="background:#16a34a;border-color:#16a34a" data-rgdl="${i}">⬇ Descargar</button></div>
+  </div></div>`;
+}
+const RG_ORD={go:0,mid:1,no:2,wt:3};
+function rgList(){ return RG.res.filter(r=>RG.f==='all'||(RG.f==='brk'?(r.st==='up'||r.st==='down'):r.st===RG.f))
+  .sort((a,b)=>(RG_ORD[a.v[0]]-RG_ORD[b.v[0]])||(b.score-a.score)); }
+function rgRender(){
+  const cnt=f=>RG.res.filter(r=>f==='all'||(f==='brk'?(r.st==='up'||r.st==='down'):r.st===f)).length;
+  [...$('rgCats').children].forEach(b=>{ b.textContent=({all:'Todas',piso:'Piso',techo:'Techo',brk:'Ruptura'})[b.dataset.f]+' '+cnt(b.dataset.f); b.classList.toggle('on',b.dataset.f===RG.f); });
+  $('rgSum').innerHTML=`<div><b>${RG.nPares||'—'}</b>pares</div><div><b style="color:#5eead4">${RG.res.filter(r=>!r.brk).length}</b>en rango</div><div><b style="color:#fcd34d">${cnt('brk')}</b>rupturas</div>`;
+  const L=rgList(), box=$('rgList');
+  if(!L.length){ box.innerHTML=`<div class="pst">${RG.res.length?'Ninguna en este filtro.':RG.run?'Buscando rangos…':'Toca ▶ Escanear.'}</div>`; return; }
+  let h='<div class="rgsec">Lista rápida · la rayita marca dónde está el precio dentro de la caja</div>';
+  h+=L.map((r,i)=>`<div class="rgrow" data-rggo="${i}"><span class="pill ${r.dir==='short'?'rgS':r.dir?'rgL':'rgN'}">${r.dir?r.dir.toUpperCase():'—'}</span><b>${r.base}</b><span class="st">${RG_SHORT[r.st]}</span><span class="rgbar"><i style="left:${Math.round(Math.max(0,Math.min(1,r.pos))*100)}%;${r.brk?'background:#fcd34d':''}"></i></span><span class="st">${r.R.wPct.toFixed(1)}%</span><span class="rgsc">${r.score}</span></div>`).join('');
+  h+=L.map((r,i)=>rgCard(r,i)).join('');
+  box.innerHTML=h;
+  L.forEach((r,i)=>{ const el=$('rgc'+i); rgDraw(el.querySelector('canvas'),r); });
+  box.querySelectorAll('[data-rggo]').forEach(e=>e.onclick=()=>$('rgc'+e.dataset.rggo).scrollIntoView({behavior:'smooth',block:'start'}));
+  box.querySelectorAll('[data-rgcp]').forEach(e=>e.onclick=()=>copy(rgText(L[+e.dataset.rgcp]),e));
+  box.querySelectorAll('[data-rgdl]').forEach(e=>e.onclick=()=>{ const o=rgImage(L[+e.dataset.rgdl]); showAndDownload(o.cv,o.name,e); });
+}
+async function rgBtc(){ const [b1,b4]=await Promise.all([trendFor('futures','BTCUSDT','1h'),trendFor('futures','BTCUSDT','4h')]); RG.btc=b1&&b1===b4?b1:'flat'; }
+async function rgOne(sym,vol){
+  let K=await getKlines('futures',sym,RG_TF,RG_LIMIT); const r=rgDetect(sym,K,vol); if(!r) return null;
+  const [h1,h4]=await Promise.all([trendFor('futures',sym,'1h'),trendFor('futures',sym,'4h')]);
+  r.ctx={h1,h4,btc:RG.btc}; rgScore(r); r.v=rgVerd(r); return r;
+}
+async function rgScan(){
+  if(RG.run) return; RG.run=true; RG.abort=false; RG.res=[]; $('rgGo').disabled=true; $('rgStop').disabled=false; rgRender();
+  try{
+    $('rgSt').textContent='Leyendo pares de Binance Futures…';
+    const uni=await getUniverse('futures', getCfg().minVol); RG.nPares=uni.length;
+    try{ await rgBtc(); }catch(e){ RG.btc=null; }
+    let i=0, done=0;
+    const work=async()=>{ while(i<uni.length&&!RG.abort){ const u=uni[i++];
+      try{ const r=await rgOne(u.symbol,u.vol); if(r) RG.res.push(r); }catch(e){}
+      done++; $('rgSt').textContent=`Buscando rangos… ${done}/${uni.length} · ${RG.res.length} encontrados`; if(done%12===0) rgRender(); } };
+    await Promise.all(Array.from({length:CONCURRENCY},work));
+    $('rgSt').textContent=`${RG.abort?'Detenido':'Listo'}: ${done} pares · ${RG.res.length} en rango o rompiendo · velas 1H · ${localStamp().text}`;
+  }catch(e){ $('rgSt').textContent='❌ No se pudo leer Binance Futures: '+(e.message||e); }
+  finally{ RG.run=false; $('rgGo').disabled=false; $('rgStop').disabled=true; rgRender(); }
+}
+async function rgUno(){
+  let s=($('rgSym').value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,''); if(!s) return; if(!/USDT$/.test(s)) s+='USDT';
+  $('rgSt').textContent='Analizando '+s+'…';
+  try{ if(RG.btc==null) await rgBtc().catch(()=>{});
+    const r=await rgOne(s,0); RG.res=RG.res.filter(x=>x.symbol!==s);
+    if(r){ RG.res.unshift(r); RG.f='all'; $('rgSt').textContent=`${s}: ${RG_ST[r.st].toLowerCase()} · ${r.v[1]}`; }
+    else $('rgSt').textContent=`${s}: no está en rango ahora (sin techo y piso claros en 1H).`;
+  }catch(e){ $('rgSt').textContent=`❌ ${s}: ${e.message||e}`; }
+  rgRender();
+}
+(function(){
+  $('rgFab').onclick=()=>{ $('rgPanel').classList.add('open'); rgRender(); if(!RG.res.length&&!RG.run) rgScan(); };
+  $('rgX').onclick=()=>$('rgPanel').classList.remove('open');
+  $('rgPanel').addEventListener('click',e=>{ if(e.target.id==='rgPanel') $('rgPanel').classList.remove('open'); });
+  $('rgGo').onclick=rgScan; $('rgStop').onclick=()=>{ RG.abort=true; $('rgStop').disabled=true; };
+  $('rgUnBtn').onclick=()=>{ const o=$('rgOneRow'); o.classList.toggle('open'); if(o.classList.contains('open')) $('rgSym').focus(); };
+  $('rgOneGo').onclick=rgUno; $('rgSym').addEventListener('keydown',e=>{ if(e.key==='Enter') rgUno(); });
+  $('rgCats').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; RG.f=b.dataset.f; rgRender(); };
+})();
+
 /* ===== Menú de burbujas ===== */
 (function(){
-  const L={plusFab:'Plus 15m',fgFab:'Miedo y Codicia',k1Fab:'1000 velas 15m',bolFab:'Bolsa',jxFab:'Jaxon',tfFab:'TradFi'};
+  const L={plusFab:'Plus 15m',fgFab:'Miedo y Codicia',k1Fab:'1000 velas 15m',bolFab:'Bolsa',jxFab:'Jaxon',tfFab:'TradFi',rgFab:'Rangos'};
   Object.entries(L).forEach(([id,t])=>{ const b=document.getElementById(id); if(!b) return; b.dataset.lbl=t;
     b.addEventListener('click',()=>{ document.body.classList.remove('fabs-open'); setTimeout(()=>icono(),0); }); });
   const m=document.getElementById('menuFab'), ic=m.querySelector('.ic');
-  const PANELS=[['plusPanel','plusX'],['fgPanel','fgX'],['k1Panel','k1X'],['bolPanel','bolX'],['jxPanel','jxX'],['tfPanel','tfX']];
+  const PANELS=[['plusPanel','plusX'],['fgPanel','fgX'],['k1Panel','k1X'],['bolPanel','bolX'],['jxPanel','jxX'],['tfPanel','tfX'],['rgPanel','rgX']];
   const abierto=()=>PANELS.filter(([p])=>{const e=document.getElementById(p); return e&&e.classList.contains('open');});
   const icono=()=>{ ic.textContent=document.body.classList.contains('fabs-open')?'✕':abierto().length?'←':'☰'; m.title=abierto().length?'Volver a v3':'Escáneres y herramientas'; };
   const set=o=>{ document.body.classList.toggle('fabs-open',o); icono(); };
