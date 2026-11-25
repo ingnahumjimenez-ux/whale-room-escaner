@@ -580,6 +580,9 @@ body.fabs-open #tfFab{opacity:1;pointer-events:auto;transform:none}
 #tfPanel .tfn{display:inline-block;background:#3a2a0b;color:#fcd34d;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:6px;margin:0 0 4px}
 #tfPanel .tfl{font-size:11px;color:#94a3b8;margin-top:2px}
 #tfPanel .card{margin-top:10px}
+.tfsec{display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin:10px 2px 5px;border-bottom:1px solid #243049;padding-bottom:3px}
+.tfbx{font-size:10.5px;padding:1px 6px;border-radius:5px;background:#1e2a4a;color:#93c5fd;border:1px solid #3b5bdb;font-weight:700}
+.card.tfdim{opacity:.8}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b1a33">
@@ -4566,16 +4569,28 @@ function tfRenderHead(){
   $('tfSum').innerHTML=`<div><b>${TF.uni.length||'—'}</b>contratos TradFi</div><div><b style="color:#86efac">${sig}</b>cumplen filtros</div><div><b>${list.length}</b>analizados</div>`;
   $('tfOnly').textContent=TF.only?'Ver todos':'Solo las que cumplen filtros';
 }
+async function tfLoadBx(){ // acciones que también se operan en BingX (lista que guarda el robot Bolsa)
+  if(TF.bx) return TF.bx;
+  let L=(typeof BOL!=='undefined'&&BOL.base&&BOL.base.bx)?BOL.base.bx:null;
+  if(!L) for(const u of BOL_URLS){ try{ const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) continue; const j=await r.json(); if(j&&j.bx){ L=j.bx; break; } }catch(e){} }
+  TF.bx=L? new Set(L.map(x=>String(x).toUpperCase().replace('.',''))) : null; return TF.bx;
+}
+function tfInBx(base){ if(!TF.bx||!base) return false; const b=String(base).toUpperCase().replace(/^1000/,'').replace('.',''); return TF.bx.has(b); }
 function tfFiltered(){ return TF.res.filter(r=>(TF.cat==='all'||r.tfCat===TF.cat)&&(!TF.only||r.meetsFilters)); }
 function tfRender(){
   tfRenderHead();
   const box=$('tfList'); box.innerHTML='';
   TF.res.forEach(r=>{ if(!r.st) r.st=signalStatus(r); });
-  const list=tfFiltered().slice().sort((a,b)=>(b.meetsFilters-a.meetsFilters)||(b.score-a.score));
+  TF.res.forEach(r=>{ r.tfBx=tfInBx(r.tfBase); });
+  const list=tfFiltered().slice().sort((a,b)=>(b.tfBx-a.tfBx)||(b.meetsFilters-a.meetsFilters)||(b.score-a.score));
+  const nBx=list.filter(r=>r.tfBx).length; let sec=null;
   if(!list.length){ box.innerHTML=`<div class="pst">${TF.res.length?'Ninguno en esta categoría'+(TF.only?' que cumpla los filtros.':'.'):''}</div>`; return; }
   for(const r of list){
-    const el=document.createElement('div'); el.className='card'; el.innerHTML=cardHTML(r); el._r=r;
-    const tag=document.createElement('div'); tag.innerHTML=`<span class="tfn">${({metal:'🥇',ener:'🛢',idx:'📊',stock:'🏢'})[r.tfCat]} ${r.tfName}</span>${r.meetsFilters?'':' <span class="tfl">· no cumple tus filtros de v3 (puntaje/confluencias): solo para vigilar</span>'}`+
+    const g=r.tfBx?'bx':'bn';
+    if(g!==sec&&(nBx||TF.bx)){ sec=g; const h=document.createElement('div'); h.className='tfsec';
+      h.innerHTML=g==='bx'?`<span>En BingX · ${nBx}</span><span>se pueden operar en las dos</span>`:`<span>Solo Binance · ${list.length-nBx}</span><span>${TF.bx?'':'lista de BingX no disponible'}</span>`; box.appendChild(h); }
+    const el=document.createElement('div'); el.className='card'+(r.tfBx||!TF.bx?'':' tfdim'); el.innerHTML=cardHTML(r); el._r=r;
+    const tag=document.createElement('div'); tag.innerHTML=`<span class="tfn">${({metal:'🥇',ener:'🛢',idx:'📊',stock:'🏢'})[r.tfCat]} ${r.tfName}</span>${r.tfBx?' <span class="tfbx">BingX</span>':''}${r.meetsFilters?'':' <span class="tfl">· no cumple tus filtros de v3 (puntaje/confluencias): solo para vigilar</span>'}`+
       `<div class="tfl">⚡ Apalancamiento seguro según la tarjeta · máx. Binance: ${r.tfMaxLev?r.tfMaxLev+'x':'según contrato'}</div>`;
     const body=el.querySelector('.cbody')||el; body.insertBefore(tag,body.firstChild);
     box.appendChild(el);
@@ -4592,7 +4607,7 @@ async function tfScan(){
   const cfg=getCfg({force:true}); cfg.market='futures'; const strict=getCfg();
   try{
     $('tfSt').textContent='Buscando contratos TradFi en Binance Futures…';
-    TF.uni=await getTradFiUniverse();
+    TF.uni=await getTradFiUniverse(); try{ await tfLoadBx(); }catch(e){}
     if(!TF.uni.length){ $('tfSt').textContent='No se encontraron contratos TradFi en Binance Futures (puede que no estén disponibles desde tu país o que Binance haya cambiado la lista).'; return; }
     let done=0;
     for(const u of TF.uni){
@@ -4601,7 +4616,7 @@ async function tfScan(){
       try{
         let K=await getKlines('futures',u.symbol,cfg.tf,cfg.limit); if(cfg.closedOnly) K=K.slice(0,-1);
         const rs=dirsOf(strict).map(dir=>analyzeDir(u.symbol,K,cfg,u.vol,dir)).filter(Boolean);
-        for(const r of rs){ r.id=++state.sigId; r.session=sessionLabelNow(); r.tfCat=u.cat; r.tfName=u.name;
+        for(const r of rs){ r.id=++state.sigId; r.session=sessionLabelNow(); r.tfCat=u.cat; r.tfName=u.name; r.tfBase=u.base;
           r.tfMaxLev=({metal:50,ener:100,idx:20,stock:10})[u.cat];
           r.meetsFilters=r.score>=strict.minScore&&r.cores>=strict.minCores; TF.res.push(r); }
       }catch(e){}
