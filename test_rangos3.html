@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test 3 Rangos · perfil de volumen</title>
+<style>body{font-family:system-ui,sans-serif;background:#0b0e14;color:#e5e7eb;margin:0;padding:14px;font-size:14px}
+h2{margin:0 0 4px;font-size:19px}.mu{color:#8a9bb0;font-size:12px}
+button{background:#14b8a6;color:#042f2e;border:0;border-radius:10px;font-weight:800;font-size:15px;padding:11px 16px;width:100%;margin:10px 0}
+.bar{height:8px;background:#1e293b;border-radius:4px;overflow:hidden;margin:6px 0}.bar i{display:block;height:100%;width:0;background:#14b8a6}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0 12px;font-variant-numeric:tabular-nums}th,td{padding:5px 4px;border-bottom:1px solid #1e293b;text-align:right}th:first-child,td:first-child{text-align:left}th{color:#8a9bb0;font-weight:600}
+.box{background:#111827;border:1px solid #243049;border-radius:12px;padding:10px 12px;margin:10px 0}.g{color:#86efac}.r{color:#fca5a5}.y{color:#fcd34d}
+h3{font-size:15px;margin:14px 0 2px}tr.base td{background:#172033}</style></head><body>
+<h2>▭ Test 3 de Rangos · perfil de volumen</h2>
+<div class="mu">Mismas velas reales (~60 días, 60 monedas) y las reglas actuales de la burbuja: solo a favor de 4H (BTC no en contra), stop 1.5 ATR, salir en TP2. Prueba si el perfil de volumen (POC, zona de valor y huecos) mejora el resultado. Comisión 0.1 % ida y vuelta.</div>
+<button id="go">▶ Iniciar test 3</button>
+<div class="bar"><i id="pb"></i></div><div class="mu" id="st">Tarda 3–5 minutos. Deja la pantalla encendida.</div>
+<div id="out"></div>
+<script>
+const alignOf=(tr,dir)=>!tr||tr==='flat'?0:((tr==='up')===(dir==='long')?1:-1);
+function atrSeries(K, p=14){
+  const out=new Array(K.length).fill(NaN); let sum=0;
+  for(let i=1;i<K.length;i++){
+    const tr=Math.max(K[i].h-K[i].l, Math.abs(K[i].h-K[i-1].c), Math.abs(K[i].l-K[i-1].c));
+    if(i<=p){ sum+=tr; if(i===p) out[i]=sum/p; }
+    else out[i]=(out[i-1]*(p-1)+tr)/p;
+  }
+  return out;
+}
+function ema(vals, p){
+  const k=2/(p+1); const out=[]; let e=vals[0];
+  for(let i=0;i<vals.length;i++){ e = i===0?vals[0]:vals[i]*k+e*(1-k); out.push(e); }
+  return out;
+}
+function trendOf(K){
+  if(!K || K.length<60) return null;
+  const c=K.map(k=>k.c), n=c.length-1, e50=ema(c,50), e200=ema(c,Math.min(200,n));
+  const pts=(c[n]>e200[n])+(e50[n]>e200[n])+(e50[n]>e50[n-10]);
+  return pts>=2 && c[n]>e200[n] ? 'up' : pts<=1 && c[n]<e200[n] ? 'down' : 'flat';
+}
+function decimalsFor(p){ return Math.min(10, Math.max(2, 3-Math.floor(Math.log10(p)))); }
+function fmt(p,d){ return (+p).toFixed(d); }
+function rgQ(a,q){ const s=a.slice().sort((x,y)=>x-y); const i=(s.length-1)*q, lo=Math.floor(i), hi=Math.ceil(i); return s[lo]+(s[hi]-s[lo])*(i-lo); }
+function rgTouches(W,lvl,tol,up){ let n=0,last=-99,idx=[];
+  for(let i=0;i<W.length;i++){ const hit=up? W[i].h>=lvl-tol : W[i].l<=lvl+tol;
+    if(hit){ if(i-last>=4){ n++; idx.push(i); } last=i; } }
+  return {n,idx}; }
+function rgDetect(sym,K,vol){
+  const n=K.length-1; if(n<90) return null;
+  const A=atrSeries(K,14), atr=A[n-1]||A[n-2]; if(!atr) return null;
+  const e=n-3; let R=null;
+  for(let N=72;N>=24;N-=6){
+    const s=e-N+1; if(s<20) continue;
+    const W=K.slice(s,e+1), top=rgQ(W.map(k=>k.h),0.92), bot=rgQ(W.map(k=>k.l),0.08), w=top-bot, mid=(top+bot)/2, wPct=w/mid*100;
+    if(wPct<2.5||wPct>15||w<3*atr) continue;
+    const ins=W.filter(k=>k.c>=bot-0.1*w&&k.c<=top+0.1*w).length/W.length; if(ins<0.9) continue;
+    const xs=W.map((_,i)=>i), mx=(N-1)/2, my=W.reduce((a,k)=>a+k.c,0)/N;
+    let num=0,den=0; W.forEach((k,i)=>{ num+=(i-mx)*(k.c-my); den+=(i-mx)*(i-mx); });
+    if(Math.abs(num/den*N)/w>0.5) continue;
+    const tol=0.12*w, tT=rgTouches(W,top,tol,true), tB=rgTouches(W,bot,tol,false);
+    if(tT.n<2||tB.n<2) continue;
+    R={N,s,e,top,bot,mid,w,wPct,tT,tB}; break;
+  }
+  if(!R) return null;
+  const {top,bot,mid,w}=R, c=K[n].c, lc=K[n-1];
+  if(c>top+1.2*w||c<bot-1.2*w) return null;
+  const avgV=K.slice(R.s,R.e+1).reduce((a,k)=>a+k.v,0)/R.N;
+  let brk=null, bi=-1;
+  for(let i=n-2;i<=n-1;i++){ if(K[i].c>top+0.1*w&&c>top){ brk='up'; bi=i; } if(K[i].c<bot-0.1*w&&c<bot){ brk='down'; bi=i; } }
+  const pos=(c-bot)/w;
+  const st= brk==='up'?'up' : brk==='down'?'down' : pos<=0.3?'piso' : pos>=0.7?'techo' : 'medio';
+  const dir= st==='piso'||st==='up'?'long' : st==='techo'||st==='down'?'short' : null;
+  const body=Math.abs(lc.c-lc.o)||1e-12, lw=Math.min(lc.o,lc.c)-lc.l, uw=lc.h-Math.max(lc.o,lc.c), tol=0.15*w;
+  const rejL = lc.l<=bot+tol && ((lw>=1.5*body && lc.c>=(lc.h+lc.l)/2) || (lc.c>lc.o && lc.c>K[n-2].o && K[n-2].c<K[n-2].o));
+  const rejS = lc.h>=top-tol && ((uw>=1.5*body && lc.c<=(lc.h+lc.l)/2) || (lc.c<lc.o && lc.c<K[n-2].o && K[n-2].c>K[n-2].o));
+  const rej = st==='piso'?rejL : st==='techo'?rejS : false;
+  const vRef = brk? K[bi].v : lc.v, volOk = brk? vRef>=1.3*avgV : vRef>=avgV;
+  let entryLow, entryHigh, stop, tp1, tp2;
+  if(st==='piso'){ entryLow=bot; entryHigh=bot+0.25*w; stop=bot-Math.max(1.5*atr,0.08*w); tp1=mid; tp2=top-0.05*w; }
+  else if(st==='techo'){ entryLow=top-0.25*w; entryHigh=top; stop=top+Math.max(1.5*atr,0.08*w); tp1=mid; tp2=bot+0.05*w; }
+  else if(st==='up'){ entryLow=top; entryHigh=top+0.3*atr; stop=top-Math.max(1.5*atr,0.15*w); tp1=top+0.5*w; tp2=top+w; }
+  else if(st==='down'){ entryLow=bot-0.3*atr; entryHigh=bot; stop=bot+Math.max(1.5*atr,0.15*w); tp1=bot-0.5*w; tp2=bot-w; }
+  const r={symbol:sym, base:sym.replace(/USDT$/,''), K, n, atr, vol, R, c, pos, st, dir, brk, rej, volOk, avgV, d:decimalsFor(c), entryLow, entryHigh, stop, tp1, tp2};
+  if(dir){ const sh=dir==='short', en=st==='up'||st==='down' ? (sh?Math.max(c,entryLow):Math.min(c,entryHigh)) : c;
+    if(Math.abs(en-r.stop)<1.5*atr){ r.stop= sh? en+1.5*atr : en-1.5*atr; }   // stop mínimo: 1.5 ATR desde la entrada (test 2)
+    r.entry=en; r.risk=Math.abs(en-r.stop); r.stopPct=r.risk/en*100;
+    r.rr1=(sh?en-tp1:tp1-en)/r.risk; r.rr2=(sh?en-tp2:tp2-en)/r.risk;
+    r.pct1=(sh?1-tp1/en:tp1/en-1)*100; r.pct2=(sh?1-tp2/en:tp2/en-1)*100;
+    r.maxLev=Math.max(1,Math.min(10,Math.floor(50/r.stopPct))); r.minLev=Math.max(1,Math.round(r.maxLev*0.4));
+    r.levTxt=r.minLev===r.maxLev?`${r.maxLev}x`:`${r.minLev}-${r.maxLev}x`; }
+  return r;
+}
+function rgScore(r){
+  let s=50; const R=r.R;
+  s+=5*(Math.min(R.tT.n,4)-2)+5*(Math.min(R.tB.n,4)-2); if(R.N>=48) s+=5;
+  if(r.dir){ if(r.rr2>=2) s+=5; if(r.rr2>=3) s+=5; if(r.rr1<1) s-=15;
+    const c=r.ctx||{}, a4=alignOf(c.h4,r.dir), ab=alignOf(c.btc,r.dir); s+= a4>0?5:a4<0?-10:0; if(r.symbol!=='BTCUSDT') s+= ab>0?3:ab<0?-7:0; }
+  else s-=15;
+  r.score=Math.max(0,Math.min(100,Math.round(s)));
+}
+function rgVerd(r){ // reglas del test 2: solo a favor de 4H (BTC no en contra) · objetivo TP2 · stop 1.5 ATR
+  const c=r.ctx||{}, a4=alignOf(c.h4,r.dir), ab=r.symbol==='BTCUSDT'?0:alignOf(c.btc,r.dir), F=v=>fmt(v,r.d);
+  if(r.st==='medio') return ['wt','⏳ ESPERA',`está en medio del rango · LONG cerca de ${F(r.R.bot)} o SHORT cerca de ${F(r.R.top)}`];
+  if(a4<0||ab<0) return ['no','⛔ NO',`va contra ${a4<0&&ab<0?'4H y BTC':a4<0?'4H':'BTC'} · en el test estas entradas perdieron`];
+  if(a4===0) return ['wt','⏳ ESPERA','4H lateral · esperar a que 4H marque dirección'];
+  if(r.rr1<1) return ['no','⛔ NO','poco recorrido frente al stop'];
+  if(r.st==='up'||r.st==='down') return ['go','✅ TÓMALA',`entrar en el retesteo de ${F(r.st==='up'?r.R.top:r.R.bot)} · salir en TP2 (ancho del rango)`];
+  return ['go','✅ TÓMALA',`a favor de 4H · salir en TP2 (${r.st==='piso'?'techo':'piso'} del rango)`];
+}
+const API='https://fapi.binance.com/fapi/v1/';
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function J(u){ for(let a=0;a<3;a++){ try{ const r=await fetch(u); if(r.ok) return await r.json(); }catch(e){} await sleep(600*(a+1)); } throw new Error('sin respuesta: '+u.split('?')[0]); }
+const kl=async s=>(await J(API+'klines?symbol='+s+'&interval=1h&limit=1500')).map(r=>({t:r[0],o:+r[1],h:+r[2],l:+r[3],c:+r[4],v:+r[5]}));
+function agr(K,m){ const o=[]; for(let i=K.length%m;i+m<=K.length;i+=m){ const g=K.slice(i,i+m); o.push({t:g[0].t,o:g[0].o,h:Math.max(...g.map(k=>k.h)),l:Math.min(...g.map(k=>k.l)),c:g[m-1].c,v:g.reduce((a,k)=>a+k.v,0)}); } return o; }
+function trendAt(K,t,m){ const sub=K.slice(Math.max(0,t+1-m*250),t+1); return trendOf(m===1?sub:agr(sub,m)); }
+const FEE=0.1;
+// mode: split = ½ TP1 + ½ TP2 (stop a la entrada tras TP1) · tp1 = todo en TP1 · tp2 = todo en TP2
+function sim(K,t,dir,entry,stop,tp1,tp2,wait,mode){
+  const sh=dir==='short', risk=Math.abs(entry-stop), feeR=FEE/100*entry/risk; let i=t+1;
+  if(wait){ let f=false; for(;i<=Math.min(K.length-1,t+12);i++){ const k=K[i]; if(k.l<=entry&&k.h>=entry){ f=true; break; } if(sh?(k.c>stop||k.l<=tp1):(k.c<stop||k.h>=tp1)) return null; } if(!f) return null; i++; }
+  let half=false, st=stop, res=0; const end=Math.min(K.length-1,i+48), mv=p=>Math.abs(p-entry)/risk;
+  for(;i<=end;i++){ const k=K[i], hs=sh?k.h>=st:k.l<=st, h1=sh?k.l<=tp1:k.h>=tp1, h2=sh?k.l<=tp2:k.h>=tp2;
+    if(mode==='tp1'){ if(hs) return {R:-1-feeR,w:false,end:i}; if(h1) return {R:mv(tp1)-feeR,w:true,end:i}; continue; }
+    if(mode==='tp2'){ if(hs) return {R:-1-feeR,w:false,end:i}; if(h2) return {R:mv(tp2)-feeR,w:true,end:i}; continue; }
+    if(!half){ if(hs) return {R:-1-feeR,w:false,end:i}; if(h1){ half=true; res+=0.5*mv(tp1); st=entry; if(h2) return {R:res+0.5*mv(tp2)-feeR,w:true,end:i}; } }
+    else { if(hs) return {R:res-feeR,w:true,end:i}; if(h2) return {R:res+0.5*mv(tp2)-feeR,w:true,end:i}; } }
+  const c=K[end].c, m2=(sh?entry-c:c-entry)/risk; let R;
+  if(mode==='split') R=half?res+0.5*m2:m2; else R=m2;
+  return {R:R-feeR, w:half||R>0, end};
+}
+
+function profile(K,s,e,lo,hi,nb){ // volumen por precio: reparte el volumen de cada vela entre su mínimo y su máximo
+  const B=new Array(nb).fill(0), step=(hi-lo)/nb;
+  for(let i=s;i<=e;i++){ const k=K[i], a=Math.max(lo,k.l), b=Math.min(hi,k.h); if(b<=a) continue;
+    const r=k.h-k.l||1e-12; for(let j=Math.floor((a-lo)/step);j<=Math.min(nb-1,Math.floor((b-lo)/step));j++){ const x0=lo+j*step, x1=x0+step, ov=Math.min(b,x1)-Math.max(a,x0); if(ov>0) B[j]+=k.v*ov/r; } }
+  return {B,step,lo};
+}
+function vp(K,r){ const R=r.R, w=R.w, lo=R.bot-0.1*w, hi=R.top+0.1*w, nb=24, P=profile(K,R.s,r.n-1,lo,hi,nb), B=P.B;
+  let pi=0; B.forEach((v,j)=>{ if(v>B[pi]) pi=j; }); const tot=B.reduce((a,b)=>a+b,0);
+  let a=pi,b=pi,acc=B[pi]; while(acc<0.7*tot&&(a>0||b<nb-1)){ const up=b<nb-1?B[b+1]:-1, dn=a>0?B[a-1]:-1; if(up>=dn){ b++; acc+=B[b]; } else { a--; acc+=B[a]; } }
+  const c=j=>lo+(j+0.5)*P.step; return {poc:c(pi), val:lo+a*P.step, vah:lo+(b+1)*P.step};
+}
+function pathVol(K,t,from,to){ // volumen en el camino de la ruptura frente al promedio de las últimas 200 velas
+  const lo0=Math.min(from,to), hi0=Math.max(from,to), s=Math.max(0,t-200);
+  let mn=Infinity,mx=-Infinity; for(let i=s;i<=t;i++){ mn=Math.min(mn,K[i].l); mx=Math.max(mx,K[i].h); }
+  const nb=40, P=profile(K,s,t,mn,mx,nb), avg=P.B.reduce((a,b)=>a+b,0)/nb;
+  let sum=0,n=0; for(let j=0;j<nb;j++){ const x=mn+(j+0.5)*P.step; if(x>=lo0&&x<=hi0){ sum+=P.B[j]; n++; } }
+  return n? sum/n/avg : null; }
+const G={}; const add=(g,x)=>{ if(x) (G[g]=G[g]||[]).push(x); };
+function stats(a){ if(!a||!a.length) return null; const n=a.length, w=a.filter(x=>x.w).length, tot=a.reduce((s,x)=>s+x.R,0); return {n,w:w/n,avg:tot/n,tot}; }
+function row(name,k,cls){ const s=stats(G[k]); if(!s) return `<tr><td>${name}</td><td>0</td><td>—</td><td>—</td><td>—</td></tr>`;
+  const c=s.avg>0.05?'g':s.avg<-0.05?'r':'y';
+  return `<tr class="${cls||''}"><td>${name}</td><td>${s.n}</td><td>${Math.round(s.w*100)}%</td><td class="${c}">${s.avg>=0?'+':''}${s.avg.toFixed(2)}</td><td class="${c}">${s.tot>=0?'+':''}${s.tot.toFixed(1)}</td></tr>`; }
+const TH='<tr><th>Grupo</th><th>Ops</th><th>Gana</th><th>R prom.</th><th>R total</th></tr>';
+function report(done,total,days){
+  const T=(title,rows,note)=>`<h3>${title}</h3>${note?`<div class="mu">${note}</div>`:''}<table>${TH}${rows.join('')}</table>`;
+  let h=`<div class="box">${done}/${total} pares · ~${days} días · ${new Date().toLocaleString('es-SV')}</div>`;
+  h+=T('1 · Base: reglas actuales de la burbuja',[row('Todas las entradas ✅ (salir en TP2)','base','base'),row('Solo piso y techo','baseE'),row('Solo rupturas','baseB')],'Esta es la referencia. Las demás tablas comparan contra ella.');
+  h+=T('2 · Piso y techo: ¿dónde está el precio frente a la zona de valor?',[row('Fuera de la zona de valor (bajo VAL en piso / sobre VAH en techo)','vaOut'),row('Dentro de la zona de valor','vaIn')],'Zona de valor = precios donde se negoció el 70 % del volumen del rango');
+  h+=T('3 · ¿Dónde tomar ganancia? (piso y techo)',[row('Todo en TP2 (como ahora)','x:tp2','base'),row('Todo en el POC','x:poc'),row('½ en el POC + ½ en TP2','x:pocS'),row('Todo en el medio del rango','x:mid'),row('½ en el medio + ½ en TP2','x:midS')],'POC = precio más negociado del rango');
+  h+=T('4 · Rupturas: ¿el camino hasta TP2 está libre?',[row('Camino libre (hueco de volumen)','pv:lo'),row('Volumen normal','pv:mid'),row('Choca con volumen alto','pv:hi')],'Libre = menos de 0.6× el volumen promedio por precio · alto = más de 1.2×');
+  h+=T('5 · ¿El POC del lado correcto ayuda? (piso y techo)',[row('POC entre la entrada y TP2','pocFav'),row('POC del otro lado','pocCon')],'Ej.: LONG en piso con el POC arriba del precio (el imán jala hacia el objetivo)');
+  const b=stats(G.base), cand=[['Solo fuera de la zona de valor','vaOut'],['Salir ½ POC + ½ TP2','x:pocS'],['Salir todo en el POC','x:poc'],['Rupturas con camino libre','pv:lo'],['POC del lado correcto','pocFav']].map(([n,k])=>[n,stats(G[k])]).filter(x=>x[1]&&x[1].n>=30);
+  if(b&&cand.length){ const bb=b.avg; const lines=cand.map(([n,s])=>`${n}: ${s.avg>=0?'+':''}${s.avg.toFixed(2)} R (${s.n} ops) ${s.avg>bb+0.05?'<b class="g">mejora</b>':s.avg<bb-0.05?'<b class="r">empeora</b>':'<b class="y">igual</b>'}`);
+    h+=`<div class="box"><b>Resumen frente a la base (${bb>=0?'+':''}${bb.toFixed(2)} R por operación):</b><br>${lines.join('<br>')}<br><span class="mu">Solo cuenta como mejora si supera la base por más de 0.05 R y tiene al menos 30 operaciones.</span></div>`;
+    const H1=stats(G['h1:vaOut']), H2=stats(G['h2:vaOut']), B1=stats(G['h1:base']), B2=stats(G['h2:base']);
+    if(H1&&H2&&B1&&B2) h+=T('6 · Por mitades (base vs. fuera de la zona de valor)',[row('Base · 1ª mitad','h1:base'),row('Base · 2ª mitad','h2:base'),row('Fuera de zona de valor · 1ª mitad','h1:vaOut'),row('Fuera de zona de valor · 2ª mitad','h2:vaOut')]); }
+  $('out').innerHTML=h;
+}
+$('go').onclick=async()=>{
+  $('go').disabled=true; $('go').textContent='Probando…'; for(const k in G) delete G[k];
+  try{
+    $('st').textContent='Leyendo pares de Binance Futures…';
+    const [info,tick]=await Promise.all([J(API+'exchangeInfo'),J(API+'ticker/24hr')]);
+    const vol=new Map(tick.map(t=>[t.symbol,+t.quoteVolume]));
+    const ST=new Set(['USDC','FDUSD','TUSD','BUSD','USDP','DAI','EUR','USDE']);
+    const uni=info.symbols.filter(s=>s.status==='TRADING'&&s.quoteAsset==='USDT'&&s.contractType==='PERPETUAL'&&!ST.has(s.baseAsset)&&!/TRAD/i.test(String(s.underlyingSubType||''))&&!/EQUIT|COMMOD/i.test(String(s.underlyingType||'')))
+      .map(s=>s.symbol).sort((a,b)=>(vol.get(b)||0)-(vol.get(a)||0)).slice(0,60);
+    const BTC=await kl('BTCUSDT'); const bIdx=new Map(BTC.map((k,i)=>[k.t,i])); const tMid=BTC[Math.floor(BTC.length/2)].t;
+    let done=0; const days=Math.round(BTC.length/24);
+    for(const sym of uni){
+      $('st').textContent=`Probando ${sym} (${done+1}/${uni.length})…`; $('pb').style.width=(done/uni.length*100)+'%';
+      try{
+        const K=await kl(sym); let busy=-1;
+        for(let t=300;t<K.length-6;t++){
+          if(t<=busy) continue;
+          const Ks=K.slice(0,t+1), r=rgDetect(sym,Ks,0); if(!r||!r.dir) continue;
+          const bi=bIdx.get(K[t].t); let btc=null; if(bi!=null&&sym!=='BTCUSDT'){ const b1=trendAt(BTC,bi,1), b4=trendAt(BTC,bi,4); btc=b1&&b1===b4?b1:'flat'; }
+          r.ctx={h1:null,h4:trendAt(K,t,4),btc}; rgScore(r); r.v=rgVerd(r);
+          if(r.v[0]!=='go') continue;                     // solo lo que la burbuja marca ✅ TÓMALA
+          const sh=r.dir==='short', brk=r.st==='up'||r.st==='down';
+          const entry=brk?(r.st==='up'?r.entryHigh:r.entryLow):r.c, wait=brk&&(r.st==='up'?r.c>entry:r.c<entry);
+          const o=sim(K,t,r.dir,entry,r.stop,r.tp1,r.tp2,wait,'tp2'); if(!o){ busy=t+12; continue; }
+          const half=K[t].t<tMid?'h1:':'h2:';
+          add('base',o); add(half+'base',o); add(brk?'baseB':'baseE',o);
+          if(!brk){
+            const V=vp(Ks,r), out=r.st==='piso'? r.c<V.val : r.c>V.vah;
+            add(out?'vaOut':'vaIn',o); if(out) add(half+'vaOut',o);
+            add('x:tp2',o);
+            const okP= sh? V.poc<entry-0.2*r.atr : V.poc>entry+0.2*r.atr;
+            if(okP){ add('x:poc',sim(K,t,r.dir,entry,r.stop,V.poc,V.poc,false,'tp1')); add('x:pocS',sim(K,t,r.dir,entry,r.stop,V.poc,r.tp2,false,'split')); }
+            add('x:mid',sim(K,t,r.dir,entry,r.stop,r.tp1,r.tp1,false,'tp1')); add('x:midS',sim(K,t,r.dir,entry,r.stop,r.tp1,r.tp2,false,'split'));
+            add(okP?'pocFav':'pocCon',o);
+          } else {
+            const pv=pathVol(K,t,r.st==='up'?r.R.top:r.R.bot,r.tp2);
+            if(pv!=null) add(pv<0.6?'pv:lo':pv>1.2?'pv:hi':'pv:mid',o);
+          }
+          busy=o.end;
+        }
+      }catch(e){}
+      done++; if(done%5===0) report(done,uni.length,days); await sleep(60);
+    }
+    $('pb').style.width='100%'; $('st').textContent='✅ Test 3 terminado. Toma captura de todos los resultados.'; report(done,uni.length,days);
+  }catch(e){ $('st').textContent='❌ '+(e.message||e); }
+  $('go').disabled=false; $('go').textContent='▶ Repetir test 3';
+};
+</script></body></html>
