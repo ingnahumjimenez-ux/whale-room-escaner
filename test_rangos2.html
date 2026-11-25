@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test 2 Rangos · 1H</title>
+<style>body{font-family:system-ui,sans-serif;background:#0b0e14;color:#e5e7eb;margin:0;padding:14px;font-size:14px}
+h2{margin:0 0 4px;font-size:19px}.mu{color:#8a9bb0;font-size:12px}
+button{background:#14b8a6;color:#042f2e;border:0;border-radius:10px;font-weight:800;font-size:15px;padding:11px 16px;width:100%;margin:10px 0}
+.bar{height:8px;background:#1e293b;border-radius:4px;overflow:hidden;margin:6px 0}.bar i{display:block;height:100%;width:0;background:#14b8a6}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0 12px;font-variant-numeric:tabular-nums}th,td{padding:5px 4px;border-bottom:1px solid #1e293b;text-align:right}th:first-child,td:first-child{text-align:left}th{color:#8a9bb0;font-weight:600}
+.box{background:#111827;border:1px solid #243049;border-radius:12px;padding:10px 12px;margin:10px 0}.g{color:#86efac}.r{color:#fca5a5}.y{color:#fcd34d}
+h3{font-size:15px;margin:14px 0 2px}tr.best td{background:#052e16}</style></head><body>
+<h2>▭ Test 2 de Rangos · 1H</h2>
+<div class="mu">Misma detección y mismas velas reales (~60 días, 60 monedas). Prueba las mejoras: A) sin entradas contra 4H/BTC, B) solo a favor de la tendencia, C) sin exigir vela de rechazo ni volumen, y D) distintos stops y formas de salir. Comisión 0.1 % ida y vuelta.</div>
+<button id="go">▶ Iniciar test 2</button>
+<div class="bar"><i id="pb"></i></div><div class="mu" id="st">Tarda 3–5 minutos. Deja la pantalla encendida.</div>
+<div id="out"></div>
+<script>
+
+const alignOf=(tr,dir)=>!tr||tr==='flat'?0:((tr==='up')===(dir==='long')?1:-1);
+function atrSeries(K, p=14){
+  const out=new Array(K.length).fill(NaN); let sum=0;
+  for(let i=1;i<K.length;i++){
+    const tr=Math.max(K[i].h-K[i].l, Math.abs(K[i].h-K[i-1].c), Math.abs(K[i].l-K[i-1].c));
+    if(i<=p){ sum+=tr; if(i===p) out[i]=sum/p; }
+    else out[i]=(out[i-1]*(p-1)+tr)/p;
+  }
+  return out;
+}
+function ema(vals, p){
+  const k=2/(p+1); const out=[]; let e=vals[0];
+  for(let i=0;i<vals.length;i++){ e = i===0?vals[0]:vals[i]*k+e*(1-k); out.push(e); }
+  return out;
+}
+function trendOf(K){
+  if(!K || K.length<60) return null;
+  const c=K.map(k=>k.c), n=c.length-1, e50=ema(c,50), e200=ema(c,Math.min(200,n));
+  const pts=(c[n]>e200[n])+(e50[n]>e200[n])+(e50[n]>e50[n-10]);
+  return pts>=2 && c[n]>e200[n] ? 'up' : pts<=1 && c[n]<e200[n] ? 'down' : 'flat';
+}
+function decimalsFor(p){ return Math.min(10, Math.max(2, 3-Math.floor(Math.log10(p)))); }
+function fmt(p,d){ return (+p).toFixed(d); }
+function rgQ(a,q){ const s=a.slice().sort((x,y)=>x-y); const i=(s.length-1)*q, lo=Math.floor(i), hi=Math.ceil(i); return s[lo]+(s[hi]-s[lo])*(i-lo); }
+function rgTouches(W,lvl,tol,up){ let n=0,last=-99,idx=[];
+  for(let i=0;i<W.length;i++){ const hit=up? W[i].h>=lvl-tol : W[i].l<=lvl+tol;
+    if(hit){ if(i-last>=4){ n++; idx.push(i); } last=i; } }
+  return {n,idx}; }
+function rgDetect(sym,K,vol){
+  const n=K.length-1; if(n<90) return null;
+  const A=atrSeries(K,14), atr=A[n-1]||A[n-2]; if(!atr) return null;
+  const e=n-3; let R=null;
+  for(let N=72;N>=24;N-=6){
+    const s=e-N+1; if(s<20) continue;
+    const W=K.slice(s,e+1), top=rgQ(W.map(k=>k.h),0.92), bot=rgQ(W.map(k=>k.l),0.08), w=top-bot, mid=(top+bot)/2, wPct=w/mid*100;
+    if(wPct<2.5||wPct>15||w<3*atr) continue;
+    const ins=W.filter(k=>k.c>=bot-0.1*w&&k.c<=top+0.1*w).length/W.length; if(ins<0.9) continue;
+    const xs=W.map((_,i)=>i), mx=(N-1)/2, my=W.reduce((a,k)=>a+k.c,0)/N;
+    let num=0,den=0; W.forEach((k,i)=>{ num+=(i-mx)*(k.c-my); den+=(i-mx)*(i-mx); });
+    if(Math.abs(num/den*N)/w>0.5) continue;
+    const tol=0.12*w, tT=rgTouches(W,top,tol,true), tB=rgTouches(W,bot,tol,false);
+    if(tT.n<2||tB.n<2) continue;
+    R={N,s,e,top,bot,mid,w,wPct,tT,tB}; break;
+  }
+  if(!R) return null;
+  const {top,bot,mid,w}=R, c=K[n].c, lc=K[n-1];
+  if(c>top+1.2*w||c<bot-1.2*w) return null;
+  const avgV=K.slice(R.s,R.e+1).reduce((a,k)=>a+k.v,0)/R.N;
+  let brk=null, bi=-1;
+  for(let i=n-2;i<=n-1;i++){ if(K[i].c>top+0.1*w&&c>top){ brk='up'; bi=i; } if(K[i].c<bot-0.1*w&&c<bot){ brk='down'; bi=i; } }
+  const pos=(c-bot)/w;
+  const st= brk==='up'?'up' : brk==='down'?'down' : pos<=0.3?'piso' : pos>=0.7?'techo' : 'medio';
+  const dir= st==='piso'||st==='up'?'long' : st==='techo'||st==='down'?'short' : null;
+  const body=Math.abs(lc.c-lc.o)||1e-12, lw=Math.min(lc.o,lc.c)-lc.l, uw=lc.h-Math.max(lc.o,lc.c), tol=0.15*w;
+  const rejL = lc.l<=bot+tol && ((lw>=1.5*body && lc.c>=(lc.h+lc.l)/2) || (lc.c>lc.o && lc.c>K[n-2].o && K[n-2].c<K[n-2].o));
+  const rejS = lc.h>=top-tol && ((uw>=1.5*body && lc.c<=(lc.h+lc.l)/2) || (lc.c<lc.o && lc.c<K[n-2].o && K[n-2].c>K[n-2].o));
+  const rej = st==='piso'?rejL : st==='techo'?rejS : false;
+  const vRef = brk? K[bi].v : lc.v, volOk = brk? vRef>=1.3*avgV : vRef>=avgV;
+  let entryLow, entryHigh, stop, tp1, tp2;
+  if(st==='piso'){ entryLow=bot; entryHigh=bot+0.25*w; stop=bot-Math.max(0.6*atr,0.08*w); tp1=mid; tp2=top-0.05*w; }
+  else if(st==='techo'){ entryLow=top-0.25*w; entryHigh=top; stop=top+Math.max(0.6*atr,0.08*w); tp1=mid; tp2=bot+0.05*w; }
+  else if(st==='up'){ entryLow=top; entryHigh=top+0.3*atr; stop=top-Math.max(0.6*atr,0.15*w); tp1=top+0.5*w; tp2=top+w; }
+  else if(st==='down'){ entryLow=bot-0.3*atr; entryHigh=bot; stop=bot+Math.max(0.6*atr,0.15*w); tp1=bot-0.5*w; tp2=bot-w; }
+  const r={symbol:sym, base:sym.replace(/USDT$/,''), K, n, atr, vol, R, c, pos, st, dir, brk, rej, volOk, avgV, d:decimalsFor(c), entryLow, entryHigh, stop, tp1, tp2};
+  if(dir){ const sh=dir==='short', en=st==='up'||st==='down' ? (sh?Math.max(c,entryLow):Math.min(c,entryHigh)) : c;
+    if(Math.abs(en-r.stop)<0.6*atr){ r.stop= sh? en+0.6*atr : en-0.6*atr; }   // stop mínimo: 0.6 ATR desde la entrada
+    r.entry=en; r.risk=Math.abs(en-r.stop); r.stopPct=r.risk/en*100;
+    r.rr1=(sh?en-tp1:tp1-en)/r.risk; r.rr2=(sh?en-tp2:tp2-en)/r.risk;
+    r.pct1=(sh?1-tp1/en:tp1/en-1)*100; r.pct2=(sh?1-tp2/en:tp2/en-1)*100;
+    r.maxLev=Math.max(1,Math.min(10,Math.floor(50/r.stopPct))); r.minLev=Math.max(1,Math.round(r.maxLev*0.4));
+    r.levTxt=r.minLev===r.maxLev?`${r.maxLev}x`:`${r.minLev}-${r.maxLev}x`; }
+  return r;
+}
+function rgScore(r){
+  let s=50; const R=r.R;
+  s+=5*(Math.min(R.tT.n,4)-2)+5*(Math.min(R.tB.n,4)-2); if(R.N>=48) s+=5;
+  if(r.rej) s+=10; if(r.volOk) s+=5;
+  if(r.dir){ if(r.rr1>=1.5) s+=5; if(r.rr2>=3) s+=5; if(r.rr1<1) s-=15;
+    const c=r.ctx||{}, a4=alignOf(c.h4,r.dir), ab=alignOf(c.btc,r.dir); s+= a4>0?5:a4<0?-10:0; if(r.symbol!=='BTCUSDT') s+= ab>0?3:ab<0?-7:0; }
+  else s-=15;
+  r.score=Math.max(0,Math.min(100,Math.round(s)));
+}
+function rgVerd(r){
+  const c=r.ctx||{}, a4=alignOf(c.h4,r.dir), ab=r.symbol==='BTCUSDT'?0:alignOf(c.btc,r.dir), F=v=>fmt(v,r.d);
+  if(r.st==='medio') return ['wt','⏳ ESPERA',`está en medio del rango · LONG cerca de ${F(r.R.bot)} o SHORT cerca de ${F(r.R.top)}`];
+  if(r.rr1<1) return ['no','⛔ NO','poco recorrido hasta el objetivo frente al stop'];
+  if(r.st==='up'||r.st==='down'){ const lv=F(r.st==='up'?r.R.top:r.R.bot);
+    if(a4<0||ab<0) return ['mid','⚠️ RUPTURA DÉBIL',`contra ${a4<0?'4H':'BTC'} · esperar retesteo de ${lv} · ½ dinero`];
+    return [r.volOk?'go':'mid', r.volOk?'🚀 RUPTURA':'👀 RUPTURA SIN VOLUMEN', `entrar en el retesteo de ${lv} · objetivo = ancho del rango`]; }
+  const edge=r.st==='piso'?'techo':'piso';
+  if(a4<0||ab<0) return ['mid','⚠️ SOLO PEQUEÑA',`½ dinero · salir en el medio · contra ${a4<0?'4H':'BTC'}`];
+  if(!r.rej) return ['mid','👀 LISTA','falta vela de rechazo · esperar confirmación'];
+  if(r.rr1<1.3) return ['mid','👀 LISTA',`poco recorrido hasta el medio · mejor entrar más cerca del ${r.st}`];
+  return ['go','✅ TÓMALA',`entrada en el ${r.st} · salir en el medio y el ${edge}`];
+}
+
+const API='https://fapi.binance.com/fapi/v1/';
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function J(u){ for(let a=0;a<3;a++){ try{ const r=await fetch(u); if(r.ok) return await r.json(); }catch(e){} await sleep(600*(a+1)); } throw new Error('sin respuesta: '+u.split('?')[0]); }
+const kl=async s=>(await J(API+'klines?symbol='+s+'&interval=1h&limit=1500')).map(r=>({t:r[0],o:+r[1],h:+r[2],l:+r[3],c:+r[4],v:+r[5]}));
+function agr(K,m){ const o=[]; for(let i=K.length%m;i+m<=K.length;i+=m){ const g=K.slice(i,i+m); o.push({t:g[0].t,o:g[0].o,h:Math.max(...g.map(k=>k.h)),l:Math.min(...g.map(k=>k.l)),c:g[m-1].c,v:g.reduce((a,k)=>a+k.v,0)}); } return o; }
+function trendAt(K,t,m){ const sub=K.slice(Math.max(0,t+1-m*250),t+1); return trendOf(m===1?sub:agr(sub,m)); }
+const FEE=0.1;
+// mode: split = ½ TP1 + ½ TP2 (stop a la entrada tras TP1) · tp1 = todo en TP1 · tp2 = todo en TP2
+function sim(K,t,dir,entry,stop,tp1,tp2,wait,mode){
+  const sh=dir==='short', risk=Math.abs(entry-stop), feeR=FEE/100*entry/risk; let i=t+1;
+  if(wait){ let f=false; for(;i<=Math.min(K.length-1,t+12);i++){ const k=K[i]; if(k.l<=entry&&k.h>=entry){ f=true; break; } if(sh?(k.c>stop||k.l<=tp1):(k.c<stop||k.h>=tp1)) return null; } if(!f) return null; i++; }
+  let half=false, st=stop, res=0; const end=Math.min(K.length-1,i+48), mv=p=>Math.abs(p-entry)/risk;
+  for(;i<=end;i++){ const k=K[i], hs=sh?k.h>=st:k.l<=st, h1=sh?k.l<=tp1:k.h>=tp1, h2=sh?k.l<=tp2:k.h>=tp2;
+    if(mode==='tp1'){ if(hs) return {R:-1-feeR,w:false,end:i}; if(h1) return {R:mv(tp1)-feeR,w:true,end:i}; continue; }
+    if(mode==='tp2'){ if(hs) return {R:-1-feeR,w:false,end:i}; if(h2) return {R:mv(tp2)-feeR,w:true,end:i}; continue; }
+    if(!half){ if(hs) return {R:-1-feeR,w:false,end:i}; if(h1){ half=true; res+=0.5*mv(tp1); st=entry; if(h2) return {R:res+0.5*mv(tp2)-feeR,w:true,end:i}; } }
+    else { if(hs) return {R:res-feeR,w:true,end:i}; if(h2) return {R:res+0.5*mv(tp2)-feeR,w:true,end:i}; } }
+  const c=K[end].c, m2=(sh?entry-c:c-entry)/risk; let R;
+  if(mode==='split') R=half?res+0.5*m2:m2; else R=m2;
+  return {R:R-feeR, w:half||R>0, end};
+}
+function levels(r,k){ // niveles con stop de k ATR (mínimo k ATR desde la entrada)
+  const R0=r.R, w=R0.w, a=r.atr; let entry, stop, wait=false;
+  if(r.st==='piso'){ entry=r.c; stop=R0.bot-Math.max(k*a,0.08*w); }
+  else if(r.st==='techo'){ entry=r.c; stop=R0.top+Math.max(k*a,0.08*w); }
+  else if(r.st==='up'){ entry=r.entryHigh; wait=r.c>entry; stop=R0.top-Math.max(k*a,0.15*w); }
+  else { entry=r.entryLow; wait=r.c<entry; stop=R0.bot+Math.max(k*a,0.15*w); }
+  if(r.dir==='long'&&entry-stop<k*a) stop=entry-k*a; if(r.dir==='short'&&stop-entry<k*a) stop=entry+k*a;
+  const risk=Math.abs(entry-stop), rr1=(r.dir==='short'?entry-r.tp1:r.tp1-entry)/risk;
+  return {entry,stop,wait,rr1};
+}
+const G={}; const add=(g,x)=>{ (G[g]=G[g]||[]).push(x); };
+const KS=[0.6,1.0,1.5], MODES=[['split','½ TP1 + ½ TP2'],['tp1','todo en TP1'],['tp2','todo en TP2']];
+function stats(a){ if(!a||!a.length) return null; const n=a.length, w=a.filter(x=>x.w).length, tot=a.reduce((s,x)=>s+x.R,0); return {n,w:w/n,avg:tot/n,tot}; }
+function row(name,a,cls){ const s=stats(a); if(!s) return `<tr><td>${name}</td><td>0</td><td>—</td><td>—</td><td>—</td></tr>`;
+  const c=s.avg>0.05?'g':s.avg<-0.05?'r':'y';
+  return `<tr class="${cls||''}"><td>${name}</td><td>${s.n}</td><td>${Math.round(s.w*100)}%</td><td class="${c}">${s.avg>=0?'+':''}${s.avg.toFixed(2)}</td><td class="${c}">${s.tot>=0?'+':''}${s.tot.toFixed(1)}</td></tr>`; }
+const TH='<tr><th>Grupo</th><th>Ops</th><th>Gana</th><th>R prom.</th><th>R total</th></tr>';
+const FL=[['F0','Sin filtro (como test 1)'],['F1','A · sin entradas contra 4H/BTC'],['F2','A+B · 4H a favor, BTC no en contra'],['F3','Estricto · 4H y BTC a favor']];
+function report(done,total,days){
+  const T=(title,rows,note)=>`<h3>${title}</h3>${note?`<div class="mu">${note}</div>`:''}<table>${TH}${rows.join('')}</table>`;
+  let h=`<div class="box">${done}/${total} pares · ~${days} días · ${new Date().toLocaleString('es-SV')}</div>`;
+  h+=T('1 · Filtros de tendencia (stop 0.6 ATR · ½ TP1 + ½ TP2)',FL.map(([k,n])=>row(n,G[k+'|0.6|split'])),'Gana = % de operaciones que terminaron en positivo o tocaron TP1');
+  let best=null; const cells=[];
+  for(const k of KS) for(const [m,mn] of MODES){ const s=stats(G['F2|'+k+'|'+m]); cells.push([k,m,mn,s]); if(s&&s.n>=20&&(!best||s.avg>best[3].avg)) best=[k,m,mn,s]; }
+  h+=T('2 · Stop y salida (con filtro A+B)',cells.map(([k,m,mn])=>row(`Stop ${k} ATR · ${mn}`,G['F2|'+k+'|'+m],best&&best[0]===k&&best[1]===m?'best':'')),'Fila verde = mejor combinación');
+  const bk=best?best[0]:0.6, bm=best?best[1]:'split';
+  h+=T(`3 · Por situación (A+B · stop ${bk} ATR · ${best?best[2]:''})`,[['Rebote en piso (LONG)','piso'],['Rechazo en techo (SHORT)','techo'],['Ruptura al alza (LONG)','up'],['Ruptura a la baja (SHORT)','down']].map(([n,s])=>row(n,G['S:'+s+'|'+bk+'|'+bm])));
+  h+=T('4 · ¿Se mantiene en el tiempo? (A+B · mejor combinación)',[row('Primera mitad de los días',G['H1|'+bk+'|'+bm]),row('Segunda mitad de los días',G['H2|'+bk+'|'+bm])],'Si las dos mitades salen positivas, la mejora no es casualidad de un solo periodo');
+  h+=T('5 · ¿El borde del rango aporta algo?',[row('Borde del rango a favor de 4H (A+B)',G['F2|1|tp1']),row('Medio del rango a favor de 4H',G['MED|1|tp1'])],'Ambos con stop 1.0 ATR y todo en TP1. Si el borde no gana más que el medio, lo que sirve es la tendencia, no el rango.');
+  if(best){ const s=best[3], f0=stats(G['F0|0.6|split']);
+    h+=`<div class="box"><b>Resumen:</b> con el filtro A+B, la mejor forma fue <b>stop ${best[0]} ATR · ${best[2]}</b>: ${s.avg>=0?'+':''}${s.avg.toFixed(2)} R por operación en ${s.n} operaciones (${s.tot>=0?'+':''}${s.tot.toFixed(1)} R en total). Como está ahora (test 1): ${f0?(f0.avg>=0?'+':'')+f0.avg.toFixed(2)+' R por operación':'—'}.<br><span class="mu">Ej.: +0.20 R arriesgando $10 por operación = +$2 por operación.</span></div>`; }
+  $('out').innerHTML=h;
+}
+$('go').onclick=async()=>{
+  $('go').disabled=true; $('go').textContent='Probando…'; for(const k in G) delete G[k];
+  try{
+    $('st').textContent='Leyendo pares de Binance Futures…';
+    const [info,tick]=await Promise.all([J(API+'exchangeInfo'),J(API+'ticker/24hr')]);
+    const vol=new Map(tick.map(t=>[t.symbol,+t.quoteVolume]));
+    const ST=new Set(['USDC','FDUSD','TUSD','BUSD','USDP','DAI','EUR','USDE']);
+    const uni=info.symbols.filter(s=>s.status==='TRADING'&&s.quoteAsset==='USDT'&&s.contractType==='PERPETUAL'&&!ST.has(s.baseAsset)&&!/TRAD/i.test(String(s.underlyingSubType||''))&&!/EQUIT|COMMOD/i.test(String(s.underlyingType||'')))
+      .map(s=>s.symbol).sort((a,b)=>(vol.get(b)||0)-(vol.get(a)||0)).slice(0,60);
+    const BTC=await kl('BTCUSDT'); const bIdx=new Map(BTC.map((k,i)=>[k.t,i])); const tMid=BTC[Math.floor(BTC.length/2)].t;
+    let done=0; const days=Math.round(BTC.length/24);
+    for(const sym of uni){
+      $('st').textContent=`Probando ${sym} (${done+1}/${uni.length})…`; $('pb').style.width=(done/uni.length*100)+'%';
+      try{
+        const K=await kl(sym); let busy=-1;
+        for(let t=300;t<K.length-6;t++){
+          if(t<=busy) continue;
+          const r=rgDetect(sym,K.slice(0,t+1),0); if(!r) continue;
+          const bi=bIdx.get(K[t].t); let btc=null; if(bi!=null&&sym!=='BTCUSDT'){ const b1=trendAt(BTC,bi,1), b4=trendAt(BTC,bi,4); btc=b1&&b1===b4?b1:'flat'; }
+          const h4=trendAt(K,t,4);
+          if(r.st==='medio'){ // comparación: entrar en medio a favor de 4H
+            const a=h4==='up'?'long':h4==='down'?'short':null;
+            if(a){ const w=r.R.w, sh=a==='short', e=r.c, st=sh?e+Math.max(r.atr,0.15*w):e-Math.max(r.atr,0.15*w), tp=sh?r.R.bot+0.05*w:r.R.top-0.05*w;
+              const o=sim(K,t,a,e,st,tp,tp,false,'tp1'); if(o){ add('MED|1|tp1',o); busy=o.end; continue; } }
+            busy=t+6; continue; }
+          const a4=alignOf(h4,r.dir), ab=sym==='BTCUSDT'?0:alignOf(btc,r.dir);
+          const F={F0:true, F1:a4>=0&&ab>=0, F2:a4>0&&ab>=0, F3:a4>0&&(sym==='BTCUSDT'||ab>0)};
+          let endRef=null;
+          for(const k of KS){ const L=levels(r,k);
+            for(const [m] of MODES){ const o=sim(K,t,r.dir,L.entry,L.stop,r.tp1,r.tp2,L.wait,m); if(!o) continue;
+              if(k===0.6&&m==='split') endRef=o.end;
+              const ok=L.rr1>=1;
+              for(const f in F){ if(!F[f]) continue; if(f!=='F0'&&!ok) continue; add(f+'|'+k+'|'+m,o); }
+              if(F.F2&&ok){ add('S:'+r.st+'|'+k+'|'+m,o); add((K[t].t<tMid?'H1':'H2')+'|'+k+'|'+m,o); } } }
+          busy= endRef!=null? endRef : t+12;
+        }
+      }catch(e){}
+      done++; if(done%5===0) report(done,uni.length,days); await sleep(60);
+    }
+    $('pb').style.width='100%'; $('st').textContent='✅ Test 2 terminado. Toma captura de todos los resultados.'; report(done,uni.length,days);
+  }catch(e){ $('st').textContent='❌ '+(e.message||e); }
+  $('go').disabled=false; $('go').textContent='▶ Repetir test 2';
+};
+</script></body></html>
