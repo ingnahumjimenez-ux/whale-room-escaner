@@ -895,6 +895,7 @@ body.fabs-open #tfFab{opacity:1;pointer-events:auto;transform:none}
 <div id="rgPanel"><div class="sheet"><div class="grab"></div>
   <div class="ph"><h2>▭ Rangos · 1H</h2><button class="x" id="rgX">✕</button></div>
   <div class="pst">Monedas atrapadas entre techo y piso · Binance Futures · motor v3</div>
+  <div class="pst" style="background:#123b38;border:1px solid #14b8a6;color:#99f6e4;border-radius:9px;padding:6px 9px">🧪 Probado: gana siguiendo la tendencia (solo a favor de 4H · stop 1.5 ATR · salir en TP2). En los últimos 60 días, casi solo SHORT. Usa riesgo chico.</div>
   <div class="cats" id="rgCats"><button data-f="all" class="on">Todas</button><button data-f="piso">Piso</button><button data-f="techo">Techo</button><button data-f="brk">Ruptura</button></div>
   <div class="sum" id="rgSum"></div>
   <div class="b3"><button class="primary" id="rgGo">▶ Escanear</button><button class="ghost" id="rgStop" disabled>■ Detener</button><button class="ghost" id="rgUnBtn">🔍 Un par</button></div>
@@ -4721,13 +4722,13 @@ function rgDetect(sym,K,vol){
   const rej = st==='piso'?rejL : st==='techo'?rejS : false;
   const vRef = brk? K[bi].v : lc.v, volOk = brk? vRef>=1.3*avgV : vRef>=avgV;
   let entryLow, entryHigh, stop, tp1, tp2;
-  if(st==='piso'){ entryLow=bot; entryHigh=bot+0.25*w; stop=bot-Math.max(0.6*atr,0.08*w); tp1=mid; tp2=top-0.05*w; }
-  else if(st==='techo'){ entryLow=top-0.25*w; entryHigh=top; stop=top+Math.max(0.6*atr,0.08*w); tp1=mid; tp2=bot+0.05*w; }
-  else if(st==='up'){ entryLow=top; entryHigh=top+0.3*atr; stop=top-Math.max(0.6*atr,0.15*w); tp1=top+0.5*w; tp2=top+w; }
-  else if(st==='down'){ entryLow=bot-0.3*atr; entryHigh=bot; stop=bot+Math.max(0.6*atr,0.15*w); tp1=bot-0.5*w; tp2=bot-w; }
+  if(st==='piso'){ entryLow=bot; entryHigh=bot+0.25*w; stop=bot-Math.max(1.5*atr,0.08*w); tp1=mid; tp2=top-0.05*w; }
+  else if(st==='techo'){ entryLow=top-0.25*w; entryHigh=top; stop=top+Math.max(1.5*atr,0.08*w); tp1=mid; tp2=bot+0.05*w; }
+  else if(st==='up'){ entryLow=top; entryHigh=top+0.3*atr; stop=top-Math.max(1.5*atr,0.15*w); tp1=top+0.5*w; tp2=top+w; }
+  else if(st==='down'){ entryLow=bot-0.3*atr; entryHigh=bot; stop=bot+Math.max(1.5*atr,0.15*w); tp1=bot-0.5*w; tp2=bot-w; }
   const r={symbol:sym, base:sym.replace(/USDT$/,''), K, n, atr, vol, R, c, pos, st, dir, brk, rej, volOk, avgV, d:decimalsFor(c), entryLow, entryHigh, stop, tp1, tp2};
   if(dir){ const sh=dir==='short', en=st==='up'||st==='down' ? (sh?Math.max(c,entryLow):Math.min(c,entryHigh)) : c;
-    if(Math.abs(en-r.stop)<0.6*atr){ r.stop= sh? en+0.6*atr : en-0.6*atr; }   // stop mínimo: 0.6 ATR desde la entrada
+    if(Math.abs(en-r.stop)<1.5*atr){ r.stop= sh? en+1.5*atr : en-1.5*atr; }   // stop mínimo: 1.5 ATR desde la entrada (test 2)
     r.entry=en; r.risk=Math.abs(en-r.stop); r.stopPct=r.risk/en*100;
     r.rr1=(sh?en-tp1:tp1-en)/r.risk; r.rr2=(sh?en-tp2:tp2-en)/r.risk;
     r.pct1=(sh?1-tp1/en:tp1/en-1)*100; r.pct2=(sh?1-tp2/en:tp2/en-1)*100;
@@ -4738,24 +4739,19 @@ function rgDetect(sym,K,vol){
 function rgScore(r){
   let s=50; const R=r.R;
   s+=5*(Math.min(R.tT.n,4)-2)+5*(Math.min(R.tB.n,4)-2); if(R.N>=48) s+=5;
-  if(r.rej) s+=10; if(r.volOk) s+=5;
-  if(r.dir){ if(r.rr1>=1.5) s+=5; if(r.rr2>=3) s+=5; if(r.rr1<1) s-=15;
+  if(r.dir){ if(r.rr2>=2) s+=5; if(r.rr2>=3) s+=5; if(r.rr1<1) s-=15;
     const c=r.ctx||{}, a4=alignOf(c.h4,r.dir), ab=alignOf(c.btc,r.dir); s+= a4>0?5:a4<0?-10:0; if(r.symbol!=='BTCUSDT') s+= ab>0?3:ab<0?-7:0; }
   else s-=15;
   r.score=Math.max(0,Math.min(100,Math.round(s)));
 }
-function rgVerd(r){
+function rgVerd(r){ // reglas del test 2: solo a favor de 4H (BTC no en contra) · objetivo TP2 · stop 1.5 ATR
   const c=r.ctx||{}, a4=alignOf(c.h4,r.dir), ab=r.symbol==='BTCUSDT'?0:alignOf(c.btc,r.dir), F=v=>fmt(v,r.d);
   if(r.st==='medio') return ['wt','⏳ ESPERA',`está en medio del rango · LONG cerca de ${F(r.R.bot)} o SHORT cerca de ${F(r.R.top)}`];
-  if(r.rr1<1) return ['no','⛔ NO','poco recorrido hasta el objetivo frente al stop'];
-  if(r.st==='up'||r.st==='down'){ const lv=F(r.st==='up'?r.R.top:r.R.bot);
-    if(a4<0||ab<0) return ['mid','⚠️ RUPTURA DÉBIL',`contra ${a4<0?'4H':'BTC'} · esperar retesteo de ${lv} · ½ dinero`];
-    return [r.volOk?'go':'mid', r.volOk?'🚀 RUPTURA':'👀 RUPTURA SIN VOLUMEN', `entrar en el retesteo de ${lv} · objetivo = ancho del rango`]; }
-  const edge=r.st==='piso'?'techo':'piso';
-  if(a4<0||ab<0) return ['mid','⚠️ SOLO PEQUEÑA',`½ dinero · salir en el medio · contra ${a4<0?'4H':'BTC'}`];
-  if(!r.rej) return ['mid','👀 LISTA','falta vela de rechazo · esperar confirmación'];
-  if(r.rr1<1.3) return ['mid','👀 LISTA',`poco recorrido hasta el medio · mejor entrar más cerca del ${r.st}`];
-  return ['go','✅ TÓMALA',`entrada en el ${r.st} · salir en el medio y el ${edge}`];
+  if(a4<0||ab<0) return ['no','⛔ NO',`va contra ${a4<0&&ab<0?'4H y BTC':a4<0?'4H':'BTC'} · en el test estas entradas perdieron`];
+  if(a4===0) return ['wt','⏳ ESPERA','4H lateral · esperar a que 4H marque dirección'];
+  if(r.rr1<1) return ['no','⛔ NO','poco recorrido frente al stop'];
+  if(r.st==='up'||r.st==='down') return ['go','✅ TÓMALA',`entrar en el retesteo de ${F(r.st==='up'?r.R.top:r.R.bot)} · salir en TP2 (ancho del rango)`];
+  return ['go','✅ TÓMALA',`a favor de 4H · salir en TP2 (${r.st==='piso'?'techo':'piso'} del rango)`];
 }
 const RG_ST={piso:'Rebote en el piso del rango',techo:'Rechazo en el techo del rango',up:'Ruptura del rango al alza',down:'Ruptura del rango a la baja',medio:'En medio del rango'};
 const RG_SHORT={piso:'piso',techo:'techo',up:'ruptura ↑',down:'ruptura ↓',medio:'medio'};
@@ -4787,8 +4783,8 @@ function rgDraw(cv,r){
 }
 function rgText(r){ const F=v=>fmt(v,r.d), R=r.R;
   const L=[`▭ RANGO · ${r.base}/USDT · 1H`, r.dir?`${r.dir.toUpperCase()} · ${RG_ST[r.st]}`:RG_ST[r.st], `Rango: ${F(R.bot)} – ${F(R.top)} (${R.wPct.toFixed(1)} %, ${R.N} velas)`];
-  if(r.dir){ L.push(`Entrada: ${F(r.entryLow)} – ${F(r.entryHigh)}`, `Stop: ${F(r.stop)}`, `TP1: ${F(r.tp1)} · TP2: ${F(r.tp2)}`, `Apalancamiento: ${r.levTxt}`,
-      r.st==='piso'?`Si cierra bajo ${F(R.bot)} con volumen: salir`: r.st==='techo'?`Si cierra sobre ${F(R.top)} con volumen: salir`: `Si vuelve a cerrar dentro del rango: salir`); }
+  if(r.dir){ L.push(`Entrada: ${F(r.entryLow)} – ${F(r.entryHigh)}`, `Stop: ${F(r.stop)}`, `Objetivo TP2: ${F(r.tp2)} (TP1 ${F(r.tp1)} solo referencia)`, `Apalancamiento: ${r.levTxt}`,
+      `Salida: solo en el stop o en TP2 · máx. 48 h`); }
   else L.push(`LONG cerca de ${F(R.bot)} · SHORT cerca de ${F(R.top)}`);
   return L.join('\n'); }
 function rgImage(r){ const st=localStamp(), v=rgVerd(r);
@@ -4807,15 +4803,15 @@ function rgCard(r,i){
   const chk=[[`${R.tB.n} toques piso`,R.tB.n>=2],[`${R.tT.n} toques techo`,R.tT.n>=2]];
   if(r.st==='piso'||r.st==='techo') chk.push(['Vela de rechazo',r.rej]);
   chk.push([r.brk?'Volumen de ruptura':'Volumen',r.volOk]);
-  const chips=ctx+(ctx?'<span class="sep">|</span>':'')+chk.map(([t,p])=>`<span class="${p?'g':'n'}">${p?'':'✗ '}${t}</span>`).join('');
+  const chips=ctx+(ctx?'<span class="sep">|</span>':'')+chk.map(([t,p])=>`<span class="${p?'g':'n'}" title="solo información">${p?'':'✗ '}${t}</span>`).join('')+'<span class="n" style="border:0">ⓘ info</span>';
   let kv=`<b>Rango</b><span>${F(R.bot)} – ${F(R.top)} · ancho ${R.wPct.toFixed(1)} % · ${R.N} velas</span><b>Precio</b><span>${F(r.c)} · ${Math.round(Math.max(0,Math.min(1,r.pos))*100)} % de la caja</span>`;
   if(r.dir){ const ed=r.st==='piso'?'techo':r.st==='techo'?'piso':'medida';
     kv+=`<b>Entrada</b><span>${F(r.entryLow)} – ${F(r.entryHigh)}</span>
       <b>Stop</b><span style="color:#fca5a5">${F(r.stop)} (${sh?'+':'−'}${r.stopPct.toFixed(1)} %)</span>
-      <b>TP1 ${r.st==='piso'||r.st==='techo'?'medio':'½ rango'}</b><span style="color:#86efac">${F(r.tp1)} (${sh?'−':'+'}${r.pct1.toFixed(1)} %) · R:R ${r.rr1.toFixed(1)}</span>
-      <b>TP2 ${ed}</b><span style="color:#86efac">${F(r.tp2)} (${sh?'−':'+'}${r.pct2.toFixed(1)} %) · R:R ${r.rr2.toFixed(1)}</span>
+      <b>🎯 TP2</b><span style="color:#86efac;font-weight:700">${F(r.tp2)} (${sh?'−':'+'}${r.pct2.toFixed(1)} %) · R:R ${r.rr2.toFixed(1)} · ${ed==='medida'?'ancho del rango':ed}</span>
+      <b>TP1 ${r.st==='piso'||r.st==='techo'?'medio':'½ rango'}</b><span style="color:#8a9bb0">${F(r.tp1)} (${sh?'−':'+'}${r.pct1.toFixed(1)} %) · solo referencia</span>
       <b>Apalanc. · Vol</b><span>${r.levTxt} · ${fmtVol(r.vol)} USDT</span>
-      <b>Si rompe</b><span style="color:#8a9bb0">${r.st==='piso'?`cierre bajo ${F(R.bot)} con volumen = salir`:r.st==='techo'?`cierre sobre ${F(R.top)} con volumen = salir`:'si vuelve a cerrar dentro del rango = salir'}</span>`; }
+      <b>Salida</b><span style="color:#8a9bb0">solo en el stop o en TP2 · máx. 48 h (como en el test)</span>`; }
   else kv+=`<b>Plan</b><span>LONG cerca de ${F(R.bot)} · SHORT cerca de ${F(R.top)}</span><b>Vol</b><span>${fmtVol(r.vol)} USDT</span>`;
   return `<div class="rgc" id="rgc${i}"><canvas width="1080" height="620"></canvas><div class="rgm">
     <span class="rgtag">▭ ${RG_ST[r.st]}</span>
@@ -4826,7 +4822,7 @@ function rgCard(r,i){
     <div class="b3"><a href="https://www.tradingview.com/chart/?symbol=BINANCE:${r.symbol}.P" target="_blank" rel="noopener">📈 TradingView</a><button class="ghost" data-rgcp="${i}">Copiar señal</button><button class="primary" style="background:#16a34a;border-color:#16a34a" data-rgdl="${i}">⬇ Descargar</button></div>
   </div></div>`;
 }
-const RG_ORD={go:0,mid:1,no:2,wt:3};
+const RG_ORD={go:0,mid:1,wt:2,no:3};
 function rgList(){ return RG.res.filter(r=>RG.f==='all'||(RG.f==='brk'?(r.st==='up'||r.st==='down'):r.st===RG.f))
   .sort((a,b)=>(RG_ORD[a.v[0]]-RG_ORD[b.v[0]])||(b.score-a.score)); }
 function rgRender(){
