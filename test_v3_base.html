@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test 0 · motor de v3</title>
+<style>body{font-family:system-ui,sans-serif;background:#0b0e14;color:#e5e7eb;margin:0;padding:14px;font-size:14px}
+h2{margin:0 0 4px;font-size:19px}.mu{color:#8a9bb0;font-size:12px}
+button{background:#3b82f6;color:#fff;border:0;border-radius:10px;font-weight:800;font-size:15px;padding:11px 16px;width:100%;margin:10px 0}
+select{background:#111827;color:#e5e7eb;border:1px solid #334155;border-radius:8px;padding:7px;font-size:13px;width:100%}
+.bar{height:8px;background:#1e293b;border-radius:4px;overflow:hidden;margin:6px 0}.bar i{display:block;height:100%;width:0;background:#3b82f6}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0 12px;font-variant-numeric:tabular-nums}th,td{padding:5px 3px;border-bottom:1px solid #1e293b;text-align:right}th:first-child,td:first-child{text-align:left}th{color:#8a9bb0;font-weight:600;font-size:11px}
+.box{background:#111827;border:1px solid #243049;border-radius:12px;padding:10px 12px;margin:10px 0}.g{color:#86efac}.r{color:#fca5a5}.y{color:#fcd34d}
+h3{font-size:15px;margin:14px 0 2px}tr.base td{background:#172033}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}</style></head><body>
+<h2>🔬 Test 0 · motor de v3 (base)</h2>
+<div class="mu">Usa el motor real de v3 (FVG + tendencia + nivel, 3 de 3, puntaje ≥ 90, contexto 4H/1H/BTC) sobre velas reales de Binance Futures, vela por vela. Mide cuántas señales llegan a T1 y T2 antes del stop y cuánto ganan con cada forma de salir. No incluye el "modo de mercado" (miedo/codicia), porque no hay historia de ese dato. Comisión 0.1 % ida y vuelta.</div>
+<div class="two"><select id="modo"><option value="15m|45">15 min · 45 días (como usas v3)</option><option value="1h|180">1 hora · 6 meses (alza y baja)</option></select>
+<select id="npar"><option value="30">30 pares (más rápido)</option><option value="50">50 pares</option></select></div>
+<button id="go">▶ Iniciar test</button>
+<div class="bar"><i id="pb"></i></div><div class="mu" id="st">Tarda 15–30 minutos. Deja la pantalla encendida y el teléfono cargando.</div>
+<div id="out"></div>
+<script>
+const TF_LABEL = {'15m':'15M','30m':'30M','1h':'1H','2h':'2H','4h':'4H','6h':'6H','8h':'8H','12h':'12H','1d':'1D','3d':'3D','1w':'1W'};
+const alignOf=(tr,dir)=>!tr||tr==='flat'?0:((tr==='up')===(dir==='long')?1:-1);
+const CTX_ADJ={h4:[5,-10], h1:[3,-5], btc:[3,-7]};
+function atrSeries(K, p=14){
+  const out=new Array(K.length).fill(NaN); let sum=0;
+  for(let i=1;i<K.length;i++){
+    const tr=Math.max(K[i].h-K[i].l, Math.abs(K[i].h-K[i-1].c), Math.abs(K[i].l-K[i-1].c));
+    if(i<=p){ sum+=tr; if(i===p) out[i]=sum/p; }
+    else out[i]=(out[i-1]*(p-1)+tr)/p;
+  }
+  return out;
+}
+function ema(vals, p){
+  const k=2/(p+1); const out=[]; let e=vals[0];
+  for(let i=0;i<vals.length;i++){ e = i===0?vals[0]:vals[i]*k+e*(1-k); out.push(e); }
+  return out;
+}
+function pivots(K, k){
+  const highs=[], lows=[];
+  for(let i=k;i<K.length-k;i++){
+    let isH=true,isL=true;
+    for(let j=i-k;j<=i+k;j++){
+      if(j===i) continue;
+      if(K[j].h>K[i].h) isH=false;
+      if(K[j].l<K[i].l) isL=false;
+      if(!isH&&!isL) break;
+    }
+    if(isH) highs.push(i);
+    if(isL) lows.push(i);
+  }
+  return {highs, lows};
+}
+function findTrendline(K, lows, atrPct){
+  const last=K.length-1, close=K[last].c;
+  const tol=Math.max(0.004, 0.35*atrPct);           // tolerancia en log
+  const minSpan=Math.max(15, Math.floor(K.length*0.08));
+  const cands=[];
+  for(let x=0;x<lows.length;x++){
+    for(let y=x+1;y<lows.length;y++){
+      const a=lows[x], b=lows[y];
+      if(b-a<minSpan) continue;
+      const la=Math.log(K[a].l), lb=Math.log(K[b].l);
+      if(lb<=la) continue;
+      const slope=(lb-la)/(b-a);
+      let viol=0;
+      for(let i=a;i<=last;i++){
+        const lv=la+slope*(i-a);
+        if(Math.log(K[i].c) < lv-tol){ if(++viol>2) break; }
+      }
+      if(viol>2) continue;
+      let touches=0;
+      for(const p of lows){ if(p<a) continue; if(Math.abs(Math.log(K[p].l)-(la+slope*(p-a)))<tol*1.5) touches++; }
+      const lineNow=Math.exp(la+slope*(last-a));
+      const span=last-a;
+      cands.push({a,b,la,slope,touches,span,lineNow, quality:touches*2+span/100});
+    }
+  }
+  if(!cands.length) return null;
+  const atr=atrPct*close;
+  cands.forEach(c=>{ c.dATR=(close-c.lineNow)/atr; c.near = c.dATR>=-0.5 && c.dATR<=3; });
+  const near=cands.filter(c=>c.near).sort((p,q)=>q.quality-p.quality);
+  const best = near[0] || cands.sort((p,q)=>q.quality-p.quality)[0];
+  best.valueAt = i=>Math.exp(best.la+best.slope*(i-best.a));
+  return best;
+}
+function findLevels(K, piv, atrPct){
+  const pts=[];
+  piv.highs.forEach(i=>pts.push({p:K[i].h,i}));
+  piv.lows.forEach(i=>pts.push({p:K[i].l,i}));
+  pts.sort((a,b)=>a.p-b.p);
+  const tol=Math.max(0.006, 0.6*atrPct);
+  const cl=[];
+  for(const pt of pts){
+    const c=cl[cl.length-1];
+    if(c && Math.abs(pt.p/c.price-1)<=tol){ c.sum+=pt.p; c.n++; c.price=c.sum/c.n; c.last=Math.max(c.last,pt.i); }
+    else cl.push({sum:pt.p,n:1,price:pt.p,last:pt.i});
+  }
+  return cl.filter(c=>c.n>=2).map(c=>({price:c.price, touches:c.n, last:c.last}));
+}
+function findBullFVG(K, atr, lookback=150){
+  const last=K.length-1, close=K[last].c;
+  const found=[];
+  for(let i=Math.max(2,last-lookback); i<=last; i++){
+    const bottom=K[i-2].h, top=K[i].l;
+    if(top<=bottom || (top-bottom)<0.15*atr) continue;
+    let invalid=false, minLow=Infinity;
+    for(let j=i+1;j<=last;j++){ if(K[j].c<bottom){invalid=true;break;} minLow=Math.min(minLow,K[j].l); }
+    if(invalid) continue;
+    const near = close>=bottom-0.3*atr && close<=top+1.5*atr;
+    const inside = close>=bottom && close<=top;
+    const filled = minLow===Infinity?0:Math.max(0,Math.min(1,(top-minLow)/(top-bottom)));
+    found.push({i,bottom,top,near,inside,filled,dist:Math.abs(close-(top+bottom)/2)});
+  }
+  const near=found.filter(f=>f.near).sort((a,b)=>a.dist-b.dist || b.i-a.i);
+  return near[0] || null;
+}
+function decimalsFor(p){ return Math.min(10, Math.max(2, 3-Math.floor(Math.log10(p)))); }
+function fmt(p,d){ return (+p).toFixed(d); }
+function analyzeDir(symbol, K, cfg, vol, dir){
+  if(dir==='long'){ const r=analyze(symbol,K,{...cfg,dir:'long'},vol); if(r){ r.dir='long'; } return r; }
+  const Ki=K.map(k=>({t:k.t, o:1/k.o, h:1/k.l, l:1/k.h, c:1/k.c, v:k.v}));
+  const ri=analyze(symbol,Ki,{...cfg,dir:'short'},vol);
+  if(!ri) return null;
+  const inv=x=>1/x;
+  const r={...ri};
+  r.dir='short'; r.K=K; r.close=K[ri.last].c;
+  r.atr=ri.atrPct*r.close; r.d=decimalsFor(r.close);
+  r.entryLow=inv(ri.entryHigh); r.entryHigh=inv(ri.entryLow);
+  r.entryMid=(r.entryLow+r.entryHigh)/2; r.stop=inv(ri.stop);
+  r.risk=r.stop-r.entryMid; r.stopPct=r.risk/r.entryMid*100;
+  r.targets=ri.targets.map(t=>{ const p=inv(t.p); return {p, ext:t.ext, pct:(1-p/r.entryMid)*100, rr:(r.entryMid-p)/r.risk}; });
+  r.maxLev=Math.max(1,Math.min(10,Math.floor(50/r.stopPct))); r.minLev=Math.max(1,Math.round(r.maxLev*0.4));
+  r.levTxt=r.minLev===r.maxLev?`${r.maxLev}x`:`${r.minLev}-${r.maxLev}x`;
+  if(ri.tl){ const tl=ri.tl; r.tl={...tl, lineNow:inv(tl.lineNow), valueAt:i=>1/tl.valueAt(i)}; }
+  if(ri.fvg){ r.fvg={...ri.fvg, top:inv(ri.fvg.bottom), bottom:inv(ri.fvg.top)}; }
+  r.levels=ri.levels.map(l=>({...l, price:inv(l.price)}));
+  if(ri.support){ r.support={...ri.support, price:inv(ri.support.price)}; r.support=r.levels.find(l=>Math.abs(l.price-r.support.price)<1e-12)||r.support; }
+  r.drop=ri.drop/(1-ri.drop); // subida desde el mínimo, en precios reales
+  r.warns=ri.warns.map(w=>w.startsWith('Al stop:')?`Al stop: −${r.stopPct.toFixed(1)} % del precio = −${(r.stopPct*r.minLev).toFixed(0)} % del margen a ${r.minLev}x y −${(r.stopPct*r.maxLev).toFixed(0)} % a ${r.maxLev}x.`
+    : w.startsWith('T1 tiene R:R')?`T1 tiene R:R ${r.targets[0].rr.toFixed(2)} (<1): se alcanza fácil, pero no compensa el riesgo por sí solo.` : w);
+  if(r.targets[0].rr>=1) r.warns=r.warns.filter(w=>!w.startsWith('T1 tiene R:R'));
+  delete r._liq;
+  return r;
+}
+function dirsOf(cfg){ return cfg.dir==='both'?['long','short']:[cfg.dir||'long']; }
+function analyze(symbol, K, cfg, vol){
+  if(K.length<120) return null;
+  const last=K.length-1, close=K[last].c;
+  const atrS=atrSeries(K); const atr=atrS[last]; if(!atr||!isFinite(atr)) return null;
+  const atrPct=atr/close;
+  const closes=K.map(k=>k.c);
+  const e20=ema(closes,20), e50=ema(closes,50), e200=ema(closes,200);
+  const piv=pivots(K,cfg.pivot);
+
+  const tl=findTrendline(K, piv.lows, atrPct);
+  const levels=findLevels(K, piv, atrPct);
+  const fvg=findBullFVG(K, atr);
+
+  // soporte horizontal cerca de la entrada
+  const supCands=levels.filter(l=>l.price<=close+0.5*atr && l.price>=close-3*atr);
+  const support=supCands.sort((a,b)=>(b.touches-a.touches)||(b.price-a.price))[0]||null;
+
+  // retroceso (comprar la caída, como la señal original)
+  const look=Math.min(30,last);
+  let hh=-Infinity; for(let i=last-look;i<=last;i++) hh=Math.max(hh,K[i].h);
+  const drop=(hh-close)/hh;
+  const pullback = close<e20[last] && drop>=2*atrPct;
+
+  const hasTL = !!(tl && tl.near), hasFVG=!!fvg, hasLvl=!!support;
+  const cores = (+hasTL)+(+hasFVG)+(+hasLvl);
+
+  // puntaje
+  let score=0;
+  if(hasFVG) score+=30+(fvg.inside?5:0);
+  if(hasTL)  score+=25+Math.min(8,(tl.touches-2)*2)+Math.min(4,tl.span/150);
+  if(hasLvl) score+=17+Math.min(6,(support.touches-2)*1.5);
+  if(pullback) score+=8;
+  // confluencia: las herramientas coinciden en el mismo precio
+  const anchors=[]; if(hasFVG) anchors.push((fvg.top+fvg.bottom)/2); if(hasTL) anchors.push(tl.lineNow); if(hasLvl) anchors.push(support.price);
+  let confluent=false;
+  if(anchors.length>=2){ const spread=Math.max(...anchors)-Math.min(...anchors); if(spread<=1.5*atr){ confluent=true; score+=10; } }
+  score=Math.round(Math.min(100,score));
+
+  if(cores<cfg.minCores || score<cfg.minScore) { if(!cfg.force) return null; }
+
+  // ===== Construcción de la señal =====
+  let entryHigh = hasFVG ? Math.min(close, fvg.top+0.1*atr) : close;
+  const w = Math.min(0.02, Math.max(0.003, 0.4*atrPct));
+  let entryLow = entryHigh*(1-w);
+  if(hasFVG) entryLow=Math.max(entryLow, Math.min(fvg.bottom, entryHigh*(1-0.003)));
+  if(entryLow>=entryHigh) entryLow=entryHigh*(1-0.003);
+  const entryMid=(entryHigh+entryLow)/2;
+
+  const baseList=[entryLow]; if(hasFVG) baseList.push(fvg.bottom); if(hasTL) baseList.push(tl.lineNow); if(hasLvl && support.price<entryLow) baseList.push(support.price);
+  let stop=Math.min(...baseList)-0.8*atr;
+  stop=Math.min(stop, entryLow*(1-0.02));
+  if(stop<=0) return null;
+  const risk=entryMid-stop, stopPct=risk/entryMid*100;
+
+  // objetivos: resistencias por encima (pivotes altos + niveles)
+  const pool=[];
+  piv.highs.forEach(i=>pool.push(K[i].h));
+  levels.forEach(l=>pool.push(l.price));
+  pool.push(hh);
+  const minFirst=entryMid+0.45*risk;
+  const gap=Math.max(0.025, 0.8*atrPct);
+  const sorted=[...new Set(pool)].filter(p=>p>=minFirst).sort((a,b)=>a-b);
+  const targets=[];
+  for(const p of sorted){ if(!targets.length || p/targets[targets.length-1].p-1>=gap) targets.push({p,ext:false}); if(targets.length===8) break; }
+  if(!targets.length) targets.push({p:Math.max(minFirst,entryMid+risk),ext:true});
+  while(targets.length<8){
+    // rellena primero el hueco más grande entre resistencias reales; si no hay, extiende hacia arriba
+    let bi=-1, bg=0;
+    for(let k=1;k<targets.length;k++){ const g2=targets[k].p/targets[k-1].p-1; if(g2>bg){bg=g2;bi=k;} }
+    if(bi>0 && bg>=2*gap){ targets.splice(bi,0,{p:Math.sqrt(targets[bi-1].p*targets[bi].p),ext:true}); }
+    else { const lt=targets[targets.length-1].p; targets.push({p:Math.max(lt*(1+gap), lt+risk*0.75),ext:true}); }
+  }
+
+  const maxLev=Math.max(1,Math.min(10,Math.floor(50/stopPct)));
+  const minLev=Math.max(1,Math.round(maxLev*0.4));
+  const levTxt = minLev===maxLev?`${maxLev}x`:`${minLev}-${maxLev}x`;
+  const d=decimalsFor(close);
+
+  const rr=targets.map(t=>({p:t.p, ext:t.ext, pct:(t.p/entryMid-1)*100, rr:(t.p-entryMid)/risk}));
+
+  // justificación (mismo estilo que la señal original)
+  const tf=TF_LABEL[cfg.tf];
+  const parts=[];
+  if(hasFVG) parts.push(cfg.dir==='short' ? `${tf} bearish FVG` : `${tf} FVG`);
+  const conf=[];
+  if(hasTL) conf.push(cfg.dir==='short' ? `${tl.span>=K.length*0.4?'long-term ':''}descending trendline resistance` : `${tl.span>=K.length*0.4?'long-term ':''}ascending trendline support`);
+  if(hasLvl) conf.push('horizontal levels');
+  let just = parts.length
+    ? `${parts[0]} ${conf.length?'confluent with '+conf.join(' and '):''} at entry.`
+    : `${conf.join(' and ')} at entry (${tf}).`;
+  just = just.charAt(0).toUpperCase()+just.slice(1).replace(/\s+/g,' ');
+
+  // advertencias, igual que en el análisis crítico
+  const warns=[];
+  if(rr[0].rr<1) warns.push(`T1 tiene R:R ${rr[0].rr.toFixed(2)} (<1): se alcanza fácil, pero no compensa el riesgo por sí solo.`);
+  if(close<e20[last] && e20[last]<e50[last]) warns.push(cfg.dir==='short' ? 'Venta contra la tendencia de corto plazo (EMA20 > EMA50): riesgo de vender en plena subida.' : 'Compra contra la tendencia de corto plazo (EMA20 < EMA50): riesgo de "atrapar un cuchillo que cae".');
+  if(close<e200[last]) warns.push(cfg.dir==='short' ? 'El precio está encima de la EMA200: el contexto de largo plazo no es bajista.' : 'El precio está debajo de la EMA200: el contexto de largo plazo no es alcista.');
+  warns.push(`Al stop: −${stopPct.toFixed(1)} % del precio = −${(stopPct*minLev).toFixed(0)} % del margen a ${minLev}x y −${(stopPct*maxLev).toFixed(0)} % a ${maxLev}x.`);
+  if(stopPct>12) warns.push('Stop muy amplio (>12 %): reduce el apalancamiento o el tamaño de la posición.');
+  const extN=rr.filter(t=>t.ext).length;
+  if(extN) warns.push(`${extN} objetivo(s) proyectado(s) sin ${cfg.dir==='short'?'soporte':'resistencia'} histórica (marcados "ext").`);
+  if(hasFVG && fvg.filled>0.7) warns.push(`El FVG ya está mitigado en ${(fvg.filled*100).toFixed(0)} %, así que es más débil.`);
+  if(!confluent && cores>=2) warns.push('Las herramientas no coinciden en el mismo precio (separación > 1.5 ATR).');
+
+  return {
+    symbol, vol, close, atr, atrPct, d, K, last, tl, fvg, support, levels, pullback, drop, confluent,
+    hasTL, hasFVG, hasLvl, cores, score, entryLow, entryHigh, entryMid, stop, stopPct, risk,
+    targets:rr, levTxt, minLev, maxLev, just, warns, tf:cfg.tf, market:cfg.market, candleT:K[last].t
+  };
+}
+function trendOf(K){
+  if(!K || K.length<60) return null;
+  const c=K.map(k=>k.c), n=c.length-1, e50=ema(c,50), e200=ema(c,Math.min(200,n));
+  const pts=(c[n]>e200[n])+(e50[n]>e200[n])+(e50[n]>e50[n-10]);
+  return pts>=2 && c[n]>e200[n] ? 'up' : pts<=1 && c[n]<e200[n] ? 'down' : 'flat';
+}
+const API='https://fapi.binance.com/fapi/v1/';
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function J(u){ for(let a=0;a<4;a++){ try{ const r=await fetch(u); if(r.ok) return await r.json(); if(r.status===429||r.status===418) await sleep(3000); }catch(e){} await sleep(700*(a+1)); } throw new Error('sin respuesta: '+u.split('?')[0]); }
+const MS={'15m':9e5,'1h':36e5,'4h':144e5};
+async function hist(sym,tf,need){ let out=[], end=null;
+  while(out.length<need){ const q=`klines?symbol=${sym}&interval=${tf}&limit=1500`+(end?`&endTime=${end}`:'');
+    const k=(await J(API+q)).map(r=>({t:r[0],o:+r[1],h:+r[2],l:+r[3],c:+r[4],v:+r[5]})); if(!k.length) break;
+    out=k.concat(out); end=k[0].t-1; if(k.length<1500) break; await sleep(120); }
+  const now=Date.now(); return out.filter(k=>k.t+MS[tf]<=now).slice(-need); }   // solo velas cerradas
+function ctxSeries(C,tf){ // devuelve f(T) = tendencia con velas cerradas hasta T
+  const d=MS[tf], cache=new Map(); let j=0;
+  return T=>{ while(j+1<C.length&&C[j+1].t+d<=T) j++; if(C[j].t+d>T) return null; if(cache.has(j)) return cache.get(j);
+    const v=j>=59?trendOf(C.slice(Math.max(0,j-249),j+1)):null; cache.set(j,v); return v; }; }
+const FEE=0.1;
+function simAll(K,t,r,cfgT,extra){ // un solo llenado, varias formas de salir
+  const sh=r.dir==='short', T=r.targets.map(x=>x.p), wait=cfgT.wait, hold=cfgT.hold;
+  let stop=r.stop+(sh?1:-1)*extra*r.atr, i=t, fill=null, zone=false; const c0=K[t].c;
+  if(sh? c0>=r.entryLow : c0<=r.entryHigh){ if(sh? c0>=stop : c0<=stop) return null; fill=c0; zone=true; i=t+1; }
+  else { for(i=t+1;i<=Math.min(K.length-1,t+wait);i++){ const k=K[i]; if(sh? k.h>=r.entryLow : k.l<=r.entryHigh){ fill=sh?r.entryLow:r.entryHigh; i++; break; } if(sh? k.l<=T[0] : k.h>=T[0]) return null; } if(fill==null) return null; }
+  const risk=Math.abs(fill-stop); if(!(risk>0)) return null; const feeR=FEE/100*fill/risk, mv=p=>(sh?fill-p:p-fill)/risk;
+  const end=Math.min(K.length-1,i+hold); let maxT=0, stopHit=-1, ti=[]; 
+  // recorre: para cada vela anota hasta qué objetivo llegó y si tocó el stop (stop primero si ambos en la misma vela)
+  const ev=[]; for(let j=i;j<=end;j++){ const k=K[j], hs=sh?k.h>=stop:k.l<=stop; let reach=maxT; while(reach<8&&(sh?k.l<=T[reach]:k.h>=T[reach])) reach++; ev.push({j,hs,reach,c:k.c}); if(hs&&stopHit<0) stopHit=ev.length-1; if(reach>maxT) maxT=reach; }
+  const res={zone, fill, endIdx:end};
+  const runTo=(n)=>{ for(const e of ev){ if(e.hs) return {R:-1-feeR,w:false,end:e.j}; if(e.reach>=n) return {R:mv(T[n-1])-feeR,w:true,end:e.j}; } const c=ev.length?ev[ev.length-1].c:fill; const R=mv(c)-feeR; return {R,w:R>0,end}; };
+  res.T1=runTo(1); res.T2=runTo(2); res.T3=runTo(3); res.T5=runTo(5);
+  // escalonado: 20 % en T1..T5, stop a la entrada tras T1
+  { let got=0, part=0, st=false; let R=0, endJ=end, done=false;
+    for(const e of ev){ const hsNow= got>0 ? (sh? K[e.j].h>=fill : K[e.j].l<=fill) : e.hs;
+      if(hsNow){ R+= got>0? 0 : -1*(1-part); part=1; done=true; endJ=e.j; break; }
+      while(got<Math.min(5,e.reach)){ R+=0.2*mv(T[got]); part+=0.2; got++; }
+      if(got>=5){ done=true; endJ=e.j; break; } }
+    if(!done){ const c=ev.length?ev[ev.length-1].c:fill; R+=(1-part)*mv(c); }
+    res.esc={R:R-feeR, w:got>0, end:endJ}; }
+  // todo en T3 con stop a la entrada después de T1
+  { let be=false, out=null; for(const e of ev){ const hsNow= be ? (sh? K[e.j].h>=fill : K[e.j].l<=fill) : e.hs;
+      if(hsNow){ out={R:(be?0:-1)-feeR, w:be, end:e.j}; break; } if(e.reach>=3){ out={R:mv(T[2])-feeR,w:true,end:e.j}; break; } if(e.reach>=1) be=true; }
+    if(!out){ const c=ev.length?ev[ev.length-1].c:fill; const R=mv(c)-feeR; out={R,w:R>0,end}; } res.T3be=out; }
+  { const f1=ev.findIndex(e=>e.reach>=1), f2=ev.findIndex(e=>e.reach>=2); res.hitT1= f1>=0 && (stopHit<0||f1<stopHit); res.hitT2= f2>=0 && (stopHit<0||f2<stopHit); }
+  return res;
+}
+const G={}; const add=(g,x)=>{ if(x) (G[g]=G[g]||[]).push(x); };
+const avg=(a,f)=>a.reduce((s,x)=>s+f(x),0)/a.length;
+function row(name,k,cls){ const a=G[k]; if(!a||!a.length) return `<tr class="${cls||''}"><td>${name}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+  const p1=avg(a,x=>x.hitT1?1:0), p2=avg(a,x=>x.hitT2?1:0), r1=avg(a,x=>x.T1.R), r2=avg(a,x=>x.T2.R), re=avg(a,x=>x.esc.R);
+  const c=v=>v>0.05?'g':v<-0.05?'r':'y', f=v=>(v>=0?'+':'')+v.toFixed(2);
+  return `<tr class="${cls||''}"><td>${name}</td><td>${a.length}</td><td>${Math.round(p1*100)}%</td><td>${Math.round(p2*100)}%</td><td class="${c(r1)}">${f(r1)}</td><td class="${c(r2)}">${f(r2)}</td><td class="${c(re)}">${f(re)}</td></tr>`; }
+const TH='<tr><th>Grupo</th><th>Ops</th><th>Llega T1</th><th>Llega T2</th><th>R · T1</th><th>R · T2</th><th>R · escal.</th></tr>';
+function rowX(name,a,key){ if(!a||!a.length) return `<tr><td>${name}</td><td>0</td><td>—</td><td>—</td></tr>`; const w=avg(a,x=>x[key].w?1:0), r=avg(a,x=>x[key].R), c=r>0.05?'g':r<-0.05?'r':'y';
+  return `<tr><td>${name}</td><td>${a.length}</td><td>${Math.round(w*100)}%</td><td class="${c}">${r>=0?'+':''}${r.toFixed(2)}</td></tr>`; }
+function report(done,total,info){
+  const T=(t,rows,note)=>`<h3>${t}</h3>${note?`<div class="mu">${note}</div>`:''}<table>${TH}${rows.join('')}</table>`;
+  let h=`<div class="box">${done}/${total} pares · ${info} · ${new Date().toLocaleString('es-SV')}</div>`;
+  h+=T('1 · v3 tal como está, por veredicto',[row('✅ TÓMALA','v:go','base'),row('⚠️ SOLO PEQUEÑA · 4H en contra','v:mid4'),row('⚠️ SOLO PEQUEÑA · 1H o BTC en contra','v:midO'),row('⛔ NO LA TOMES','v:no')],'Señales visibles en v3: puntaje ≥ 90 después del contexto y 3 de 3 herramientas. "Llega T1/T2" = probabilidad de tocar ese objetivo antes del stop. R · escal. = 20 % en T1…T5 y stop a la entrada tras T1.');
+  h+=T('2 · Dirección (solo ✅)',[row('LONG ✅','d:long'),row('SHORT ✅','d:short')]);
+  h+=T('3 · ¿El puntaje predice? (todas las señales con 3 herramientas)',[row('Puntaje 60–79','s:60'),row('Puntaje 80–89','s:80'),row('Puntaje 90–94','s:90'),row('Puntaje 95–100','s:95')],'Si el puntaje sirve, las filas de abajo deben tener más % de T1/T2');
+  h+=T('4 · Entrada (✅)',[row('Ya estaba en la zona al salir la señal','e:zone'),row('Esperó a que regresara a la zona','e:wait')]);
+  h+=T('5 · Según el mercado (BTC 4H) · ✅ y ⚠️',[row('BTC 4H alcista','m:up'),row('BTC 4H lateral','m:flat'),row('BTC 4H bajista','m:down')]);
+  h+=T('6 · Stop (✅)',[row('Stop 0.8 ATR (como ahora)','k:0'),row('Stop 1.2 ATR','k:0.4'),row('Stop 1.5 ATR','k:0.7')]);
+  h+=T('7 · Por mitades (✅)',[row('1ª mitad','h:1'),row('2ª mitad','h:2')]);
+  const a=G['v:go']||[];
+  h+=`<h3>8 · Forma de salir (✅)</h3><table><tr><th>Salida</th><th>Ops</th><th>Gana</th><th>R prom.</th></tr>${[['Todo en T1','T1'],['Todo en T2','T2'],['Todo en T3','T3'],['Todo en T5','T5'],['Escalonado 20 % T1…T5','esc'],['Todo en T3 · stop a la entrada tras T1','T3be']].map(([n,k])=>rowX(n,a,k)).join('')}</table>`;
+  if(a.length>=20){ const ex=[['T1','todo en T1'],['T2','todo en T2'],['T3','todo en T3'],['T5','todo en T5'],['esc','escalonado'],['T3be','T3 con stop a la entrada']].map(([k,n])=>[n,avg(a,x=>x[k].R)]).sort((p,q)=>q[1]-p[1]);
+    const g=G['v:go']||[], m4=G['v:mid4']||[], s9=G['s:90']||[], s95=G['s:95']||[];
+    const L=[`Probabilidad histórica de una ✅: <b>${Math.round(avg(g,x=>x.hitT1?1:0)*100)} %</b> llega a T1 y <b>${Math.round(avg(g,x=>x.hitT2?1:0)*100)} %</b> a T2 antes del stop.`,
+      `Mejor forma de salir: <b>${ex[0][0]}</b> (${ex[0][1]>=0?'+':''}${ex[0][1].toFixed(2)} R por operación).`,
+      m4.length>=15?`⚠️ con 4H en contra: ${avg(m4,x=>x.T2.R)>=0?'+':''}${avg(m4,x=>x.T2.R).toFixed(2)} R en T2 (${m4.length} ops).`:'',
+      s9.length>=15&&s95.length>=15?`Puntaje 95–100 contra 90–94: T1 ${Math.round(avg(s95,x=>x.hitT1?1:0)*100)} % contra ${Math.round(avg(s9,x=>x.hitT1?1:0)*100)} %.`:''].filter(Boolean);
+    h+=`<div class="box"><b>Resumen</b><br>${L.join('<br>')}</div>`; }
+  $('out').innerHTML=h;
+}
+$('go').onclick=async()=>{
+  $('go').disabled=true; $('go').textContent='Probando…'; for(const k in G) delete G[k];
+  const [tf,days]=$('modo').value.split('|'); const npar=+$('npar').value;
+  const bars=Math.round(days*864e5/MS[tf]), WIN=500, step=2;
+  const cfgT={wait:tf==='15m'?16:6, hold:tf==='15m'?192:72};
+  const MC=+(new URLSearchParams(location.search).get('mc')||3);   // solo para pruebas internas
+  const cfg={market:'futures',tf,minScore:MC<3?0:60,minCores:MC,pivot:5,dir:'both'};
+  try{
+    $('st').textContent='Leyendo pares de Binance Futures…';
+    const [info,tick]=await Promise.all([J(API+'exchangeInfo'),J(API+'ticker/24hr')]);
+    const vol=new Map(tick.map(t=>[t.symbol,+t.quoteVolume]));
+    const ST=new Set(['USDC','FDUSD','TUSD','BUSD','USDP','DAI','EUR','USDE']);
+    const uni=info.symbols.filter(s=>s.status==='TRADING'&&s.quoteAsset==='USDT'&&s.contractType==='PERPETUAL'&&!ST.has(s.baseAsset)&&!/(UP|DOWN|BULL|BEAR)$/.test(s.baseAsset)&&!/TRAD/i.test(String(s.underlyingSubType||''))&&!/EQUIT|COMMOD/i.test(String(s.underlyingType||'')))
+      .map(s=>s.symbol).sort((a,b)=>(vol.get(b)||0)-(vol.get(a)||0)).slice(0,npar);
+    $('st').textContent='Leyendo historia de BTC…';
+    const need1h=Math.round(days*24)+260, need4h=Math.round(days*6)+260;
+    const B1=await hist('BTCUSDT','1h',need1h), B4=await hist('BTCUSDT','4h',need4h), b1=ctxSeries(B1,'1h'), b4=ctxSeries(B4,'4h');
+    const btcAt=T=>{ const x=b1(T), y=b4(T); return x&&x===y?x:'flat'; };
+    let done=0, tMid=null;
+    for(const sym of uni){
+      try{
+        $('st').textContent=`Descargando ${sym} (${done+1}/${uni.length})…`;
+        const K=await hist(sym,tf,bars+WIN), C4=await hist(sym,'4h',need4h), C1=tf==='1h'?K:await hist(sym,'1h',need1h);
+        const s4=ctxSeries(C4,'4h'), s1=ctxSeries(C1,'1h');
+        if(tMid==null) tMid=K[Math.floor((WIN+K.length)/2)].t;
+        const busy={long:-1,short:-1}, d=MS[tf];
+        for(let t=WIN;t<K.length-2;t+=step){
+          if(t%200<step){ $('st').textContent=`Probando ${sym} (${done+1}/${uni.length}) · ${Math.round((t-WIN)/(K.length-WIN)*100)} %`; $('pb').style.width=((done+(t-WIN)/(K.length-WIN))/uni.length*100)+'%'; await sleep(0); }
+          const W=K.slice(t-WIN+1,t+1);
+          for(const dir of ['long','short']){
+            if(t<=busy[dir]) continue;
+            const r=analyzeDir(sym,W,cfg,vol.get(sym)||0,dir); if(!r) continue;
+            const T=K[t].t+d, ctx={h4:s4(T),h1:s1(T),btc:sym==='BTCUSDT'?null:btcAt(T)};
+            let adj=0; const ad=(key,tr)=>{ const a=alignOf(tr,dir); adj+= a>0?CTX_ADJ[key][0]:a<0?CTX_ADJ[key][1]:0; }; ad('h4',ctx.h4); ad('h1',ctx.h1); if(sym!=='BTCUSDT') ad('btc',ctx.btc);
+            const fs=Math.max(0,Math.min(100,r.score+adj));
+            const ag=[['4H',ctx.h4],['1H',ctx.h1]].concat(sym==='BTCUSDT'?[]:[['BTC',ctx.btc]]).filter(([,tr])=>tr&&alignOf(tr,dir)<0).map(([l])=>l);
+            const v= (ag.includes('BTC')&&ag.includes('4H'))||ag.length>=3 ? 'no' : ag.length===0 ? 'go' : ag.includes('4H') ? 'mid4' : 'midO';
+            const tr=Object.assign(r,{dir}); const o=simAll(K,t,tr,cfgT,0); if(!o){ busy[dir]=t+cfgT.wait; continue; }
+            add('s:'+(fs>=95?95:fs>=90?90:fs>=80?80:60),o);
+            if((r.score>=90&&fs>=90)||MC<3){   // visible en v3
+              add('v:'+v,o);
+              if(v!=='no'){ const m=btcAt(T); add('m:'+(m||'flat'),o); }
+              if(v==='go'){ add('d:'+dir,o); add(o.zone?'e:zone':'e:wait',o); add('h:'+(K[t].t<tMid?1:2),o); add('k:0',o);
+                add('k:0.4',simAll(K,t,tr,cfgT,0.4)); add('k:0.7',simAll(K,t,tr,cfgT,0.7)); }
+            }
+            busy[dir]=Math.max(o.T3be.end,o.esc.end,o.T2.end);
+          }
+        }
+      }catch(e){ console.log(sym,e); }
+      done++; report(done,uni.length,`${tf} · ${days} días`); await sleep(50);
+    }
+    $('pb').style.width='100%'; $('st').textContent='✅ Test terminado. Toma captura de todos los resultados.'; report(done,uni.length,`${tf} · ${days} días`);
+  }catch(e){ $('st').textContent='❌ '+(e.message||e); }
+  $('go').disabled=false; $('go').textContent='▶ Repetir test';
+};
+
+</script></body></html>
