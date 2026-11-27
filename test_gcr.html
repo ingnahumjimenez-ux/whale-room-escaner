@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test · plantilla Global Crypto Research</title>
+<style>body{font-family:system-ui,sans-serif;background:#0b0e14;color:#e5e7eb;margin:0;padding:12px;font-size:14px}
+h2{margin:0 0 4px;font-size:19px}.mu{color:#8a9bb0;font-size:12px}
+button{background:#a855f7;color:#fff;border:0;border-radius:10px;font-weight:800;font-size:15px;padding:11px 16px;width:100%;margin:10px 0}
+select{background:#111827;color:#e5e7eb;border:1px solid #334155;border-radius:8px;padding:7px;font-size:13px;width:100%;margin-top:8px}
+.bar{height:8px;background:#1e293b;border-radius:4px;overflow:hidden;margin:6px 0}.bar i{display:block;height:100%;width:0;background:#a855f7}
+table{width:100%;border-collapse:collapse;font-size:10.5px;margin:6px 0 12px;font-variant-numeric:tabular-nums}th,td{padding:5px 2px;border-bottom:1px solid #1e293b;text-align:right}th:first-child,td:first-child{text-align:left}th{color:#8a9bb0;font-weight:600;font-size:10px}
+.box{background:#111827;border:1px solid #243049;border-radius:12px;padding:10px 12px;margin:10px 0;font-size:13px}.g{color:#86efac}.r{color:#fca5a5}.y{color:#fcd34d}
+h3{font-size:14.5px;margin:12px 0 2px}tr.base td{background:#172033}</style></head><body>
+<h2>🧪 Test · plantilla Global Crypto Research</h2>
+<div class="mu">Aplica la plantilla que usan sus señales a velas reales de Binance Futures (15 min, 45 días): LONG Cross 20×, zona de entrada de 3.3 %, stop −4.8 % y objetivos +5.5 % / +11 % / +19 % desde la mitad de la zona. Cuenta también las que tocan el stop y las que se liquidan. Comisión 0.1 % ida y vuelta.</div>
+<select id="uni"><option value="30-110">Altcoins chicas (puestos 30 a 110 por volumen, como las del canal)</option><option value="0-60">Las 60 de más volumen</option></select>
+<button id="go">▶ Iniciar test</button>
+<div class="bar"><i id="pb"></i></div><div class="mu" id="st">Tarda 5–10 minutos. Deja la pantalla encendida.</div>
+<div id="out"></div>
+<script>
+function ema(vals, p){
+  const k=2/(p+1); const out=[]; let e=vals[0];
+  for(let i=0;i<vals.length;i++){ e = i===0?vals[0]:vals[i]*k+e*(1-k); out.push(e); }
+  return out;
+}
+function trendOf(K){
+  if(!K || K.length<60) return null;
+  const c=K.map(k=>k.c), n=c.length-1, e50=ema(c,50), e200=ema(c,Math.min(200,n));
+  const pts=(c[n]>e200[n])+(e50[n]>e200[n])+(e50[n]>e50[n-10]);
+  return pts>=2 && c[n]>e200[n] ? 'up' : pts<=1 && c[n]<e200[n] ? 'down' : 'flat';
+}
+const API='https://fapi.binance.com/fapi/v1/';
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function J(u){ for(let a=0;a<4;a++){ try{ const r=await fetch(u); if(r.ok) return await r.json(); if(r.status===429||r.status===418) await sleep(3000); }catch(e){} await sleep(700*(a+1)); } throw new Error('sin respuesta: '+u.split('?')[0]); }
+const MS={'15m':9e5,'1h':36e5,'4h':144e5};
+async function hist(sym,tf,need){ let out=[], end=null;
+  while(out.length<need){ const q=`klines?symbol=${sym}&interval=${tf}&limit=1500`+(end?`&endTime=${end}`:'');
+    const k=(await J(API+q)).map(r=>({t:r[0],o:+r[1],h:+r[2],l:+r[3],c:+r[4],v:+r[5]})); if(!k.length) break;
+    out=k.concat(out); end=k[0].t-1; if(k.length<1500) break; await sleep(120); }
+  const now=Date.now(); return out.filter(k=>k.t+MS[tf]<=now).slice(-need); }
+function ctxSeries(C,tf){ const d=MS[tf], cache=new Map(); let j=0;
+  return T=>{ while(j+1<C.length&&C[j+1].t+d<=T) j++; if(!C.length||C[j].t+d>T) return null; if(cache.has(j)) return cache.get(j);
+    const v=j>=59?trendOf(C.slice(Math.max(0,j-249),j+1)):null; cache.set(j,v); return v; }; }
+// Plantilla GCR medida en sus señales (desde la mitad de la zona): zona 3.3 % · SL −4.8 % · T1 +5.5 % · T2 +11 % · T3 +19 % · Cross 20×
+const LEV=20, MMR=0.005, FEE=0.1, WAIT=48, HOLD=288;   // velas de 15 min: espera 12 h para llenar, máximo 72 h abierta
+function sim(K,t,mode){
+  const c=K[t].c, top=c*1.003, bot=c*0.97, mid=(top+bot)/2, SL=mid*(1-0.048), T=[mid*1.055,mid*1.11,mid*1.19];
+  let e=null, i=t+1;
+  if(mode==='top'){ e=c; }
+  else { for(;i<=Math.min(K.length-1,t+WAIT);i++){ if(K[i].l<=mid){ e=mid; i++; break; } if(K[i].h>=T[0]) return null; } if(e==null) return null; }
+  const liq=e*(1-1/LEV+MMR), risk=e-SL, feeR=FEE/100*e/risk, mv=p=>(p-e)/risk, end=Math.min(K.length-1,i+HOLD);
+  const liqFirst=liq>SL;   // la liquidación llega antes que el stop
+  let reach=0, hitSL=false, liqd=false, j=i, maxH=e; const ev=[];
+  for(;j<=end;j++){ const k=K[j]; const lowHit=k.l<=SL;
+    let r=reach; while(r<3&&k.h>=T[r]) r++;
+    ev.push({j,low:lowHit,r,c:k.c}); if(lowHit){ break; } reach=r; maxH=Math.max(maxH,k.h); if(reach>=3) break; }
+  const stopOut=ev.length&&ev[ev.length-1].low, isLiq=stopOut&&liqFirst;
+  const lossR2=-1;   // el resultado se mide con el stop; la liquidación se informa aparte (en aislado llegaría antes)
+  const lastC=ev.length?ev[ev.length-1].c:e;
+  const run=n=>{ for(const x of ev){ if(x.low) return lossR2-feeR; if(x.r>=n) return mv(T[n-1])-feeR; } return mv(lastC)-feeR; };
+  const thirds=()=>{ let got=0, R=0, be=false;
+    for(const x of ev){ if(x.low){ return R+(be?0:lossR2)*(1-got/3)-feeR; }
+      while(got<x.r){ R+=mv(T[got])/3; got++; be=true; } if(got>=3) return R-feeR; }
+    return R+(1-got/3)*mv(lastC)-feeR; };
+  const R1=run(1), R2=run(2), R3=run(3), Rt=thirds();
+  const marg=R=>R*risk/e*LEV*100;   // % sobre el margen a 20×
+  const posted= reach>=1 ? (maxH/e-1)*LEV*100 : null;   // lo que publicaría el canal: máximo alcanzado × 20
+  return {R1,R2,R3,Rt,m1:marg(R1),m3:marg(Rt),hit1:reach>=1,hit2:reach>=2,hit3:reach>=3,sl:stopOut,liq:isLiq,liqFirst,posted,end:j};
+}
+const G={}; const add=(g,x)=>{ if(x) (G[g]=G[g]||[]).push(x); };
+const avg=(a,f)=>a.reduce((s,x)=>s+f(x),0)/a.length;
+function row(name,k,cls){ const a=G[k]; if(!a||!a.length) return `<tr><td>${name}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+  const c=v=>v>0.05?'g':v<-0.05?'r':'y', f=v=>(v>=0?'+':'')+v.toFixed(2), P=v=>Math.round(v*100)+'%';
+  const rt=avg(a,x=>x.Rt), r2=avg(a,x=>x.R2), mg=avg(a,x=>x.m3);
+  return `<tr class="${cls||''}"><td>${name}</td><td>${a.length}</td><td>${P(avg(a,x=>x.hit1?1:0))}</td><td>${P(avg(a,x=>x.hit2?1:0))}</td><td>${P(avg(a,x=>x.hit3?1:0))}</td><td>${P(avg(a,x=>x.sl?1:0))}</td><td class="${c(r2)}">${f(r2)}</td><td class="${c(rt)}">${f(rt)}</td><td class="${c(mg/20)}">${mg>=0?'+':''}${mg.toFixed(0)}%</td></tr>`; }
+const TH='<tr><th>Grupo</th><th>Ops</th><th>T1</th><th>T2</th><th>T3</th><th>Stop</th><th>R · T2</th><th>R · ⅓</th><th>Margen 20× · ⅓</th></tr>';
+function report(done,total,info){
+  const T=(t,rows,note)=>`<h3>${t}</h3>${note?`<div class="mu">${note}</div>`:''}<table>${TH}${rows.join('')}</table>`;
+  let h=`<div class="box">${done}/${total} pares · ${info} · ${new Date().toLocaleString('es-SV')}</div>`;
+  h+=T('1 · La plantilla GCR según cómo eliges la entrada',[row('Sin filtro (LONG cada 6 h)','F0:mid','base'),row('4H alcista','F1:mid'),row('Subió +5 % en 24 h (momentum)','F2:mid'),row('BTC 4H no bajista','F3:mid'),row('4H alcista + BTC no bajista','F4:mid')],'Entrada a la mitad de la zona (orden límite, espera hasta 12 h). T1/T2/T3 = % que llega antes del stop. ⅓ = un tercio en cada TP y stop a la entrada tras T1. Margen 20× = ganancia o pérdida promedio sobre el margen.');
+  h+=T('2 · Entrar arriba de la zona (precio de mercado)',[row('Sin filtro','F0:top'),row('4H alcista + BTC no bajista','F4:top')],'Con entrada arriba el stop queda más lejos: a 20× muchas veces la liquidación llega antes que el stop');
+  h+=T('3 · Por mitades (4H alcista + BTC no bajista, entrada a la mitad)',[row('1ª mitad','H1'),row('2ª mitad','H2')]);
+  const a=G['F0:top']||[], b=G['F0:mid']||[];
+  if(a.length&&b.length){ const lq=avg(a,x=>x.liq?1:0), lf=avg(a,x=>x.liqFirst?1:0), w=b.filter(x=>x.posted!=null), pub=w.length?avg(w,x=>x.posted):0, real=avg(b,x=>x.m3);
+    h+=`<div class="box"><b>Liquidación a 20× (entrada arriba):</b> en el <b>${Math.round(lf*100)} %</b> de las señales la liquidación (en margen aislado) queda antes que el stop; el <b>${Math.round(lq*100)} %</b> de todas habría terminado liquidada antes de tocar el stop. En Cross la liquidación depende del saldo total de la cuenta, y una pérdida así se come parte del resto del saldo.<br>
+    <b>Lo que publicaría el canal:</b> en las que llegaron a T1, el máximo alcanzado × 20 promedia <b>+${pub.toFixed(0)} %</b>. El resultado real promedio de todas las señales (ganadoras y perdedoras, ⅓ en cada TP) fue <b>${real>=0?'+':''}${real.toFixed(0)} %</b> sobre el margen.</div>`; }
+  const best=[['Sin filtro','F0:mid'],['4H alcista','F1:mid'],['Momentum','F2:mid'],['BTC no bajista','F3:mid'],['4H + BTC','F4:mid']].map(([n,k])=>[n,G[k]]).filter(x=>x[1]&&x[1].length>=30).map(([n,a])=>[n,avg(a,x=>x.Rt),a.length]).sort((p,q)=>q[1]-p[1]);
+  if(best.length) h+=`<div class="box"><b>Resumen:</b> mejor forma de elegir entradas con esta plantilla: <b>${best[0][0]}</b> (${best[0][1]>=0?'+':''}${best[0][1].toFixed(2)} R por operación, ${best[0][2]} ops). Peor: <b>${best[best.length-1][0]}</b> (${best[best.length-1][1].toFixed(2)} R).<br><span class="mu">El canal no dice cómo elige sus monedas; este test mide si la plantilla (zona, stop y escalera de TP) gana por sí sola o con filtros simples.</span></div>`;
+  $('out').innerHTML=h;
+}
+$('go').onclick=async()=>{
+  $('go').disabled=true; $('go').textContent='Probando…'; for(const k in G) delete G[k];
+  const [from,to]=$('uni').value.split('-').map(Number), days=45, bars=days*96+100;
+  try{
+    $('st').textContent='Leyendo pares de Binance Futures…';
+    const [info,tick]=await Promise.all([J(API+'exchangeInfo'),J(API+'ticker/24hr')]);
+    const vol=new Map(tick.map(t=>[t.symbol,+t.quoteVolume]));
+    const ST=new Set(['USDC','FDUSD','TUSD','BUSD','USDP','DAI','EUR','USDE','BTC','ETH']);
+    const uni=info.symbols.filter(s=>s.status==='TRADING'&&s.quoteAsset==='USDT'&&s.contractType==='PERPETUAL'&&!ST.has(s.baseAsset)&&!/TRAD/i.test(String(s.underlyingSubType||''))&&!/EQUIT|COMMOD/i.test(String(s.underlyingType||'')))
+      .map(s=>s.symbol).sort((a,b)=>(vol.get(b)||0)-(vol.get(a)||0)).slice(from,to);
+    const B4=await hist('BTCUSDT','4h',days*6+260), b4=ctxSeries(B4,'4h');
+    let done=0, tMid=null;
+    for(const sym of uni){
+      try{
+        $('st').textContent=`Probando ${sym} (${done+1}/${uni.length})…`; $('pb').style.width=(done/uni.length*100)+'%';
+        const K=await hist(sym,'15m',bars), C4=await hist(sym,'4h',days*6+260), s4=ctxSeries(C4,'4h');
+        if(K.length<500){ done++; continue; } if(tMid==null) tMid=K[Math.floor(K.length/2)].t;
+        const busy={}; 
+        for(let t=100;t<K.length-10;t+=24){   // una señal posible cada 6 h
+          const T=K[t].t+MS['15m'], h4=s4(T), bt=b4(T), ch24=K[t].c/K[Math.max(0,t-96)].c-1;
+          const F={F0:true, F1:h4==='up', F2:ch24>=0.05, F3:bt!=='down', F4:h4==='up'&&bt!=='down'};
+          for(const mode of ['mid','top']){ const o=sim(K,t,mode); if(!o) continue;
+            for(const f in F){ if(!F[f]) continue; if(mode==='top'&&!(f==='F0'||f==='F4')) continue; add(f+':'+mode,o); }
+            if(mode==='mid'&&F.F4) add(K[t].t<tMid?'H1':'H2',o); }
+          if(t%480<24) await sleep(0);
+        }
+      }catch(e){ console.log(sym,e); }
+      done++; report(done,uni.length,'velas de 15 min · 45 días'); await sleep(40);
+    }
+    $('pb').style.width='100%'; $('st').textContent='✅ Test terminado. Toma captura de todos los resultados.'; report(done,uni.length,'velas de 15 min · 45 días');
+  }catch(e){ $('st').textContent='❌ '+(e.message||e); }
+  $('go').disabled=false; $('go').textContent='▶ Repetir test';
+};
+
+</script></body></html>
